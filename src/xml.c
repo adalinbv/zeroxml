@@ -66,8 +66,8 @@ static void __xmlErrorSet(const void *, const char *, unsigned int);
 # ifndef NDEBUG
 #  define PRINT_INFO(a, b, c) \
      if (0 < (c) && (c) < XML_MAX_ERROR) { \
-         fprintf(stderr, "detected in %s at line %i:\n\t%s at %i\n", \
-                                __func__, __LINE__, __xml_error_str[(c)], b-a); \
+         fprintf(stderr, "detected in %s at line %i:\n\t%s at %li\n", \
+                 __func__, __LINE__, __xml_error_str[(c)], (long)(b-a)); \
      } else { \
          fprintf(stderr, "in %s at line %i: Unknown error number!\n", \
                                 __func__, __LINE__); \

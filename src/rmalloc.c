@@ -523,7 +523,7 @@ static void ControlBlock(begin *B, const char *file)
 	begin *b = (begin *)((*(unsigned char **)E)-START_SPACE);
 	if (IsPossibleFilePos(b->File, b->Size)) {
 	  fprintf(stderr, 
-		  "\tFirst %d bytes of overwritten memory can be interpreted\n"
+		  "\tFirst %ld bytes of overwritten memory can be interpreted\n"
 		  "\t\tas a pointer to a block "
 		  " allocated in:\n"
 #ifdef GENERATIONS
@@ -531,7 +531,7 @@ static void ControlBlock(begin *B, const char *file)
 #else
 		  "\t\t%s [%u Bytes]\n",
 #endif
-		  sizeof(void *),
+		  (long)sizeof(void *),
 		  b->File,
 		  (unsigned) b->Size
 #ifdef GENERATIONS
@@ -659,10 +659,10 @@ static void Initialize(void)
 	  "\t\tflags:  \tUNUSED\n"
 #endif
 	  "\t\talignment:\t" INT2STRING(ALIGNMENT) "\n"
-	  "\t\tpre space:\t%d\n"
-	   "\t\tpost space:\t%d\n"
+	  "\t\tpre space:\t%ld\n"
+	   "\t\tpost space:\t%ld\n"
 	  "\t\thash tab size:\t" INT2STRING(HASHSIZE) "\n\n",
-	  START_SPACE, END_SPACE);
+	  (long)START_SPACE, (long)END_SPACE);
 
   /* --- init list heads --- */  
   for (i = 0;   i < HASHSIZE;   i++) {
