@@ -99,6 +99,8 @@ CONFIGURE_FILE(
     "${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in"
     "${CMAKE_CURRENT_BINARY_DIR}/include/config.h")
 
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+
 
 SET(ZEROXML_OBJS
     src/rmalloc.c
