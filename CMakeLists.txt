@@ -1,0 +1,152 @@
+cmake_minimum_required(VERSION 2.4.7)
+SET(cmake_verbose_makefile TRUE)
+
+IF(COMMAND CMAKE_POLICY)
+  CMAKE_POLICY(SET CMP0003 NEW)
+ENDIF(COMMAND CMAKE_POLICY)
+
+
+INCLUDE(CheckLibraryExists)
+INCLUDE(CheckIncludeFile)
+INCLUDE (CheckIncludeFiles)
+
+PROJECT(zeroxml C)
+
+OPTION(UTILS  "Build and install utility programs" OFF)
+OPTION(WERROR "Treat compile warnings as errors"   OFF)
+OPTION(NODECACHE "Use XML Node cache"              OFF)
+OPTION(NONVALIDATING "Trun off XML validation"     OFF)
+
+IF(WIN32)
+    SET(LIBNAME ZeroXML32)
+    ADD_DEFINITIONS("-D_WIN32")
+ELSE()
+    SET(LIBNAME zeroxml)
+ENDIF()
+
+SET(LIBTYPE STATIC)
+
+# read 'version' file into a variable (stripping any newlines or spaces)
+file(READ version versionFile)
+string(STRIP ${versionFile} ZEROXML_VERSION)
+SET(VERSION ZEROXML_VERSION)
+
+#  read 'description` file into a variable
+file(STRINGS description descriptionFile)
+STRING(REGEX REPLACE ";" " " descriptionFile "${descriptionFile}")
+
+# split version string into components, note CMAKE_MATCH_0 is the entire regexp match
+STRING(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" CPACK_PACKAGE_VERSION ${ZEROXML_VERSION})
+SET(CPACK_PACKAGE_VERSION_MAJOR ${CMAKE_MATCH_1})
+SET(CPACK_PACKAGE_VERSION_MINOR ${CMAKE_MATCH_2})
+SET(CPACK_PACKAGE_VERSION_PATCH ${CMAKE_MATCH_3})
+SET(CPACK_PACKAGE_NAME "ZeroXML")
+SET(CPACK_PACKAGE_CONTACT "tech@adalin.org")
+SET(CPACK_PACKAGE_VENDOR "tech@adalin.org")
+SET(CPACK_PACKAGE_DESCRIPTION "A lightweight, cross platform XML configuration file reading library")
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${descriptionFile})
+SET(CPACK_PACKAGE_DESCRIPTION_FILE "${PROJECT_SOURCE_DIR}/description")
+SET(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/COPYING")
+SET(CPACK_RESOURCE_FILE_README "${PROJECT_SOURCE_DIR}/README")
+
+# DEBIAN
+IF(CMAKE_SIZEOF_VOID_P EQUAL 8)
+  message("64 bit build")
+  SET(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
+ELSE ()
+  message("32 bit build")
+  SET(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "i386")
+ENDIF ()
+SET(CPACK_DEBIAN_PACKAGE_SECTION "devel")
+SET(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.1)")
+
+# RPM
+IF(CMAKE_SIZEOF_VOID_P EQUAL 8)
+  message("64 bit build")
+  SET(CPACK_RPM_PACKAGE_ARCHITECTURE "x86_64")
+else()
+  message("32 bit build")
+  SET(CPACK_RPM_PACKAGE_ARCHITECTURE "i386")
+ENDIF ()
+SET(CPACK_RPM_PACKAGE_GROUP "System/Libraries")
+
+
+SET(CPACK_SOURCE_GENERATOR TBZ2 ZIP)
+SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${ZEROXML_VERSION}" CACHE INTERNAL "tarball basename")
+SET(CPACK_SOURCE_IGNORE_FILES
+  "^${PROJECT_SOURCE_DIR}/.git;\\\\.gitignore;Makefile.am;~$;${CPACK_SOURCE_IGNORE_FILES}")
+
+SET(CPACK_GENERATOR "DEB;RPM")
+SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Adalin B.V.")
+
+INCLUDE (CPack)
+
+# We have some custom .cmake scripts not in the official distribution.
+SET(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
+
+# Add definitions, compiler switches, etc.
+INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}" include "${CMAKE_BINARY_DIR}/include")
+
+ADD_DEFINITIONS(-Wall -DHAVE_CONFIG_H=1)
+IF(WERROR)
+  ADD_DEFINITIONS(-Werror)
+ENDIF()
+
+SET(XML_USE_NODECACHE ${NODECACHE})
+SET(XML_NONVALIDATING ${NONVALIDATING})
+
+CONFIGURE_FILE(
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/include/config.h")
+
+
+SET(ZEROXML_OBJS
+    src/rmalloc.c
+    src/xml.c
+    src/xml_cache.c
+   )
+
+# Build a library
+SET(LIB_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
+ADD_LIBRARY(${LIBNAME} ${LIBTYPE} ${ZEROXML_OBJS})
+SET_TARGET_PROPERTIES(${LIBNAME} PROPERTIES DEFINE_SYMBOL XML_BUILD_LIBRARY
+                                       COMPILE_FLAGS -D_PROTOTYPES
+                                       VERSION ${LIB_VERSION}
+                                       SOVERSION ${CPACK_PACKAGE_VERSION_MAJOR})
+IF(WIN32 AND NOT LIBTYPE STREQUAL "STATIC")
+    SET_TARGET_PROPERTIES(${LIBNAME} PROPERTIES PREFIX "")
+ENDIF()
+
+TARGET_LINK_LIBRARIES(${LIBNAME} ${EXTRA_LIBS} ${AAX_LIBRARY})
+
+# Add an install target here
+INSTALL(TARGETS ${LIBNAME}
+        RUNTIME DESTINATION bin
+        ARCHIVE DESTINATION "lib${LIB_SUFFIX}"
+       )
+INSTALL(FILES
+        include/rmalloc.h
+        include/xml_cache.h
+        include/xml.h
+        DESTINATION include
+       )
+
+IF(UTILS)
+  ADD_EXECUTABLE(xmlgrep examples/xmlgrep.c)
+  TARGET_LINK_LIBRARIES(xmlgrep ${LIBNAME})
+  INSTALL(TARGETS xmlgrep
+          RUNTIME DESTINATION bin
+          ARCHIVE DESTINATION "lib${LIB_SUFFIX}"
+  )
+ENDIF()
+
+#-----------------------------------------------------------------------------
+### uninstall target
+#-----------------------------------------------------------------------------
+CONFIGURE_FILE(
+  "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/cmake_uninstall.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+  IMMEDIATE @ONLY)
+ADD_CUSTOM_TARGET(uninstall
+  "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
+
