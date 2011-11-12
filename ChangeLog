@@ -1,3 +1,7 @@
+2011-11-11  Erik Hofman <tech@adalin.org>
+  * fix some possible type conversion problems
+  * add -fPIC to the compiler flags to make the library realocatable again
+
 2011-11-01  Erik Hofman <tech@adalin.org>
   * Moved to CMake build system
 

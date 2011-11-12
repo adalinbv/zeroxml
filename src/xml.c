@@ -60,7 +60,7 @@
 #ifndef XML_NONVALIDATING
 static const char *__xml_error_str[XML_MAX_ERROR];
 
-static void __xmlErrorSet(const void *, const char *, unsigned int);
+static void __xmlErrorSet(const void *, const char *, size_t);
 # define xmlErrorSet(a, b, c)	__xmlErrorSet(a, b, c)
 
 # ifndef NDEBUG
@@ -137,7 +137,8 @@ xmlOpen(const char *filename)
                 void *mm;
 
                 fstat(fd, &statbuf);
-                mm = mmap(0, statbuf.st_size, PROT_READ, MAP_PRIVATE, fd, 0L);
+                mm = mmap(0, (size_t)statbuf.st_size, PROT_READ, MAP_PRIVATE,
+                          fd, 0L);
                 if (mm != (void *)-1)
                 {
                      rid = calloc(1, sizeof(struct _root_id));
@@ -199,7 +200,7 @@ xmlClose(void *id)
 
       if (rid->fd != -1)
       {
-            munmap(rid->start, rid->len);
+            munmap(rid->start, (size_t)rid->len);
             close(rid->fd);
       }
 
@@ -289,7 +290,7 @@ xmlNodeCopy(const void *id, const char *path)
           const int esize = 0;
 #endif
           struct _xml_id *nid;
-          int new_len;
+          size_t new_len;
 
           new_len = STRUCT_ALIGN(slen + len);
           nid = malloc(nsize + new_len + rsize + esize);
@@ -386,7 +387,7 @@ xmlNodeCopyName(const void *id, char *buf, size_t buflen)
      return slen;
 }
 
-unsigned int
+size_t
 xmlNodeGetNum(const void *id, const char *path)
 {
      struct _xml_id *xid = (struct _xml_id *)id;
@@ -524,7 +525,7 @@ xmlNodeCopyPos(const void *pid, void *id, const char *element, size_t num)
           const int esize = 0;
 #endif
           struct _xml_id *nid;
-          int new_len;
+          size_t new_len;
 
           new_len = STRUCT_ALIGN(slen + len);
           nid = malloc(nsize + new_len + rsize + esize);
@@ -1059,7 +1060,7 @@ int
 xmlAttributeGetBool(const void *id, const char *name)
 {
      struct _xml_id *xid = (struct _xml_id *)id;
-     long int ret = 0;
+     int ret = 0;
 
      assert(xid != 0);
      assert(name != 0);
@@ -1400,10 +1401,10 @@ xmlAttributeCompareString(const void *id, const char *name, const char *s)
 
 
 #ifndef XML_NONVALIDATING
-int
-xmlErrorGetNo(const void *id, int clear)
+size_t
+xmlErrorGetNo(const void *id, size_t clear)
 {
-     int ret = 0;
+     size_t ret = 0;
 
      if (id)
      {
@@ -1681,7 +1682,8 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
      char *new, *cur, *ne, *ret = 0;
      size_t restlen, elementlen;
      size_t open_len = *rlen;
-     int found, num;
+     int found;
+     size_t num;
      void *nnc = 0;
 
      assert(start != 0);
@@ -2199,7 +2201,7 @@ __xml_memncasecmp(const char *haystack, size_t *haystacklen,
 
 #ifndef XML_NONVALIDATING
 void
-__xmlErrorSet(const void *id, const char *pos, unsigned int err_no)
+__xmlErrorSet(const void *id, const char *pos, size_t err_no)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     struct _root_id *rid;

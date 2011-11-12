@@ -181,7 +181,7 @@ XML_API void XML_APIENTRY xmlFree(void *);
  * @param path path to the xml node
  * @return the number count of the nodename
  */
-XML_API unsigned int XML_APIENTRY xmlNodeGetNum(const void *, const char *);
+XML_API size_t XML_APIENTRY xmlNodeGetNum(const void *, const char *);
 
 /**
  * Get the nth occurrence of node in the parent node.
@@ -405,7 +405,7 @@ XML_API double XML_APIENTRY xmlAttributeGetDouble(const void *, const char *);
  * @param clear clear the error state if non zero
  * @return the numer of the last error, 0 means no error detected.
  */
-XML_API int XML_APIENTRY xmlErrorGetNo(const void *, int);
+XML_API size_t XML_APIENTRY xmlErrorGetNo(const void *, size_t);
 
 /**
  * Get the line number of the last detected syntax error in the xml file.
