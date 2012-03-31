@@ -12,16 +12,16 @@ INCLUDE (CheckIncludeFiles)
 
 PROJECT(zeroxml C)
 
-OPTION(UTILS  "Build and install utility programs" OFF)
+OPTION(UTILS  "Build and install utility programs" ON)
 OPTION(WERROR "Treat compile warnings as errors"   OFF)
 OPTION(NODECACHE "Use XML Node cache"              OFF)
 OPTION(NONVALIDATING "Trun off XML validation"     OFF)
 
 IF(WIN32)
-    SET(LIBNAME ZeroXML32)
+    SET(LIBZEROXML ZeroXML32)
     ADD_DEFINITIONS("-D_WIN32")
 ELSE()
-    SET(LIBNAME zeroxml)
+    SET(LIBZEROXML zeroxml)
 ENDIF()
 
 SET(LIBTYPE STATIC)
@@ -93,10 +93,33 @@ SET(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
 # Add definitions, compiler switches, etc.
 INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}" include "${CMAKE_BINARY_DIR}/include")
 
+IF(NOT CMAKE_BUILD_TYPE)
+  SET(CMAKE_BUILD_TYPE Release CACHE STRING
+      "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
+      FORCE)
+ENDIF(NOT CMAKE_BUILD_TYPE)
+
+
 ADD_DEFINITIONS(-Wall -DHAVE_CONFIG_H=1)
 IF(WERROR)
   ADD_DEFINITIONS(-Werror)
 ENDIF()
+
+SET(C_FLAGS "${C_FLAGS} -march=i386 -Wall -Werror=format-security" CACHE STRING
+    "Flags used by al build types."
+    FORCE)
+SET(CMAKE_C_FLAGS_RELWITHDEBINFO "${C_FLAGS} -g -O2 -D_DEBUG" CACHE STRING
+    "Flags used by the compiler during Release with Debug Info builds."
+    FORCE)
+SET(CMAKE_C_FLAGS_MINSIZEREL "${C_FLAGS} -Os -DNDEBUG" CACHE STRING
+    "Flags used by the compiler during release minsize builds."
+    FORCE)
+SET(CMAKE_C_FLAGS_RELEASE "${C_FLAGS} -Os -fomit-frame-pointer -DNDEBUG"
+    CACHE STRING "Flags used by the compiler during release builds"
+    FORCE)
+SET(CMAKE_C_FLAGS_DEBUG "${C_FLAGS} -g3 -D_DEBUG" CACHE STRING
+    "Flags used by the compiler during debug builds."
+    FORCE)
 
 SET(XML_USE_NODECACHE ${NODECACHE})
 SET(XML_NONVALIDATING ${NONVALIDATING})
@@ -104,9 +127,6 @@ SET(XML_NONVALIDATING ${NONVALIDATING})
 CONFIGURE_FILE(
     "${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in"
     "${CMAKE_CURRENT_BINARY_DIR}/include/config.h")
-
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
-
 
 SET(ZEROXML_OBJS
     src/rmalloc.c
@@ -116,13 +136,13 @@ SET(ZEROXML_OBJS
 
 # Build a library
 SET(LIB_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
-ADD_LIBRARY(${LIBNAME} ${LIBTYPE} ${ZEROXML_OBJS})
-SET_TARGET_PROPERTIES(${LIBNAME} PROPERTIES DEFINE_SYMBOL XML_BUILD_LIBRARY
+ADD_LIBRARY(${LIBZEROXML} ${LIBTYPE} ${ZEROXML_OBJS})
+SET_TARGET_PROPERTIES(${LIBZEROXML} PROPERTIES DEFINE_SYMBOL XML_BUILD_LIBRARY
                                        COMPILE_FLAGS -D_PROTOTYPES
                                        VERSION ${LIB_VERSION}
                                        SOVERSION ${CPACK_PACKAGE_VERSION_MAJOR})
 IF(WIN32 AND NOT LIBTYPE STREQUAL "STATIC")
-    SET_TARGET_PROPERTIES(${LIBNAME} PROPERTIES PREFIX "")
+    SET_TARGET_PROPERTIES(${LIBZEROXML} PROPERTIES PREFIX "")
 ENDIF()
 
 IF(CMAKE_SIZEOF_VOID_P MATCHES "8")
@@ -133,10 +153,10 @@ IF(NOT DEFINED LIB_POSTFIX)
   SET(LIB_POSTFIX "")
 ENDIF(NOT DEFINED LIB_POSTFIX)
 
-TARGET_LINK_LIBRARIES(${LIBNAME} ${EXTRA_LIBS} ${AAX_LIBRARY})
+TARGET_LINK_LIBRARIES(${LIBZEROXML} ${EXTRA_LIBS} ${AAX_LIBRARY})
 
 # Add an install target here
-INSTALL(TARGETS ${LIBNAME}
+INSTALL(TARGETS ${LIBZEROXML}
         RUNTIME DESTINATION bin
         ARCHIVE DESTINATION "lib${LIB_POSTFIX}"
        )
@@ -148,12 +168,7 @@ INSTALL(FILES
        )
 
 IF(UTILS)
-  ADD_EXECUTABLE(xmlgrep examples/xmlgrep.c)
-  TARGET_LINK_LIBRARIES(xmlgrep ${LIBNAME})
-  INSTALL(TARGETS xmlgrep
-          RUNTIME DESTINATION bin
-          ARCHIVE DESTINATION "lib${LIB_POSTFIX}"
-  )
+  ADD_SUBDIRECTORY(examples)
 ENDIF()
 
 #-----------------------------------------------------------------------------
