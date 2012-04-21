@@ -49,6 +49,10 @@
 extern "C" {
 #endif
 
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #if defined _WIN32 || defined __CYGWIN__
 # define RMALLOC_APIENTRY __cdecl
 # define RMALLOC_API __attribute__((dllexport))

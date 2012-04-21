@@ -2,9 +2,12 @@
 
 /* Define this to enable nano debug messages. */
 #undef DEBUG
+#cmakedefine DEBUG @DEBUG@
+#cmakedefine MALLOC_DEBUG @MALLOC_DEBUG@
 
 /* Omit the assert warnings */
 #undef NDEBUG
+#cmakedefine NDEBUG @NDEBUG@
 
 /* Name of package */
 #undef PACKAGE
@@ -40,4 +43,8 @@
 /* Define to include the node cache. */
 #undef XML_USE_NODECACHE
 #cmakedefine XML_USE_NODECACHE @XML_USE_NODECACHE@
+
+/* Define to include enable memory debugging. */
+#undef MALLOC_DEBUG
+#cmakedefine MALLOC_DEBUG @MALLOC_DEBUG@
 

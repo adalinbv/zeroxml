@@ -41,6 +41,7 @@
 # include <stdio.h>
 # include <rmalloc.h>
 #else
+# include <stdio.h>	/* for stderr */
 # include <stdlib.h>
 # include <string.h>
 #endif
