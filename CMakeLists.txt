@@ -94,7 +94,7 @@ INCLUDE (CPack)
 SET(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
 
 # Add definitions, compiler switches, etc.
-INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}" include "${CMAKE_BINARY_DIR}/include")
+INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}"/src src include "${CMAKE_BINARY_DIR}/include")
 
 IF(NOT CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE Release CACHE STRING
@@ -137,11 +137,6 @@ SET(ZEROXML_OBJS
     src/xml_cache.c
    )
 
-SET(ZEROXMLDEBUG_OBJS
-    src/rmalloc.c
-    ${ZEROXML_OBJS}
-   )
-
 # Build a library
 IF(CMAKE_SIZEOF_VOID_P MATCHES "8")
   SET(LIB_POSTFIX "64" CACHE STRING "suffix for 32/64 dir placement")
@@ -170,10 +165,16 @@ INSTALL(TARGETS ${LIBZEROXML}
        )
 
 IF(MEMDEBUG)
+  SET(ZEROXMLDEBUG_OBJS
+      src/rmalloc.c
+      src/xml.c
+      src/xml_cache.c
+     )
+
   ADD_LIBRARY(${LIBZEROXML_DEBUG} ${LIBTYPE} ${ZEROXMLDEBUG_OBJS})
   SET_TARGET_PROPERTIES(${LIBZEROXML_DEBUG}
                          PROPERTIES DEFINE_SYMBOL XML_BUILD_LIBRARY
-                         COMPILE_FLAGS -D_PROTOTYPES
+                         COMPILE_FLAGS "-D_PROTOTYPES -DMALLOC_DEBUG=ON"
                          VERSION ${LIB_VERSION}
                          SOVERSION ${CPACK_PACKAGE_VERSION_MAJOR})
   IF(WIN32 AND NOT LIBTYPE STREQUAL "STATIC")

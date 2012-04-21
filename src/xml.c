@@ -37,14 +37,7 @@
 # include <unistd.h>
 #endif
 
-#ifndef NDEBUG
-# include <stdio.h>
-# include <rmalloc.h>
-#else
-# include <stdio.h>	/* for stderr */
-# include <stdlib.h>
-# include <string.h>
-#endif
+#include <stdio.h>
 #include <strings.h>	/* strncasecmp */
 #ifdef _MSC_VER
 # define strncasecmp strnicmp
@@ -55,7 +48,9 @@
 #include <sys/types.h>
 #include <assert.h>
 
+#include <rmalloc.h>
 #include <xml.h>
+
 #include "api.h"
 
 #ifndef XML_NONVALIDATING

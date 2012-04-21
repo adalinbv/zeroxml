@@ -3,7 +3,6 @@
 /* Define this to enable nano debug messages. */
 #undef DEBUG
 #cmakedefine DEBUG @DEBUG@
-#cmakedefine MALLOC_DEBUG @MALLOC_DEBUG@
 
 /* Omit the assert warnings */
 #undef NDEBUG

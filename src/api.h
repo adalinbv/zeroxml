@@ -38,9 +38,9 @@
 
 #include <xml.h> 
 
-#ifdef DEBUG
-# ifdef NDEBUG
-#  undef NDEBUG
+#ifdef NDEBUG
+# ifdef DEBUG
+#  undef DEBUG
 # endif
 #endif
 

@@ -34,8 +34,9 @@
 #include <sys/types.h>
 #include <assert.h>
 
-#ifndef NDEBUG
 #include <rmalloc.h>
+
+#ifndef NDEBUG
 # define PRINT(a, b, c) { \
     size_t l1 = (b), l2 = (c); \
     char *s = (a); \
@@ -49,8 +50,6 @@
         } else printf("Length (%u) seems too large at line %i\n",len, __LINE__); \
     } else printf("NULL pointer at line %i\n", __LINE__); \
 }
-#else
-#include <string.h>
 #endif
 
 #if !defined(XML_USE_NODECACHE)
