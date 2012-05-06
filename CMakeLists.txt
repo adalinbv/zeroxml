@@ -108,7 +108,7 @@ IF(WERROR)
   ADD_DEFINITIONS(-Werror)
 ENDIF()
 
-SET(C_FLAGS "${C_FLAGS} -march=i386 -Wall -Werror=format-security" CACHE STRING
+SET(C_FLAGS "${C_FLAGS} -Wall -Werror=format-security" CACHE STRING
     "Flags used by al build types."
     FORCE)
 SET(CMAKE_C_FLAGS_RELWITHDEBINFO "${C_FLAGS} -g -O2 -D_DEBUG" CACHE STRING
