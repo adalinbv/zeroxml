@@ -62,6 +62,14 @@ static const char *__xml_error_str[XML_MAX_ERROR];
 static void __xmlErrorSet(const void *, const char *, size_t);
 # define xmlErrorSet(a, b, c)	__xmlErrorSet(a, b, c)
 
+#ifndef __func__
+# ifdef __FUNCTION__
+#  define __func__ __FUNCTION__
+# else
+#  define __func__ "<unknown>"
+# endif
+#endif
+
 # ifndef NDEBUG
 #  define PRINT_INFO(a, b, c) \
      if (0 < (c) && (c) < XML_MAX_ERROR) { \

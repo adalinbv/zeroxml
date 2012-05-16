@@ -16,15 +16,16 @@ OPTION(UTILS  "Build and install utility programs"       ON)
 OPTION(WERROR "Treat compile warnings as errors"         OFF)
 OPTION(NODECACHE "Use XML Node cache"                    OFF)
 OPTION(NONVALIDATING "Trun off XML validation"           OFF)
-OPTION(MEMDEBUG "Turn on memory debugging functions"     ON)
 
 IF(WIN32)
-    SET(LIBZEROXML ZeroXML32)
-    SET(LIBZEROXML_DEBUG ZeroXML32-rmalloc)
-    ADD_DEFINITIONS("-D_WIN32")
+  SET(LIBZEROXML ZeroXML32)
+  SET(LIBZEROXML_DEBUG ZeroXML32-rmalloc)
+  ADD_DEFINITIONS("-D_WIN32")
+  OPTION(MEMDEBUG "Turn on memory debugging functions"     OFF)
 ELSE()
-    SET(LIBZEROXML zeroxml)
-    SET(LIBZEROXML_DEBUG zeroxml-rmalloc)
+  SET(LIBZEROXML zeroxml)
+  SET(LIBZEROXML_DEBUG zeroxml-rmalloc)
+  OPTION(MEMDEBUG "Turn on memory debugging functions"     ON)
 ENDIF()
 
 SET(LIBTYPE STATIC)
@@ -103,26 +104,47 @@ IF(NOT CMAKE_BUILD_TYPE)
 ENDIF(NOT CMAKE_BUILD_TYPE)
 
 
-ADD_DEFINITIONS(-Wall -DHAVE_CONFIG_H=1 -fPIC)
+ADD_DEFINITIONS(-DHAVE_CONFIG_H=1)
 IF(WERROR)
   ADD_DEFINITIONS(-Werror)
 ENDIF()
 
-SET(C_FLAGS "${C_FLAGS} -Wall -Werror=format-security" CACHE STRING
-    "Flags used by al build types."
-    FORCE)
-SET(CMAKE_C_FLAGS_RELWITHDEBINFO "${C_FLAGS} -g -O2 -D_DEBUG" CACHE STRING
-    "Flags used by the compiler during Release with Debug Info builds."
-    FORCE)
-SET(CMAKE_C_FLAGS_MINSIZEREL "${C_FLAGS} -Os -DNDEBUG" CACHE STRING
-    "Flags used by the compiler during release minsize builds."
-    FORCE)
-SET(CMAKE_C_FLAGS_RELEASE "${C_FLAGS} -Os -fomit-frame-pointer -DNDEBUG"
-    CACHE STRING "Flags used by the compiler during release builds"
-    FORCE)
-SET(CMAKE_C_FLAGS_DEBUG "${C_FLAGS} -g3 -D_DEBUG" CACHE STRING
-    "Flags used by the compiler during debug builds."
-    FORCE)
+IF(MSVC)
+    SET(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -D_DEBUG")
+    SET(CMAKE_C_FLAGS_MINSIZEREL "${CMAKE_C_FLAGS_MINSIZEREL} -DNDEBUG")
+    SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
+    SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -D_DEBUG")
+    ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
+    ADD_DEFINITIONS(-D_CRT_NONSTDC_NO_DEPRECATE)
+
+    OPTION(FORCE_STATIC_VCRT "Force /MT for static VC runtimes" OFF)
+    IF(FORCE_STATIC_VCRT)
+        FOREACH(flag_var
+                CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
+                CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
+            IF(${flag_var} MATCHES "/MD")
+                STRING(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+            ENDIF()
+        ENDFOREACH(flag_var)
+    ENDIF()
+ELSE(MSVC)
+    ADD_DEFINITIONS(-Wall -fPIC)
+    SET(C_FLAGS "${C_FLAGS} -Wall -Werror=format-security" CACHE STRING
+        "Flags used by al build types."
+        FORCE)
+    SET(CMAKE_C_FLAGS_RELWITHDEBINFO "${C_FLAGS} -g -O2 -D_DEBUG" CACHE STRING
+        "Flags used by the compiler during Release with Debug Info builds."
+        FORCE)
+    SET(CMAKE_C_FLAGS_MINSIZEREL "${C_FLAGS} -Os -DNDEBUG" CACHE STRING
+        "Flags used by the compiler during release minsize builds."
+        FORCE)
+    SET(CMAKE_C_FLAGS_RELEASE "${C_FLAGS} -Os -fomit-frame-pointer -DNDEBUG"
+        CACHE STRING "Flags used by the compiler during release builds"
+        FORCE)
+    SET(CMAKE_C_FLAGS_DEBUG "${C_FLAGS} -g3 -D_DEBUG" CACHE STRING
+        "Flags used by the compiler during debug builds."
+        FORCE)
+ENDIF(MSVC)
 
 SET(XML_USE_NODECACHE ${NODECACHE})
 SET(XML_NONVALIDATING ${NONVALIDATING})
