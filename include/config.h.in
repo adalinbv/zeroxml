@@ -47,3 +47,11 @@
 #undef MALLOC_DEBUG
 #cmakedefine MALLOC_DEBUG @MALLOC_DEBUG@
 
+/* define if unistd.h is available */
+#undef HAVE_UNISTD_H
+#cmakedefine HAVE_UNISTD_H @HAVE_UNISTD_H@
+
+/* define if strings.h is available */
+#undef HAVE_STRINGS_H
+#cmakedefine HAVE_STRINGS_H @HAVE_STRINGS_H@
+

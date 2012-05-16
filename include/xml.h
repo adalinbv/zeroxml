@@ -36,11 +36,15 @@
 extern "C" {
 #endif
 
-#include <unistd.h>
+#include <stddef.h>
+
+#if HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 
 #if defined _WIN32 || defined __CYGWIN__
 # define XML_APIENTRY __cdecl
-# define XML_API __attribute__((dllexport))
+# define XML_API __declspec(dllexport)
 #else
 # define XML_APIENTRY
 # if __GNUC__ >= 4

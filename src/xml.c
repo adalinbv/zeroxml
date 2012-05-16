@@ -29,16 +29,19 @@
  * policies, either expressed or implied, of Adalin B.V.
  */
 
-#ifdef WIN32
+#ifdef _WIN32
 # include <io.h>
-
-#else	/* !WIN32 */
+#else
 # include <sys/mman.h>
-# include <unistd.h>
 #endif
 
 #include <stdio.h>
-#include <strings.h>	/* strncasecmp */
+#if HAVE_STRINGS_H
+# include <strings.h>	/* strncasecmp */
+#endif
+#if HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 #ifdef _MSC_VER
 # define strncasecmp strnicmp
 #endif
