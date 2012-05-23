@@ -6,12 +6,12 @@
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  * 
- *     1. Redistributions of source code must retain the above copyright notice,
- *         this list of conditions and the following disclaimer.
+ *    1. Redistributions of source code must retain the above copyright notice,
+ *        this list of conditions and the following disclaimer.
  * 
- *     2. Redistributions in binary form must reproduce the above copyright
- *         notice, this list of conditions and the following disclaimer in the
- *         documentation and/or other materials provided with the distribution.
+ *    2. Redistributions in binary form must reproduce the above copyright
+ *        notice, this list of conditions and the following disclaimer in the
+ *        documentation and/or other materials provided with the distribution.
  * 
  * THIS SOFTWARE IS PROVIDED BY ADALIN B.V. ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
@@ -57,16 +57,16 @@ void *cacheNodeGet(void *);
 
 typedef struct
 {
-     HANDLE m;
-     void *p;
+    HANDLE m;
+    void *p;
 } SIMPLE_UNMMAP;
 #endif
 
 #ifndef XML_NONVALIDATING
 struct _xml_error
 {
-     char *pos;
-     size_t err_no;
+    char *pos;
+    size_t err_no;
 };
 #endif
 
@@ -77,32 +77,34 @@ struct _xml_error
  */
 struct _root_id
 {
-     char *name;
-     char *start;
-     off_t len;
-     int fd;
+    char *name;
+    char *start;
+    off_t len;
+    int fd;
 #ifdef XML_USE_NODECACHE
-     void *node;
+    void *node;
 #endif
 #ifndef XML_NONVALIDATING
-     struct _xml_error *info;
+    struct _xml_error *info;
 #endif
 #ifdef WIN32
-     SIMPLE_UNMMAP un;
+    SIMPLE_UNMMAP un;
+#else
+    int un;				/* referenced but not used */
 #endif
 };
 
 struct _xml_id
 {
-     char *name;
-     char *start;
-     off_t len;
-     off_t name_len;
+    char *name;
+    char *start;
+    off_t len;
+    off_t name_len;
 #ifndef XML_NONVALIDATING
-     struct _root_id *root;
+    struct _root_id *root;
 #endif
 #ifdef XML_USE_NODECACHE
-     void *node;
+    void *node;
 #endif
 };
 

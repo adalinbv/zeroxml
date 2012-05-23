@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <malloc.h>
 
+#include <types.h>
 #include "xml.h"
 
 void print_xml(void *, char *, unsigned int);

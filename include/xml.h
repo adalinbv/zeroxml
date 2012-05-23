@@ -44,7 +44,11 @@ extern "C" {
 
 #if defined _WIN32 || defined __CYGWIN__
 # define XML_APIENTRY __cdecl
-# define XML_API __declspec(dllexport)
+# ifdef XML_BUILD_LIBRARY
+#  define XML_API __declspec(dllexport)
+# else
+#  define XML_API __declspec(dllimport)
+# endif
 #else
 # define XML_APIENTRY
 # if __GNUC__ >= 4

@@ -43,9 +43,11 @@
 #undef XML_USE_NODECACHE
 #cmakedefine XML_USE_NODECACHE @XML_USE_NODECACHE@
 
+#if 0
 /* Define to include enable memory debugging. */
 #undef MALLOC_DEBUG
 #cmakedefine MALLOC_DEBUG @MALLOC_DEBUG@
+#endif
 
 /* define if unistd.h is available */
 #undef HAVE_UNISTD_H
