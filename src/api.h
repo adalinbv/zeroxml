@@ -63,7 +63,7 @@ typedef struct
 #endif
 
 #ifndef XML_NONVALIDATING
-struct _xml_error
+struct _zeroxml_error
 {
     char *pos;
     size_t err_no;
@@ -85,7 +85,7 @@ struct _root_id
     void *node;
 #endif
 #ifndef XML_NONVALIDATING
-    struct _xml_error *info;
+    struct _zeroxml_error *info;
 #endif
 #ifdef WIN32
     SIMPLE_UNMMAP un;

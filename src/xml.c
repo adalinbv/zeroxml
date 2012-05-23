@@ -59,7 +59,7 @@
 #include "api.h"
 
 #ifndef XML_NONVALIDATING
-static const char *__xml_error_str[XML_MAX_ERROR];
+static const char *__zeroxml_error_str[XML_MAX_ERROR];
 
 static void __xmlErrorSet(const void *, const char *, size_t);
 # define xmlErrorSet(a, b, c)	__xmlErrorSet(a, b, c)
@@ -68,7 +68,7 @@ static void __xmlErrorSet(const void *, const char *, size_t);
 #  define PRINT_INFO(a, b, c) \
     if (0 < (c) && (c) < XML_MAX_ERROR) { \
         fprintf(stderr, "detected in %s at line %i:\n\t%s at %li\n", \
-            __func__, __LINE__, __xml_error_str[(c)], (long)(b-a)); \
+            __func__, __LINE__, __zeroxml_error_str[(c)], (long)(b-a)); \
     } else { \
         fprintf(stderr, "in %s at line %i: Unknown error number!\n", \
                         __func__, __LINE__); \
@@ -136,15 +136,15 @@ xmlOpen(const char *filename)
         int fd = open(filename, O_RDONLY);
         if (fd >= 0)
         {
-            struct stat statbuf;
-            void *mm;
-
-            fstat(fd, &statbuf);
-            mm = simple_mmap(fd, (size_t)statbuf.st_size, rid->un);
-            if (mm != (void *)-1)
+            rid = calloc(1, sizeof(struct _root_id));
+            if (rid)
             {
-                rid = calloc(1, sizeof(struct _root_id));
-                if (rid)
+                struct stat statbuf;
+                void *mm;
+
+                fstat(fd, &statbuf);
+                mm = simple_mmap(fd, (size_t)statbuf.st_size, &rid->un);
+                if (mm != (void *)-1)
                 {
                     size_t blen = statbuf.st_size;
 #ifdef XML_USE_NODECACHE
@@ -202,7 +202,7 @@ xmlClose(void *id)
 
     if (rid->fd != -1)
     {
-        simple_unmmap(rid->start, (size_t)rid->len, rid->un);
+        simple_unmmap(rid->start, (size_t)rid->len, &rid->un);
         close(rid->fd);
     }
 
@@ -287,7 +287,7 @@ xmlNodeCopy(const void *id, const char *path)
         const int rsize = sizeof(struct _root_id);
         const int nsize = sizeof(struct _xml_id);
 #ifndef XML_NONVALIDATING
-        const int esize = sizeof(struct _xml_error);
+        const int esize = sizeof(struct _zeroxml_error);
 #else
         const int esize = 0;
 #endif
@@ -323,7 +323,7 @@ xmlNodeCopy(const void *id, const char *path)
             rid->len = nid->len;
             rid->fd = 0;
 #ifndef XML_NONVALIDATING
-            rid->info = (struct _xml_error *)nptr;
+            rid->info = (struct _zeroxml_error *)nptr;
             memset(nptr, 0, esize);
 #endif
 #ifdef XML_USE_NODECACHE
@@ -522,7 +522,7 @@ xmlNodeCopyPos(const void *pid, void *id, const char *element, size_t num)
         const int rsize = sizeof(struct _root_id);
         const int nsize = sizeof(struct _xml_id);
 #ifndef XML_NONVALIDATING
-        const int esize = sizeof(struct _xml_error);
+        const int esize = sizeof(struct _zeroxml_error);
 #else
         const int esize = 0;
 #endif
@@ -563,7 +563,7 @@ xmlNodeCopyPos(const void *pid, void *id, const char *element, size_t num)
             rid->fd = 0;
 
 #ifndef XML_NONVALIDATING
-            rid->info = (struct _xml_error *)nptr;
+            rid->info = (struct _zeroxml_error *)nptr;
             memset(nptr, 0, esize);
 #endif
 #ifdef XML_USE_NODECACHE
@@ -1420,7 +1420,7 @@ xmlErrorGetNo(const void *id, size_t clear)
 
         if (rid->info)
         {
-            struct _xml_error *err = rid->info;
+            struct _zeroxml_error *err = rid->info;
 
             ret = err->err_no;
             if (clear) err->err_no = 0;
@@ -1447,7 +1447,7 @@ xmlErrorGetLineNo(const void *id, int clear)
 
         if (rid->info)
         {
-            struct _xml_error *err = rid->info;
+            struct _zeroxml_error *err = rid->info;
             char *ps = rid->start;
             char *pe = err->pos;
             char *new;
@@ -1485,7 +1485,7 @@ xmlErrorGetColumnNo(const void *id, int clear)
 
         if (rid->info)
         {
-            struct _xml_error *err = rid->info;
+            struct _zeroxml_error *err = rid->info;
             char *ps = rid->start;
             char *pe = err->pos;
             char *new;
@@ -1524,10 +1524,10 @@ xmlErrorGetString(const void *id, int clear)
 
         if (rid->info)
         {
-            struct _xml_error *err = rid->info;
+            struct _zeroxml_error *err = rid->info;
             if (XML_NO_ERROR <= err->err_no && err->err_no < XML_MAX_ERROR)
             {
-                ret = (char *)__xml_error_str[err->err_no];
+                ret = (char *)__zeroxml_error_str[err->err_no];
             }
             else
             {
@@ -1572,7 +1572,7 @@ xmlErrorGetString(const void *id, int clear)
 /* -------------------------------------------------------------------------- */
 
 #ifndef XML_NONVALIDATING
-static const char *__xml_error_str[XML_MAX_ERROR] =
+static const char *__zeroxml_error_str[XML_MAX_ERROR] =
 {
     "no error.",
     "unable to allocate enough memory.",
@@ -2217,12 +2217,12 @@ __xmlErrorSet(const void *id, const char *pos, size_t err_no)
     assert(rid->name == 0);
     if (rid->info == 0)
     {
-    rid->info = malloc(sizeof(struct _xml_error));
+    rid->info = malloc(sizeof(struct _zeroxml_error));
     }
 
     if (rid->info)
     {
-    struct _xml_error *err = rid->info;
+    struct _zeroxml_error *err = rid->info;
     err->pos = (char *)pos;
     err->err_no = err_no;
     }
