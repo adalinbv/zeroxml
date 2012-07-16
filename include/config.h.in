@@ -1,9 +1,5 @@
 /* include/config.h.in.  Generated from configure.ac by autoheader.  */
 
-/* Define this to enable nano debug messages. */
-#undef DEBUG
-#cmakedefine DEBUG @DEBUG@
-
 /* Name of package */
 #undef PACKAGE
 
