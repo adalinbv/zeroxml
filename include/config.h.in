@@ -4,10 +4,6 @@
 #undef DEBUG
 #cmakedefine DEBUG @DEBUG@
 
-/* Omit the assert warnings */
-#undef NDEBUG
-#cmakedefine NDEBUG @NDEBUG@
-
 /* Name of package */
 #undef PACKAGE
 

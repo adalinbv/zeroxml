@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2008-2011 by Erik Hofman.
- * Copyright (C) 2009-2011 by Adalin B.V.
+ * Copyright (C) 2008-2012 by Erik Hofman.
+ * Copyright (C) 2009-2012 by Adalin B.V.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,19 +44,10 @@ extern "C" {
 
 #if defined _WIN32 || defined __CYGWIN__
 # define XML_APIENTRY __cdecl
-# ifdef XML_BUILD_LIBRARY
-#  define XML_API __declspec(dllexport)
-# else
-#  define XML_API __declspec(dllimport)
-# endif
 #else
 # define XML_APIENTRY
-# if __GNUC__ >= 4
-#  define XML_API __attribute__((visibility("default")))
-# else
-#  define XML_API extern
-# endif
 #endif
+#define XML_API
 
 #if defined(TARGET_OS_MAC) && TARGET_OS_MAC
 # pragma export on
