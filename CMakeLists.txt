@@ -132,7 +132,7 @@ IF(MSVC)
         ENDFOREACH(flag_var)
     ENDIF()
 ELSE(MSVC)
-    ADD_DEFINITIONS(-Wall -fPIC)
+    ADD_DEFINITIONS(-Wall -fPIC -s)
     SET(C_FLAGS "${C_FLAGS} -Wall -Werror=format-security" CACHE STRING
         "Flags used by al build types."
         FORCE)
