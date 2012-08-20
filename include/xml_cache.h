@@ -36,6 +36,9 @@
 extern "C" {
 #endif
 
+#include <xml.h> 
+
+
 void *cacheInit();
 void cacheInitLevel(void *);
 void cacheFree(void *);

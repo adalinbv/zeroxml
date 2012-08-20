@@ -126,7 +126,7 @@ static void simple_unmmap(void*, size_t, SIMPLE_UNMMAP *);
 }
 #endif
 
-void *
+XML_API void * XML_APIENTRY
 xmlOpen(const char *filename)
 {
     struct _root_id *rid = 0;
@@ -165,7 +165,7 @@ xmlOpen(const char *filename)
     return (void *)rid;
 }
 
-void *
+XML_API void * XML_APIENTRY
 xmlInitBuffer(const char *buffer, size_t size)
 {
     struct _root_id *rid = 0;
@@ -192,7 +192,7 @@ xmlInitBuffer(const char *buffer, size_t size)
     return (void *)rid;
 }
 
-void
+XML_API void XML_APIENTRY
 xmlClose(void *id)
 {
     struct _root_id *rid = (struct _root_id *)id;
@@ -216,7 +216,7 @@ xmlClose(void *id)
     id = 0;
 }
 
-void *
+XML_API void * XML_APIENTRY
 xmlNodeGet(const void *id, const char *path)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -266,7 +266,7 @@ xmlNodeGet(const void *id, const char *path)
     return (void *)xsid;
 }
 
-void *
+XML_API void * XML_APIENTRY
 xmlNodeCopy(const void *id, const char *path)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -344,7 +344,7 @@ xmlNodeCopy(const void *id, const char *path)
     return ret;
 }
 
-char *
+XML_API char * XML_APIENTRY
 xmlNodeGetName(const void *id)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -368,7 +368,7 @@ xmlNodeGetName(const void *id)
     return ret;
 }
 
-size_t
+XML_API size_t XML_APIENTRY
 xmlNodeCopyName(const void *id, char *buf, size_t buflen)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -389,7 +389,7 @@ xmlNodeCopyName(const void *id, char *buf, size_t buflen)
     return slen;
 }
 
-size_t
+XML_API size_t XML_APIENTRY
 xmlNodeGetNum(const void *id, const char *path)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -450,7 +450,7 @@ xmlNodeGetNum(const void *id, const char *path)
     return num;
 }
 
-void *
+XML_API void * XML_APIENTRY
 xmlNodeGetPos(const void *pid, void *id, const char *element, size_t num)
 {
     struct _xml_id *xpid = (struct _xml_id *)pid;
@@ -494,7 +494,7 @@ xmlNodeGetPos(const void *pid, void *id, const char *element, size_t num)
     return ret;
 }
 
-void *
+XML_API void * XML_APIENTRY
 xmlNodeCopyPos(const void *pid, void *id, const char *element, size_t num)
 {
     struct _xml_id *xpid = (struct _xml_id *)pid;
@@ -582,7 +582,7 @@ xmlNodeCopyPos(const void *pid, void *id, const char *element, size_t num)
     return ret;
 }
 
-char *
+XML_API char * XML_APIENTRY
 xmlGetString(const void *id)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -617,7 +617,7 @@ xmlGetString(const void *id)
     return str;
 }
 
-size_t
+XML_API size_t XML_APIENTRY
 xmlCopyString(const void *id, char *buffer, size_t buflen)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -652,7 +652,7 @@ xmlCopyString(const void *id, char *buffer, size_t buflen)
     return ret;
 }
 
-int
+XML_API int XML_APIENTRY
 xmlCompareString(const void *id, const char *s)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -675,7 +675,7 @@ xmlCompareString(const void *id, const char *s)
     return ret;
 }
 
-char *
+XML_API char * XML_APIENTRY
 xmlNodeGetString(const void *id, const char *path)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -716,7 +716,7 @@ xmlNodeGetString(const void *id, const char *path)
     return str;
 }
 
-size_t
+XML_API size_t XML_APIENTRY
 xmlNodeCopyString(const void *id, const char *path, char *buffer, size_t buflen)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -762,7 +762,7 @@ xmlNodeCopyString(const void *id, const char *path, char *buffer, size_t buflen)
     return ret;
 }
 
-int
+XML_API int XML_APIENTRY
 xmlNodeCompareString(const void *id, const char *path, const char *s)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -798,7 +798,7 @@ xmlNodeCompareString(const void *id, const char *path, const char *s)
     return ret;
 }
 
-int
+XML_API int XML_APIENTRY
 xmlGetBool(const void *id)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -815,7 +815,7 @@ xmlGetBool(const void *id)
     return li;
 }
 
-int
+XML_API int XML_APIENTRY
 xmlNodeGetBool(const void *id, const char *path)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -849,7 +849,7 @@ xmlNodeGetBool(const void *id, const char *path)
     return li;
 }
 
-long int
+XML_API long int XML_APIENTRY
 xmlGetInt(const void *id)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -866,7 +866,7 @@ xmlGetInt(const void *id)
     return li;
 }
 
-long int
+XML_API long int XML_APIENTRY
 xmlNodeGetInt(const void *id, const char *path)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -900,7 +900,7 @@ xmlNodeGetInt(const void *id, const char *path)
     return li;
 }
 
-double
+XML_API double XML_APIENTRY
 xmlGetDouble(const void *id)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -917,7 +917,7 @@ xmlGetDouble(const void *id)
     return d;
 }
 
-double
+XML_API double XML_APIENTRY
 xmlNodeGetDouble(const void *id, const char *path)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -951,7 +951,7 @@ xmlNodeGetDouble(const void *id, const char *path)
     return d;
 }
 
-void *
+XML_API  void * XML_APIENTRY
 xmlMarkId(const void *id)
 {
     struct _xml_id *xmid = 0;
@@ -988,13 +988,13 @@ xmlMarkId(const void *id)
     return (void *)xmid;
 }
 
-void
+XML_API void XML_APIENTRY
 xmlFree(void *id)
 {
     free(id);
 }
 
-double
+XML_API double XML_APIENTRY
 xmlAttributeGetDouble(const void *id, const char *name)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -1058,7 +1058,7 @@ xmlAttributeGetDouble(const void *id, const char *name)
     return ret;
 }
 
-int
+XML_API int XML_APIENTRY
 xmlAttributeGetBool(const void *id, const char *name)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -1121,7 +1121,7 @@ xmlAttributeGetBool(const void *id, const char *name)
     return ret;
 }
 
-long int
+XML_API long int XML_APIENTRY
 xmlAttributeGetInt(const void *id, const char *name)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -1185,7 +1185,7 @@ xmlAttributeGetInt(const void *id, const char *name)
     return ret;
 }
 
-char *
+XML_API char * XML_APIENTRY
 xmlAttributeGetString(const void *id, const char *name)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -1259,7 +1259,7 @@ xmlAttributeGetString(const void *id, const char *name)
     return ret;
 }
 
-size_t
+XML_API size_t XML_APIENTRY
 xmlAttributeCopyString(const void *id, const char *name,
                                         char *buffer, size_t buflen)
 {
@@ -1336,7 +1336,7 @@ xmlAttributeCopyString(const void *id, const char *name,
     return ret;
 }
 
-int
+XML_API int XML_APIENTRY
 xmlAttributeCompareString(const void *id, const char *name, const char *s)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -1403,7 +1403,7 @@ xmlAttributeCompareString(const void *id, const char *name, const char *s)
 
 
 #ifndef XML_NONVALIDATING
-size_t
+XML_API size_t XML_APIENTRY
 xmlErrorGetNo(const void *id, size_t clear)
 {
     size_t ret = 0;
@@ -1430,7 +1430,7 @@ xmlErrorGetNo(const void *id, size_t clear)
     return ret;
 }
 
-size_t
+XML_API size_t XML_APIENTRY
 xmlErrorGetLineNo(const void *id, int clear)
 {
     size_t ret = 0;
@@ -1468,7 +1468,7 @@ xmlErrorGetLineNo(const void *id, int clear)
     return ret;
 }
 
-size_t
+XML_API size_t XML_APIENTRY
 xmlErrorGetColumnNo(const void *id, int clear)
 {
     size_t ret = 0;
@@ -1507,7 +1507,7 @@ xmlErrorGetColumnNo(const void *id, int clear)
     return ret;
 }
 
-const char *
+XML_API const char * XML_APIENTRY
 xmlErrorGetString(const void *id, int clear)
 {
     char *ret = 0;
@@ -1543,30 +1543,29 @@ xmlErrorGetString(const void *id, int clear)
 
 #else
 
-int
+XML_API int XML_APIENTRY
 xmlErrorGetNo(const void *id, int clear)
 {
     return XML_NO_ERROR;
 }
 
-size_t
+XML_API size_t XML_APIENTRY
 xmlErrorGetLineNo(const void *id, int clear)
 {
     return 0;
 }
 
-size_t
+XML_API size_t XML_APIENTRY
 xmlErrorGetColumnNo(const void *id, int clear)
 {
     return 0;
 }
 
-const char *
+XML_API const char * XML_APIENTRY
 xmlErrorGetString(const void *id, int clear)
 {
     return "error detection was not enabled at compile time: no error.";
 }
-
 #endif
 
 /* -------------------------------------------------------------------------- */
