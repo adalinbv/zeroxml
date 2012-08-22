@@ -44,10 +44,11 @@ extern "C" {
 
 #if defined _WIN32 || defined __CYGWIN__
 # define XML_APIENTRY __cdecl
+# define XML_API 
 #else
 # define XML_APIENTRY 
+# define XML_API __attribute__((visibility("hidden")))
 #endif
-#define XML_API __attribute__((visibility("hidden")))
 
 #if defined(TARGET_OS_MAC) && TARGET_OS_MAC
 # pragma export on
