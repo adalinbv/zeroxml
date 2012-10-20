@@ -1225,7 +1225,7 @@ xmlAttributeGetString(const void *id, const char *name)
                     while ((ps<pe) && (*ps != '"') && (*ps != '\'')) ps++;
                     if (ps<pe)
                     {
-                        ret = malloc(ps-start);
+                        ret = malloc(ps-start+1);
                         if (ret)
                         {
                             memcpy(ret, start, (ps-start));
