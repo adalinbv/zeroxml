@@ -52,7 +52,6 @@
 #include <sys/types.h>
 #include <assert.h>
 
-#include <rmalloc.h>
 #include <xml.h>
 
 #include <types.h>

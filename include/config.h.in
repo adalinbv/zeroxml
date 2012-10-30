@@ -27,6 +27,10 @@
 /* Version number of package */
 #undef VERSION
 
+/* use rmalloc */
+#undef USE_RMALLOC
+#cmakedefine USE_RMALLOC @USE_RMALLOC@
+
 /* Define this to disable validating code. */
 #undef XML_NONVALIDATING
 #cmakedefine XML_NONVALIDATING @XML_NONVALIDATING@

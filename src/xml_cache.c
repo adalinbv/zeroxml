@@ -29,12 +29,11 @@
  * policies, either expressed or implied, of Adalin B.V.
  */
 
-#include "xml.h"
-
 #include <sys/types.h>
 #include <assert.h>
 
-#include <rmalloc.h>
+#include "xml.h"
+#include "api.h"
 
 #ifndef NDEBUG
 # define PRINT(a, b, c) { \

@@ -18,6 +18,11 @@ OPTION(UTILS  "Build and install utility programs"       ON)
 OPTION(WERROR "Treat compile warnings as errors"         OFF)
 OPTION(NODECACHE "Use XML Node cache"                    OFF)
 OPTION(NONVALIDATING "Trun off XML validation"           OFF)
+OPTION(RMALLOC "Enable memory debugging functions" OFF)
+
+IF(RMALLOC)
+  SET(USE_RMALLOC 1)
+ENDIF(RMALLOC)
 
 IF(WIN32)
   SET(LIBZEROXML ZeroXML32)

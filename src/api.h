@@ -44,6 +44,20 @@
 # endif
 #endif
 
+#ifdef USE_RMALLOC
+# define USE_LOGGING    1
+# include <stdio.h>
+# include <rmalloc.h>
+#else
+# define USE_LOGGING    0
+# include <stdio.h>
+# include <stdlib.h>
+# include <string.h>
+# if HAVE_STRINGS_H
+#  include <strings.h>
+# endif
+#endif
+
 #ifdef XML_USE_NODECACHE
 #include <xml_cache.h>
 #else
