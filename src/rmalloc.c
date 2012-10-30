@@ -84,10 +84,18 @@
    INCLUDEs:
    ========= */
 
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdio.h>
-#include <unistd.h>
+#if HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+#if HAVE_STRINGS_H
+# include <strings.h>
+#endif
 #include <string.h>
-#include <strings.h>
 #include <assert.h>
 #include <setjmp.h>
 #include <signal.h>
@@ -352,13 +360,17 @@ static int IsPossibleFilePos(const char *file, int size)
   if (setjmp(errorbuf)) {
     /* uh oh, we got a kick in the ass */
     signal(SIGSEGV, old_sigsegv_handler);
+#ifndef WIN32
     signal(SIGBUS,  old_sigbus_handler);
+#endif
     return 0;
   }
   
   /* --- the following is dangerous! So catch signals --- */
   old_sigsegv_handler = signal(SIGSEGV, FatalSignal);
+#ifndef WIN32
   old_sigbus_handler  = signal(SIGBUS,  FatalSignal);
+#endif
   
   dp  = strchr(file, ':');	/* file pos needs : */
   
@@ -367,7 +379,9 @@ static int IsPossibleFilePos(const char *file, int size)
   
   /* --- danger is over! --- */
   signal(SIGSEGV, old_sigsegv_handler);
+#ifndef WIN32
   signal(SIGBUS,  old_sigbus_handler);
+#endif
   
   return ret;
 }
@@ -775,12 +789,16 @@ static void DelBlk(begin *Blk, const char *file)
     if (setjmp(errorbuf)) {
       /* uh oh, we got a kick in the ass */
       signal(SIGSEGV, old_sigsegv_handler);
+#ifndef WIN32
       signal(SIGBUS,  old_sigbus_handler);
+#endif
     }
     else {
       /* --- the following is dangerous! So catch signals --- */
       old_sigsegv_handler = signal(SIGSEGV, FatalSignal);
+#ifndef WIN32
       old_sigbus_handler  = signal(SIGBUS,  FatalSignal);
+#endif
 
       if (IsPossibleFilePos(Blk->File, Blk->Size)) {
 	fprintf(stderr, 
@@ -789,7 +807,9 @@ static void DelBlk(begin *Blk, const char *file)
 		Blk->File, (unsigned) Blk->Size);
       }
       signal(SIGSEGV, old_sigsegv_handler);
+#ifndef WIN32
       signal(SIGBUS,  old_sigbus_handler);
+#endif
     }
   }
   abort();			/* die loud */
@@ -961,7 +981,7 @@ static void *SetBlk(void *Blk, size_t size, const char *file)
 
    Purpose:		wrapper for malloc
    ============================================================================= */
-void *Rmalloc(size_t size, const char *file)
+RMALLOC_API void RMALLOC_APIENTRY *Rmalloc(size_t size, const char *file)
 {
   void *ret;			/* ret val */
 
@@ -1002,7 +1022,7 @@ void *Rmalloc(size_t size, const char *file)
 
    Purpose:		Wrapper function for calloc
    ============================================================================= */
-void *Rcalloc(size_t nelem, size_t size, const char *file) 
+RMALLOC_API void RMALLOC_APIENTRY *Rcalloc(size_t nelem, size_t size, const char *file) 
 {
   void *ret;
   
@@ -1044,7 +1064,7 @@ void *Rcalloc(size_t nelem, size_t size, const char *file)
 
    Purpose:		Wrapper function for realloc
    ============================================================================= */
-void *Rrealloc(void *p, size_t size, const char *file)
+RMALLOC_API void RMALLOC_APIENTRY *Rrealloc(void *p, size_t size, const char *file)
 {
   void     *ret;
 #ifdef WITH_FLAGS
@@ -1114,7 +1134,7 @@ static flag to avoid warning */
    Purpose:		Wrapper function for free()
 
    ============================================================================= */
-void Rfree(void *p, const char *file)
+RMALLOC_API void RMALLOC_APIENTRY Rfree(void *p, const char *file)
 {
 #ifdef ELOQUENT
   fprintf(stderr, HEAD "Free: %p (called from: %s)\n", p, file);
@@ -1153,7 +1173,7 @@ void Rfree(void *p, const char *file)
 
    Purpose:		Wrapper function for strdup()
    ============================================================================= */
-char *Rstrdup(const char *s, const char *file) 
+RMALLOC_API char RMALLOC_APIENTRY *Rstrdup(const char *s, const char *file) 
 {
   size_t size;	/* needed memory */
   char *ret;
@@ -1199,7 +1219,11 @@ char *Rstrdup(const char *s, const char *file)
    Purpose:		Wrapper function for getcwd() which sometimes returns
 			memory from heap.
    ============================================================================= */
-char *Rgetcwd(char *buffer, size_t size, const char *file) 
+#if _MSC_VER
+# include <Windows.h>
+# define getcwd		_getcwd
+#endif
+RMALLOC_API char RMALLOC_APIENTRY *Rgetcwd(char *buffer, size_t size, const char *file) 
 {
   char *ret = getcwd(buffer, size);
 

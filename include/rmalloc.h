@@ -50,15 +50,11 @@ extern "C" {
 #endif
 
 #if defined _WIN32 || defined __CYGWIN__
-# define RMALLOC_APIENTRY __cdecl
-# define RMALLOC_API __attribute__((dllexport))
+# define RMALLOC_APIENTRY
+# define RMALLOC_API extern
 #else
 # define RMALLOC_APIENTRY
-# if __GNUC__ >= 4
-#  define RMALLOC_API __attribute__((visibility("default")))
-# else
-#  define RMALLOC_API extern
-# endif
+# define RMALLOC_API extern
 #endif
 
 #if defined(TARGET_OS_MAC) && TARGET_OS_MAC

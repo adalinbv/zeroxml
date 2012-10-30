@@ -18,7 +18,7 @@ OPTION(UTILS  "Build and install utility programs"       ON)
 OPTION(WERROR "Treat compile warnings as errors"         OFF)
 OPTION(NODECACHE "Use XML Node cache"                    OFF)
 OPTION(NONVALIDATING "Trun off XML validation"           OFF)
-OPTION(RMALLOC "Enable memory debugging functions" OFF)
+OPTION(RMALLOC "Enable memory debugging functions"       OFF)
 
 IF(RMALLOC)
   SET(USE_RMALLOC 1)
@@ -29,11 +29,9 @@ IF(WIN32)
   SET(LIBZEROXML_DEBUG ZeroXML32-rmalloc)
   ADD_DEFINITIONS("-D_WIN32")
   ADD_DEFINITIONS("-DXML_BUILD_LIBRARY=1")
-  OPTION(MEMDEBUG "Turn on memory debugging functions"     OFF)
 ELSE()
   SET(LIBZEROXML zeroxml)
   SET(LIBZEROXML_DEBUG zeroxml-rmalloc)
-  OPTION(MEMDEBUG "Turn on memory debugging functions"     ON)
 ENDIF()
 
 SET(LIBTYPE STATIC)
@@ -157,7 +155,6 @@ ENDIF(MSVC)
 
 SET(XML_USE_NODECACHE ${NODECACHE})
 SET(XML_NONVALIDATING ${NONVALIDATING})
-SET(MALLOC_DEBUG ${MEMDEBUG})
 
 CHECK_INCLUDE_FILE(strings.h HAVE_STRINGS_H)
 CHECK_INCLUDE_FILE(unistd.h HAVE_UNISTD_H)
@@ -183,9 +180,9 @@ ENDIF(NOT DEFINED LIB_POSTFIX)
 SET(LIB_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 ADD_LIBRARY(${LIBZEROXML} ${LIBTYPE} ${ZEROXML_OBJS})
 SET_TARGET_PROPERTIES(${LIBZEROXML} PROPERTIES DEFINE_SYMBOL XML_BUILD_LIBRARY
-                                       COMPILE_FLAGS -D_PROTOTYPES
-                                       VERSION ${LIB_VERSION}
-                                       SOVERSION ${CPACK_PACKAGE_VERSION_MAJOR})
+                      COMPILE_FLAGS "-D_PROTOTYPES -URMALLOC"
+                      VERSION ${LIB_VERSION}
+                      SOVERSION ${CPACK_PACKAGE_VERSION_MAJOR})
 IF(WIN32 AND NOT LIBTYPE STREQUAL "STATIC")
     SET_TARGET_PROPERTIES(${LIBZEROXML} PROPERTIES PREFIX "")
 ENDIF()
@@ -198,11 +195,11 @@ INSTALL(TARGETS ${LIBZEROXML}
         ARCHIVE DESTINATION "lib${LIB_POSTFIX}"
        )
 
-IF(MEMDEBUG)
+IF(RMALLOC)
   SET(ZEROXMLDEBUG_OBJS
-      src/rmalloc.c
       src/xml.c
       src/xml_cache.c
+      src/rmalloc.c
      )
 
   ADD_LIBRARY(${LIBZEROXML_DEBUG} ${LIBTYPE} ${ZEROXMLDEBUG_OBJS})
@@ -222,7 +219,7 @@ IF(MEMDEBUG)
         RUNTIME DESTINATION bin
         ARCHIVE DESTINATION "lib${LIB_POSTFIX}"
        )
-ENDIF(MEMDEBUG)
+ENDIF(RMALLOC)
 
 INSTALL(FILES
         include/rmalloc.h
