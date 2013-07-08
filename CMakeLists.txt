@@ -6,9 +6,9 @@ IF(COMMAND CMAKE_POLICY)
 ENDIF(COMMAND CMAKE_POLICY)
 
 
-INCLUDE(CheckLibraryExists)
 INCLUDE(CheckIncludeFile)
 INCLUDE (CheckIncludeFiles)
+INCLUDE(CheckLibraryExists)
 
 PROJECT(ZeroXml C)
 SET(PACKAGE_NAME "ZeroXml")
@@ -18,6 +18,7 @@ OPTION(UTILS  "Build and install utility programs"       ON)
 OPTION(WERROR "Treat compile warnings as errors"         OFF)
 OPTION(NODECACHE "Use XML Node cache"                    OFF)
 OPTION(NONVALIDATING "Trun off XML validation"           OFF)
+OPTION(NONEVALUE "Allow NONE as a return value"          OFF)
 OPTION(RMALLOC "Enable memory debugging functions"       OFF)
 
 IF(RMALLOC)
@@ -105,7 +106,7 @@ SET(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
 INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}"/src src include "${CMAKE_BINARY_DIR}/include")
 
 IF(NOT CMAKE_BUILD_TYPE)
-  SET(CMAKE_BUILD_TYPE Release CACHE STRING
+  SET(CMAKE_BUILD_TYPE MinSizeRel CACHE STRING
       "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
       FORCE)
 ENDIF(NOT CMAKE_BUILD_TYPE)
@@ -123,6 +124,11 @@ IF(MSVC)
     SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -D_DEBUG")
     ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
     ADD_DEFINITIONS(-D_CRT_NONSTDC_NO_DEPRECATE)
+    ADD_DEFINITIONS(/NODEFAULTLIB:libcmt.lib)
+    ADD_DEFINITIONS(/NODEFAULTLIB:msvcrt.lib)
+    ADD_DEFINITIONS(/NODEFAULTLIB:libcd.lib)
+    ADD_DEFINITIONS(/NODEFAULTLIB:libcmtd.lib)
+    ADD_DEFINITIONS(/NODEFAULTLIB:msvcrtd.lib)
 
     OPTION(FORCE_STATIC_VCRT "Force /MT for static VC runtimes" OFF)
     IF(FORCE_STATIC_VCRT)
@@ -169,6 +175,7 @@ ENDIF(MSVC)
 
 SET(XML_USE_NODECACHE ${NODECACHE})
 SET(XML_NONVALIDATING ${NONVALIDATING})
+SET(XML_NONEVALUE ${NONEVALUE})
 
 CHECK_INCLUDE_FILE(strings.h HAVE_STRINGS_H)
 CHECK_INCLUDE_FILE(unistd.h HAVE_UNISTD_H)

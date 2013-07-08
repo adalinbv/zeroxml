@@ -54,9 +54,19 @@ extern "C" {
 # pragma export on
 #endif
 
-
 #define XML_MAJOR_VERSION	1
 #define XML_MINOR_VERSION	0
+
+#ifdef _MSC_VER
+# include <float.h>
+# pragma warning( disable : 4056 )
+# define XML_FPINFINITE         (DBL_MAX+DBL_MAX)
+# define XML_FPNONE             (AAX_FPINFINITE-AAX_FPINFINITE)
+#else
+# define XML_FPNONE             (0.0/0.0)
+# define XML_FPINFINITE         (1.0/0.0)
+#endif
+#define XML_NONE		(long int)0x80000000
 
 enum
 {

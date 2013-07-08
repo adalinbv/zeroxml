@@ -58,6 +58,14 @@
 # endif
 #endif
 
+#ifdef XML_NONEVALUE
+# define __XML_FPNONE		XML_FPNONE
+# define __XML_NONE		XML_NONE
+#else
+# define __XML_FPNONE		0.0
+# define __XML_NONE		0
+#endif
+
 #ifdef XML_USE_NODECACHE
 #include <xml_cache.h>
 #else

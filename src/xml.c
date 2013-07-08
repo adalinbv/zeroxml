@@ -852,7 +852,7 @@ XML_API long int XML_APIENTRY
 xmlGetInt(const void *id)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    long int li = 0;
+    long int li = __XML_NONE;
 
     assert(xid != 0);
 
@@ -869,7 +869,7 @@ XML_API long int XML_APIENTRY
 xmlNodeGetInt(const void *id, const char *path)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    long int li = 0;
+    long int li = __XML_NONE;
 
     assert(xid != 0);
     assert(path != 0);
@@ -903,7 +903,7 @@ XML_API double XML_APIENTRY
 xmlGetDouble(const void *id)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    double d = 0.0;
+    double d = __XML_FPNONE;
 
     assert(xid != 0);
 
@@ -920,7 +920,7 @@ XML_API double XML_APIENTRY
 xmlNodeGetDouble(const void *id, const char *path)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    double d = 0.0;
+    double d = __XML_FPNONE;
 
     assert(xid != 0);
     assert(path != 0);
@@ -997,7 +997,7 @@ XML_API double XML_APIENTRY
 xmlAttributeGetDouble(const void *id, const char *name)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    double ret = 0.0;
+    double ret = __XML_FPNONE;
 
     assert(xid != 0);
     assert(name != 0);
@@ -1124,7 +1124,7 @@ XML_API long int XML_APIENTRY
 xmlAttributeGetInt(const void *id, const char *name)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    long int ret = 0;
+    long int ret = __XML_NONE;
 
     assert(xid != 0);
     assert(name != 0);
