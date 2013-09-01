@@ -46,6 +46,7 @@
 #if HAVE_UNISTD_H
 # include <unistd.h>
 #endif
+#include <locale.h>
 #include <fcntl.h>
 #include <ctype.h>
 #include <sys/stat.h>
@@ -911,6 +912,19 @@ xmlGetDouble(const void *id)
     {
         char *end = xid->start + xid->len;
         d = strtod(xid->start, &end);
+        if (((end - xid->start) != xid->len) && *end == '.')
+        {						/* wrong locale */
+            struct lconv *lc = localeconv();
+            char buf[256];
+            int len;
+
+            len = (xid->len < 256) ? xid->len : 256;
+            memcpy(buf, xid->start, len);
+            *(buf + (end-xid->start)) = *(lc->decimal_point);
+
+            end = buf + xid->len;
+            d = strtod(buf, &end);
+        }
     }
 
     return d;
@@ -940,6 +954,19 @@ xmlNodeGetDouble(const void *id, const char *path)
         {
             char *end = str+len;
             d = strtod(str, &end);
+            if (((end - str) != len) && *end == '.')
+            {						/* wrong locale */
+                struct lconv *lc = localeconv();
+                char buf[256];
+                int len;
+
+                if (len > 256) len = 256;
+                memcpy(buf, str, len);
+                *(buf + (end-str)) = *(lc->decimal_point);
+
+                end = buf + xid->len;
+                d = strtod(buf, &end);
+            }
         }
         else if (slen == 0)
         {
