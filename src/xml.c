@@ -95,6 +95,8 @@ static int __xmlDecodeBoolean(const char *, const char *);
 static void *__xml_memncasecmp(const char *, size_t *, char **, size_t *);
 static void __xmlPrepareData(char **, size_t *);
 
+static double __xmlGetDoubleLocale(const char*, const char*, size_t);
+
 #ifdef WIN32
 /*
  * map 'filename' and return a pointer to it.
@@ -912,18 +914,8 @@ xmlGetDouble(const void *id)
     {
         char *end = xid->start + xid->len;
         d = strtod(xid->start, &end);
-        if (((end - xid->start) != xid->len) && *end == '.')
-        {						/* wrong locale */
-            struct lconv *lc = localeconv();
-            char buf[256];
-            int len;
-
-            len = (xid->len < 256) ? xid->len : 256;
-            memcpy(buf, xid->start, len);
-            *(buf + (end-xid->start)) = *(lc->decimal_point);
-
-            end = buf + xid->len;
-            d = strtod(buf, &end);
+        if (((end - xid->start) != xid->len) && *end == 46) {
+           d = __xmlGetDoubleLocale(xid->start, end, xid->len);
         }
     }
 
@@ -954,18 +946,8 @@ xmlNodeGetDouble(const void *id, const char *path)
         {
             char *end = str+len;
             d = strtod(str, &end);
-            if (((end - str) != len) && *end == '.')
-            {						/* wrong locale */
-                struct lconv *lc = localeconv();
-                char buf[256];
-                int len;
-
-                if (len > 256) len = 256;
-                memcpy(buf, str, len);
-                *(buf + (end-str)) = *(lc->decimal_point);
-
-                end = buf + xid->len;
-                d = strtod(buf, &end);
+            if (((end - str) != len) && *end == 46) {
+               d = __xmlGetDoubleLocale(str, end, len);
             }
         }
         else if (slen == 0)
@@ -1614,7 +1596,7 @@ static const char *__zeroxml_error_str[XML_MAX_ERROR] =
 };
 #endif
 
-int
+static int
 __xmlDecodeBoolean(const char *start, const char *end)
 {
     int rv = 0;
@@ -1636,6 +1618,38 @@ __xmlDecodeBoolean(const char *start, const char *end)
 
     return rv;
 }
+
+
+#define DOUBLE_STR_LEN		128
+static double
+__xmlGetDoubleLocale(const char* str, const char* dot, size_t len)
+{						/* fix a wrong locale */
+    struct lconv *lc = localeconv();
+    char *ptr, buf[DOUBLE_STR_LEN];
+    size_t plen;
+
+    assert((dot-str) <= len);
+
+    if (len > DOUBLE_STR_LEN) len = DOUBLE_STR_LEN;
+
+    ptr = buf;
+    plen = dot-str;
+    memcpy(ptr, str, plen);			/* integer part */
+    ptr += plen;
+    dot++;
+
+    plen = strlen(lc->decimal_point);
+    memcpy(ptr, lc->decimal_point, plen);	/* decimal point */
+    ptr += plen;
+    
+    plen = len-(dot-str);
+    memcpy(ptr, dot, plen);			/* mantissa */
+    ptr += plen;
+    /* *ptr = 0; not needed */
+
+    return strtod(buf, &ptr);
+}
+
 
 char *
 __xmlNodeGetPath(void **nc, const char *start, size_t *len, char **name, size_t *nlen)
