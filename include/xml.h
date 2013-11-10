@@ -38,7 +38,9 @@ extern "C" {
 
 #include <stddef.h>
 
-#if HAVE_UNISTD_H
+#ifdef HAVE_RMALLOC_H
+# include <rmalloc.h>
+#elif HAVE_UNISTD_H
 # include <unistd.h>
 #endif
 

@@ -3,9 +3,26 @@
    Author:	Rammi
    Date:	11/16/1995
 
-   Reminder:	Use at your own risk.
+   License:	(This is the open source ISC license, see 
+                 http://en.wikipedia.org/wiki/ISC_license 
+                 for more info)
 
-   Content:	Switching on/off of malloc debug library. This is done 
+	 Copyright © 2010  Andreas M. Rammelt <rammi@hexco.de>
+
+	 Permission to use, copy, modify, and/or distribute this software for any
+	 purpose with or without fee is hereby granted, provided that the above
+	 copyright notice and this permission notice appear in all copies.
+
+	 THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+	 WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+	 MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+	 ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+	 WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+	 ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+	 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+
+   Content:	Switching on/off of malloc debug library. This is done
 		by preprocessor switch MALLOC_DEBUG.
 
 		If MALLOC_DEBUG is defined, special debug versions for
@@ -25,18 +42,18 @@
 
 		RM_RETAG(p)  change position for allocated block to pos of
 			     this macro
-			     
-		RM_SET(p, f) Set flag f for block p. f can be a combination of 
+
+		RM_SET(p, f) Set flag f for block p. f can be a combination of
 			     the following:
 		   RM_STATIC Block is considered static. Is only summarized
                              in statistics.
-			     
+
 		   RM_STRING Block is meant to hold a string.
 
 		The global behaviour can be changed by editing, recompiling and
 		linking rmalloc.c. See information there.
-		
-   Changes:	
+
+   Changes:
                 See rmalloc.c
 
    ===================================================================== */
@@ -61,10 +78,11 @@ extern "C" {
 # pragma export on
 #endif
 
+
 /* =========
    INCLUDEs:
    ========= */
-   
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -75,17 +93,17 @@ extern "C" {
 /* #define RM_UPPERSTYLE */	/* this is only used for backward compatibility */
 
 /* once again useful: INT2STRING(prepro_macro_containing_number)-->"number" */
-#define FUNCTIONIZE(a,b)  a(b) 
+#define FUNCTIONIZE(a,b)  a(b)
 #define STRINGIZE(a)      #a
 #define INT2STRING(i)     FUNCTIONIZE(STRINGIZE,i)
 
 /* Flags in header (with WITH_FLAGS defined, see rmalloc.c) */
 #define RM_STATIC         (0x0001 << 0)         /* static memory */
 #define RM_STRING         (0x0001 << 1)         /* contains string */
-                
+
 #ifdef MALLOC_DEBUG
 /* Useful, to build 1 string from __FILE__ & __LINE__ in compile time: */
-#define RM_FILE_POS       __FILE__ ":" INT2STRING(__LINE__) 
+#define RM_FILE_POS       __FILE__ ":" INT2STRING(__LINE__)
 
 #ifdef RM_UPPERSTYLE
 /* Deprecated: Only used for backward compatibility: */
@@ -97,12 +115,39 @@ extern "C" {
 #  define STRDUP(s)       Rstrdup((s), RM_FILE_POS)
 #else /* !RM_UPPERSTYLE */
 /* Wrap with our stuff: */
+#  ifdef malloc
+#    undef malloc
+#  endif
 #  define malloc(s)       Rmalloc((s), RM_FILE_POS)
+
+#  ifdef calloc
+#    undef calloc
+#  endif
 #  define calloc(n,s)     Rcalloc((n), (s), RM_FILE_POS)
+
+#  ifdef realloc
+#    undef realloc
+#  endif
 #  define realloc(p,s)    Rrealloc((p), (s), RM_FILE_POS)
+
+#  ifdef free
+#    undef free
+#  endif
 #  define free(p)         Rfree((p), RM_FILE_POS)
+
+#  ifdef free0
+#    undef free0
+#  endif
 #  define free0(p)        Rfree((p), RM_FILE_POS),(p)=NULL
+
+#  ifdef strdup
+#    undef strdup
+#  endif
 #  define strdup(s)       Rstrdup((s), RM_FILE_POS)
+
+#  ifdef getcwd
+#    undef getcwd
+#  endif
 #  define getcwd(b,s)	  Rgetcwd((b), (s), RM_FILE_POS)
 #endif /* RM_UPPERSTYLE */
 #define RM_TEST           Rmalloc_test(RM_FILE_POS)
@@ -123,10 +168,10 @@ extern "C" {
 #else /* !RM_UPPERSTYLE */
 #  define free0(p)	free((p)), (p)=NULL
 #endif /* RM_UPPERSTYLE */
-#define RM_TEST	
+#define RM_TEST
 #define RM_STAT
-#define RM_RETAG(p)	(p) 
-#define RM_SET(p, f)	(p) 
+#define RM_RETAG(p)	(p)
+#define RM_SET(p, f)	(p)
 
 #endif /* ! MALLOC_DEBUG */
 

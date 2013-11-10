@@ -3,13 +3,52 @@
    Author:	Rammi
    Date:	11/16/1995 (started)
 
-   Reminder:	Use at your own risk.
+   License:	(This is the open source ISC license, see 
+                 http://en.wikipedia.org/wiki/ISC_license 
+                 for more info)
+
+	 Copyright © 2010  Andreas M. Rammelt <rammi@hexco.de>
+
+	 Permission to use, copy, modify, and/or distribute this software for any
+	 purpose with or without fee is hereby granted, provided that the above
+	 copyright notice and this permission notice appear in all copies.
+
+	 THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+	 WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+	 MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+	 ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+	 WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+	 ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+	 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
    Content:	Debug wrapper functions for the malloc library.
-   		For more information see rmalloc.h
+		For more information see rmalloc.h
 
-   Last Change: $Date: 2006/01/29 18:56:12 $
+   Last Change: $Date: 2010/10/08 09:38:23 $
    History:     $Log: rmalloc.c,v $
+   History:     Revision 1.16  2010/10/08 09:38:23  rammi
+   History:     Clarified license to ISC license
+   History:
+   History:     Revision 1.15  2009/07/06 12:05:48  rammi
+   History:     Incremented version.
+   History:
+   History:     Revision 1.14  2009/07/06 12:04:36  rammi
+   History:     Avoided abort when calling RM_STAT before something was allocated.
+   History:     Thanks to Matthias Bilger for pointing out the error.
+   History:     Some other messages when calling functions without proper initialization are added, too.
+   History:
+   History:     Revision 1.13  2008/12/28 13:00:26  rammi
+   History:     Fixed Typo in rmalloc.h: unded --> undef
+   History:
+   History:     Revision 1.12  2008/12/27 15:57:40  rammi
+   History:     Updated version
+   History:
+   History:     Revision 1.11  2008/12/27 15:56:44  rammi
+   History:     Embedded patch from F. Culot to avoid overflow in Rcalloc()
+   History:
+   History:     Revision 1.10  2008/09/30 12:37:23  rammi
+   History:     Added Peter Wehrfritz' changes: new SILENT mode and patch against compiler warning if TEST_DEPTH==0
+   History:
    History:     Revision 1.9  2006/01/29 18:56:12  rammi
    History:     Streamlined various things due to a proposal by Brant L Gurganus. Thanks Brant!
    History:
@@ -33,12 +72,12 @@
    History:
    History:     Revision 1.2  2002/04/22 15:26:16  rammi
    History:     Added Karl Brace's generations feature.
-   History:        
+   History:
 
    Pre-CVS history:
-   		04/11/1996 (Rammi)
+		04/11/1996 (Rammi)
 		Changed to hashed table for faster access
-   		04/15/1996 (Rammi)
+		04/15/1996 (Rammi)
 		Included statistics
 		08/16/1997 (Rammi)
 		Automatic output of used memory on exit
@@ -72,10 +111,10 @@
 		functions returning heap memory.
 		This is version 1.13!
 	        06/10/99 (Rammi)
-		The getcwd wrapper had a bug as Greg Silverman pointed 
+		The getcwd wrapper had a bug as Greg Silverman pointed
 		out (I should better have tested it!). Also fixed a
 		missing prototype and improved the signal handling in
-		rtest to allow receiving more signals while handling 
+		rtest to allow receiving more signals while handling
 		one.
    ===================================================================== */
 
@@ -89,16 +128,17 @@
 #endif
 
 #include <stdio.h>
+#include <string.h>
+#include <assert.h>
+#include <setjmp.h>
+#include <signal.h>
+#include <stdint.h>
 #if HAVE_UNISTD_H
 # include <unistd.h>
 #endif
 #if HAVE_STRINGS_H
 # include <strings.h>
 #endif
-#include <string.h>
-#include <assert.h>
-#include <setjmp.h>
-#include <signal.h>
 
 #undef  MALLOC_DEBUG		/* here we need the correct malloc functions */
 #define RM_NEED_PROTOTYPES	/* but we want to compare prototypes */
@@ -110,26 +150,26 @@
    ======== */
 
 /* Actual version */
-#define VERSION         "1.17"
+#define VERSION         "1.21"
 
 /* ================================================================== */
 /* ============ Switch settings for different behaviours ============ */
 /* ============        Please set as needed              ============ */
 /* ================================================================== */
 
-/* This switch sets, how and when the allocated blocks are tested 
- * on correctness. Each block is tested at least when 
+/* This switch sets, how and when the allocated blocks are tested
+ * on correctness. Each block is tested at least when
  * reallocating/freeing it.
  * Possible values:
- * 	0:		Minimum testing. Uses less memory, but 
+ *	0:		Minimum testing. Uses less memory, but
  *	                does not allow statistics.
- * 	1:		Extra testing possible by using RM_TEST
+ *	1:		Extra testing possible by using RM_TEST
  *	                macro. Statistics possible.
- *   	2:		Testing ALL blocks on every malloc/free.
+ *	2:		Testing ALL blocks on every malloc/free.
  *	                Statistics possible.
  */
 #ifndef RM_TEST_DEPTH
-#define RM_TEST_DEPTH 	1
+#define RM_TEST_DEPTH	1
 #endif
 
 /* This switch sets whether Karl's generations feature should be used
@@ -139,13 +179,13 @@
 #define GENERATIONS
 
 #ifdef GENERATIONS
-/* BREAK_GENERATION_COND is the condition to find the generation  you are 
+/* BREAK_GENERATION_COND is the condition to find the generation  you are
  * interested in.
  * Set your debugger to the function rmalloc_generation() to find out which
  * function stack creates that generation.
- * You can either set it as a comparision directly to the number of a 
- * generation (known from a previous run), a comparision to the function 
- * GetBreakGenerationEnv() which reads the break generation from the environment 
+ * You can either set it as a comparision directly to the number of a
+ * generation (known from a previous run), a comparision to the function
+ * GetBreakGenerationEnv() which reads the break generation from the environment
  * variable BREAK_GENERATION or don't set it so the break feature is not used.
  * The macro form allows for more complicated conditions, see example below.
  */
@@ -159,27 +199,32 @@
 #endif /* GENERATIONS */
 
 
-/* Switch on EXTENTED alloc information. (Makes sense if an actual 
+/* Switch on EXTENTED alloc information. (Makes sense if an actual
  * error is observed such as a multiple free)
  */
 /*  #define ELOQUENT */
 
+/* Only show errors. This doesn't output the initializing output and the
+ * end statistic if there was a leak encountered.
+ */
+/*  #define SILENT */
+
 /* Allows setting of special flags with the RM_SET_FLAGS macro.
  * Needs more memory.
  */
-#define WITH_FLAGS 
+#define WITH_FLAGS
 
-/* Allows realloc(NULL, ...) 
- * Posix allows this but there are some old malloc libraries 
+/* Allows realloc(NULL, ...)
+ * Posix allows this but there are some old malloc libraries
  * which crash on this. Switch on if you want to be compatible.
  */
 /* #define ALLOW_REALLOC_NULL */
 
 /* Allows free(NULL)
- * I still consider this an error in my progs because I use 
+ * I still consider this an error in my progs because I use
  * NULL always as a very special value.
  */
-#define ALLOW_FREE_NULL
+/* #define ALLOW_FREE_NULL */
 
 
 /* ================================================================== */
@@ -196,9 +241,9 @@
 #define ALIGN(s)	(((s+ALIGNMENT-1)/ALIGNMENT)*ALIGNMENT)
 
 /* Magic marker for block start: */
-#define PREV_STOP 	0x55555555
+#define PREV_STOP	0x55555555
 
-/* Additional space for block begin to keep alignment: */   
+/* Additional space for block begin to keep alignment: */
 #define START_SPACE     ALIGN(sizeof(begin))
 
 /* Additional space at end of block */
@@ -235,7 +280,7 @@ typedef struct _begin {
 #ifdef WITH_FLAGS
   unsigned       Flags;		/* Special flags */
 #endif
-  unsigned 	 StpB;		/* Magic bytes */
+  unsigned	 StpB;		/* Magic bytes */
 } begin;
 
 
@@ -250,7 +295,7 @@ typedef struct _global {
 
 
 /* =======
-   CONSTs: 
+   CONSTs:
    ======= */
 
 /* Magic block end: */
@@ -314,7 +359,7 @@ static int       FindBlk(const unsigned char *P);
 
 
 /* ===============================================================
-   			IMPLEMENTATION
+			IMPLEMENTATION
    =============================================================== */
 
 
@@ -329,7 +374,7 @@ static int       FindBlk(const unsigned char *P);
 
    Purpose:		Signal handler für fatal signals (SIGBUS, SIGSEGV)
    ============================================================================= */
-static void FatalSignal(int signum) 
+static void FatalSignal(int signum)
 {
   /* --- jump to a save place --- */
   longjmp(errorbuf, signum);
@@ -347,8 +392,8 @@ static void FatalSignal(int signum)
    Parameter:		file	possible filename
 			size    possible size
 
-   Purpose:		Decide whether file could be a filename and 
-   			size a block size.
+   Purpose:		Decide whether file could be a filename and
+			size a block size.
    ============================================================================= */
 static int IsPossibleFilePos(const char *file, int size)
 {
@@ -356,7 +401,7 @@ static int IsPossibleFilePos(const char *file, int size)
   void   (*old_sigbus_handler)(int)  = SIG_DFL;
   char    *dp;
   int      ret;
-  
+
   if (setjmp(errorbuf)) {
     /* uh oh, we got a kick in the ass */
     signal(SIGSEGV, old_sigsegv_handler);
@@ -365,24 +410,24 @@ static int IsPossibleFilePos(const char *file, int size)
 #endif
     return 0;
   }
-  
+
   /* --- the following is dangerous! So catch signals --- */
   old_sigsegv_handler = signal(SIGSEGV, FatalSignal);
 #ifndef WIN32
   old_sigbus_handler  = signal(SIGBUS,  FatalSignal);
 #endif
-  
+
   dp  = strchr(file, ':');	/* file pos needs : */
-  
-  ret =  (dp   &&   dp-file > 3   &&   !strncmp(dp-2, ".c", 2)   &&   
+
+  ret =  (dp   &&   dp-file > 3   &&   !strncmp(dp-2, ".c", 2)   &&
 	  atoi(dp+1) > 0   &&   size >= 0);
-  
+
   /* --- danger is over! --- */
   signal(SIGSEGV, old_sigsegv_handler);
 #ifndef WIN32
   signal(SIGBUS,  old_sigbus_handler);
 #endif
-  
+
   return ret;
 }
 
@@ -415,7 +460,7 @@ static unsigned GetBreakGenerationEnv(void)
     if (breakGenerationEnv != NULL) {
       /* try conversion */
       result = atoi(breakGenerationEnv);
-      fprintf(stderr, 
+      fprintf(stderr,
 	      HEAD "Using environment variable BREAK_GENERATION=%d\n",
 	      result);
     }
@@ -432,7 +477,7 @@ static unsigned GetBreakGenerationEnv(void)
 
    Return:		---
    Parameter:		Bkl	Pos of allocated block (original)
-   			file	file pos from where initial lib function
+			file	file pos from where initial lib function
 				was called
 
    Purpose:		Control integrity of block
@@ -449,7 +494,7 @@ static void ControlBlock(begin *B, const char *file)
 #if RM_TEST_DEPTH > 0
     DoAbort = 1;
 #endif
-    fprintf(stderr, HEAD 
+    fprintf(stderr, HEAD
 	    "Corrupted block begin (overwritten from elsewhere)\n"
 	    "\tshould be: %08x\n"
 	    "\tis:        %08x\n"
@@ -468,13 +513,13 @@ static void ControlBlock(begin *B, const char *file)
 #endif
 	    file);
   }
-  
+
   /* === begin of user data === */
   if (B->StpB != PREV_STOP) {
 #if RM_TEST_DEPTH > 0
     DoAbort = 1;
 #endif
-    fprintf(stderr, HEAD 
+    fprintf(stderr, HEAD
 	    "Corrupted block begin (possibly written back)\n"
 	    "\tshould be: %08x\n"
 	    "\tis:        %08x\n"
@@ -493,7 +538,7 @@ static void ControlBlock(begin *B, const char *file)
 #endif
 	    file);
   }
-  
+
   /* === end of user data === */
   if (memcmp(p+B->Size, &End, END_SPACE) != 0) {
     unsigned char *E = (unsigned char *)(p+B->Size);
@@ -502,13 +547,13 @@ static void ControlBlock(begin *B, const char *file)
 #if RM_TEST_DEPTH > 0
     DoAbort = 1;
 #endif
-    fprintf(stderr, HEAD 
+    fprintf(stderr, HEAD
 	    "Corrupted block end (possibly written past the end)\n"
 	    "\tshould be:");
     for (i = 0;   i < END_SPACE;   i++) {
       fprintf(stderr, i%4 ? "%02x" : " %02x", End[i]);
     }
-    
+
     fprintf(stderr,
 	    "\n\tis:       ");
     for (i = 0;   i < END_SPACE;   i++) {
@@ -528,16 +573,16 @@ static void ControlBlock(begin *B, const char *file)
 #endif
 	    file
 	    );
-    
+
 #if RM_TEST_DEPTH > 0
-    if (!((unsigned long)E % sizeof(void *))   &&   
+    if (!((unsigned long)E % sizeof(void *))   &&
 	!(*(unsigned long *)E % sizeof(void *))) {  /* because of alignment */
       /* Special service: look if memory was overwritten with pointer */
       if (FindBlk(*(unsigned char **)E)) {
 	begin *b = (begin *)((*(unsigned char **)E)-START_SPACE);
 	if (IsPossibleFilePos(b->File, b->Size)) {
-	  fprintf(stderr, 
-		  "\tFirst %ld bytes of overwritten memory can be interpreted\n"
+	  fprintf(stderr,
+		  "\tFirst %d bytes of overwritten memory can be interpreted\n"
 		  "\t\tas a pointer to a block "
 		  " allocated in:\n"
 #ifdef GENERATIONS
@@ -545,7 +590,7 @@ static void ControlBlock(begin *B, const char *file)
 #else
 		  "\t\t%s [%u Bytes]\n",
 #endif
-		  (long)sizeof(void *),
+		  sizeof(void *),
 		  b->File,
 		  (unsigned) b->Size
 #ifdef GENERATIONS
@@ -557,11 +602,11 @@ static void ControlBlock(begin *B, const char *file)
       }
     }
     if (!found)
-#endif	
+#endif
     {
       /* Look, what we can find... */
       int  j;
-      
+
       for (j = END_SPACE-1;   j >= 0;   j--) {
 	if (E[j] != End[j]) {
 	  break;
@@ -576,9 +621,9 @@ static void ControlBlock(begin *B, const char *file)
 	    }
 	  }
 	  if (j < 0) {
-	    fprintf(stderr, 
+	    fprintf(stderr,
 		    "\tLooks somewhat like a too long string,\n"
-		    "\t\tending with \"%s\"\n",  
+		    "\t\tending with \"%s\"\n",
 		    E);
 	  }
 	}
@@ -589,9 +634,9 @@ static void ControlBlock(begin *B, const char *file)
 		  "\t\t(forgetting the nul byte)\n");
 	}
       }
-    }  
+    }
   }
-    
+
 #if RM_TEST_DEPTH > 0
   /* Die LOUD */
   if (DoAbort) {
@@ -615,11 +660,17 @@ void Rmalloc_stat(const char *file);
 
    Purpose:		Function called on exit
    ============================================================================= */
-static void Exit(void) 
+static void Exit(void)
 {
+#ifdef SILENT
+  if (!Global.BlockCount) {
+    return;
+  }
+#endif
+
   Rmalloc_stat("[atexit]");	/* show statistics */
 }
-   
+
 
 /* =============================================================================
    Function:		Initialize	// local //
@@ -632,10 +683,11 @@ static void Exit(void)
    Purpose:		Necessary initializations
 
    ============================================================================= */
-static void Initialize(void) 
+static void Initialize(void)
 {
   int i;
-  
+
+#ifndef SILENT
   fprintf(stderr,
 	  HEAD "rmalloc -- malloc wrapper V " VERSION "\n"
 	  "\tby Rammi <mailto:rammi@hexco.de>\n"
@@ -673,20 +725,21 @@ static void Initialize(void)
 	  "\t\tflags:  \tUNUSED\n"
 #endif
 	  "\t\talignment:\t" INT2STRING(ALIGNMENT) "\n"
-	  "\t\tpre space:\t%ld\n"
-	   "\t\tpost space:\t%ld\n"
+	  "\t\tpre space:\t%d\n"
+	   "\t\tpost space:\t%d\n"
 	  "\t\thash tab size:\t" INT2STRING(HASHSIZE) "\n\n",
-	  (long)START_SPACE, (long)END_SPACE);
+	  START_SPACE, END_SPACE);
+#endif /* ndef SILENT */
 
-  /* --- init list heads --- */  
+  /* --- init list heads --- */
   for (i = 0;   i < HASHSIZE;   i++) {
     memcpy(Chain+i, &ChainTempl, sizeof(begin));
     Chain[i].Next = Chain[i].Prev = Chain+i;
   }
-  
+
   /* --- show statistics at exit --- */
   (void)atexit(Exit);
-  
+
   Global.isInitialized = 1;
 }
 
@@ -697,19 +750,24 @@ static void Initialize(void)
    Date:		16.11.1995
 
    Return:		---
-   Parameter:		file		file pos where lib function was 
-   					called
+   Parameter:		file		file pos where lib function was
+					called
 
    Purpose:	        Test all allocated blocks for inconsistencies
    ============================================================================= */
 static void TestAll(const char *file)
 {
-  begin *B;
-  int    i;
+  begin *B;                     /* Block iterator */
+  int    i;                     /* Hash iterator */
+
+  /* make sure everything is initialized */
+  if (!Global.isInitialized) {
+    Initialize();
+  }
 
   for (i = 0;   i < HASHSIZE;   i++) {
     B = Chain[i].Next;
-    
+
     /* === Once around the circle === */
     while (B != &Chain[i]) {
       ControlBlock(B, file);
@@ -726,29 +784,33 @@ static void TestAll(const char *file)
 
    Return:		---
    Parameter:		Blk		New block (original pos.)
-   			file		called from 
+			file		called from
 
    Purpose:		Add new block to the list
    ============================================================================= */
 static void AddBlk(begin *Blk, const char *file)
 {
   int hash = HASH(Blk);		/* hash val */
-  
+
+  /* make sure everything is initialized */
   if (!Global.isInitialized) {
     Initialize();
   }
 
 #if RM_TEST_DEPTH > 1
   TestAll(file);
+#else
+  /* prevent compiler warnings about unused variables */
+  file = NULL;
 #endif
   /* --- insert it --- */
   Blk->Next = Chain[hash].Next;
   Blk->Prev = &Chain[hash];
   Chain[hash].Next->Prev = Blk;
   Chain[hash].Next = Blk;
-  
+
   Global.BlockCount++;
-  
+
 }
 
 
@@ -760,15 +822,23 @@ static void AddBlk(begin *Blk, const char *file)
    Return:		---
 
    Parameter:		Blk		block to remove
-   			file		called from
+			file		called from
 
    Purpose:		Remove block from list.
-   			React angry if block is unknown
+			React angry if block is unknown
    ============================================================================= */
 static void DelBlk(begin *Blk, const char *file)
 {
   begin *B;			/* run var  */
   int    hash = HASH(Blk);	/* hash val */
+
+  if (!Global.isInitialized) {
+    fprintf(stderr, HEAD
+            "Calling free without having allocated block via rmalloc\n"
+            "in call from %s",
+            file);
+    abort();
+  }
 
   /* look if block is known */
   for (B = Chain[hash].Next;   B != &Chain[hash];   B = B->Next) {
@@ -785,7 +855,7 @@ static void DelBlk(begin *Blk, const char *file)
   {
     void   (*old_sigsegv_handler)(int) = SIG_DFL;
     void   (*old_sigbus_handler)(int)  = SIG_DFL;
-    
+
     if (setjmp(errorbuf)) {
       /* uh oh, we got a kick in the ass */
       signal(SIGSEGV, old_sigsegv_handler);
@@ -801,7 +871,7 @@ static void DelBlk(begin *Blk, const char *file)
 #endif
 
       if (IsPossibleFilePos(Blk->File, Blk->Size)) {
-	fprintf(stderr, 
+	fprintf(stderr,
 		"\tTrying identification (may be incorrect!):\n"
 		"\t\tAllocated in %s [%u Bytes]\n",
 		Blk->File, (unsigned) Blk->Size);
@@ -813,12 +883,12 @@ static void DelBlk(begin *Blk, const char *file)
     }
   }
   abort();			/* die loud */
-  
+
 found_actual_block:
 #if RM_TEST_DEPTH > 1
   /* check everything */
   TestAll(file);
-#else 
+#else
   /* test integrity of actual block */
   ControlBlock(Blk, file);
 #endif
@@ -826,19 +896,19 @@ found_actual_block:
   /* remove: */
   Blk->Next->Prev = Blk->Prev;
   Blk->Prev->Next = Blk->Next;
-  
+
   Global.BlockCount--;
-  
-#ifdef ELOQUENT    
+
+#ifdef ELOQUENT
   fprintf(stderr,
-	  HEAD "Delete: %d Bytes allocated in %s (from %s)\n", 
+	  HEAD "Delete: %d Bytes allocated in %s (from %s)\n",
 	  Blk->Size, Blk->File, file);
 #ifdef WITH_FLAGS
   if (Blk->Flags & RM_STRING) {
     char *c;
     /* look for eos */
-    for (c = (char *)Blk + START_SPACE;  
-	 c - (char *)Blk + START_SPACE < Blk->Size;   
+    for (c = (char *)Blk + START_SPACE;
+	 c - (char *)Blk + START_SPACE < Blk->Size;
 	 c++) {
       if (!*c) {
 	fprintf(stderr,
@@ -883,11 +953,11 @@ static int FindBlk(const unsigned char *P)
   begin *B;
   const begin *Blk = (const begin *)(P - START_SPACE);
   int hash = HASH(Blk);
-  
+
   /* look if block is known */
   for (B = Chain[hash].Next;   B != &Chain[hash];   B = B->Next) {
     if (B == Blk) {
-      
+
       return 1;
     }
   }
@@ -904,8 +974,8 @@ static int FindBlk(const unsigned char *P)
    Date:		04/22/2002
 
    Return:		---
-   
-   Parameter:		Blk		pointer to block 
+
+   Parameter:		Blk		pointer to block
 
    Purpose:		Breakpoint for debugger if using Karl's generations
                         feature.
@@ -924,10 +994,10 @@ void rmalloc_generation (void *Blk)
    Date:		11/16/1995
 
    Return:		pointer to block (user pos.)
-   
+
    Parameter:		Blk		pointer to block (original pos.)
-   			size		size (user)
-   			file		called from
+			size		size (user)
+			file		called from
 			flags           flags (when compiled WITH_FLAGS)
 
    Purpose:		Set our internal information
@@ -951,13 +1021,13 @@ static void *SetBlk(void *Blk, size_t size, const char *file)
 #endif
   ((begin *)Blk)->StpB  = PREV_STOP;
   memcpy(((char *)Blk)+START_SPACE+size, End, END_SPACE);
-  
+
 #if RM_TEST_DEPTH > 0
   AddBlk((begin *)Blk, file);
 #endif
 #ifdef ELOQUENT
   fprintf(stderr,
-	  HEAD "Adding: %p, %d Bytes (from %s)\n", 
+	  HEAD "Adding: %p, %d Bytes (from %s)\n",
 	  ((char *)Blk)+START_SPACE, size, file);
 #endif /* ELOQUENT */
 #ifdef GENERATIONS
@@ -975,13 +1045,13 @@ static void *SetBlk(void *Blk, size_t size, const char *file)
    Date:		11/16/1995
 
    Return:		New prepared memory block with size size (user)
-   
+
    Parameter:		size		demanded size
-   			file		called from where?
+			file		called from where?
 
    Purpose:		wrapper for malloc
    ============================================================================= */
-RMALLOC_API void RMALLOC_APIENTRY *Rmalloc(size_t size, const char *file)
+void *Rmalloc(size_t size, const char *file)
 {
   void *ret;			/* ret val */
 
@@ -1015,28 +1085,36 @@ RMALLOC_API void RMALLOC_APIENTRY *Rmalloc(size_t size, const char *file)
    Date:		11/16/1995
 
    Return:		New (cleared) memory block of size nelem*size
-   
+
    Parameter:		nelem		nr blocks (as stupid as calloc)
-   			size		size of one block
-   			file		called from
+			size		size of one block
+			file		called from
 
    Purpose:		Wrapper function for calloc
    ============================================================================= */
-RMALLOC_API void RMALLOC_APIENTRY *Rcalloc(size_t nelem, size_t size, const char *file) 
+RMALLOC_API void* RMALLOC_APIENTRY Rcalloc(size_t nelem, size_t size, const char *file)
 {
   void *ret;
-  
+
+  /* check for overflow here (patch from Frédéric Culot) */
+  if (size  &&  nelem > SIZE_MAX/size) {
+    fprintf(stderr,
+            HEAD "WARNING: calloc() overflow! Returning NULL (in %s)\n", file);
+    return NULL;
+  }
+
   /* calculate correct size now */
   size *= nelem;
-  
+
   if (size == 0) {
     fprintf(stderr,
 	    HEAD "WARNING: calloc() demands 0 Bytes (in %s)\n", file);
   }
-    
+
+
   /* Rmalloc makes nearly all the work */
   ret = Rmalloc(size, file);
-    
+
   if (ret) {
     /* clear */
     memset(ret, 0, size);
@@ -1057,20 +1135,20 @@ RMALLOC_API void RMALLOC_APIENTRY *Rcalloc(size_t nelem, size_t size, const char
    Date:		11/16/1995
 
    Return:		New block of size size (user pos.)
-   
+
    Parameter:		p		previous pointer
-   			size		new size
-   			file		called from
+			size		new size
+			file		called from
 
    Purpose:		Wrapper function for realloc
    ============================================================================= */
-RMALLOC_API void RMALLOC_APIENTRY *Rrealloc(void *p, size_t size, const char *file)
+RMALLOC_API void* RMALLOC_APIENTRY Rrealloc(void *p, size_t size, const char *file)
 {
   void     *ret;
 #ifdef WITH_FLAGS
   unsigned  flags = 0;
 #endif
-  
+
   if (p == NULL) {
 #ifndef ALLOW_REALLOC_NULL
     fprintf(stderr, HEAD "Realloc of NULL pointer (in %s)\n", file);
@@ -1087,16 +1165,15 @@ RMALLOC_API void RMALLOC_APIENTRY *Rrealloc(void *p, size_t size, const char *fi
   else {
     /* keep flags */
     flags = ((begin *)(((char *)p)-START_SPACE))->Flags;
-    ((begin *)(((char *)p)-START_SPACE))->Flags &= ~RM_STATIC; /* unset
-static flag to avoid warning */
+    ((begin *)(((char *)p)-START_SPACE))->Flags &= ~RM_STATIC; /* unset static flag to avoid warning */
   }
 #endif /* WITH_FLAGS */
-  
+
   if (size == 0) {
     fprintf(stderr,
 	    HEAD "WARNING: realloc() demands 0 Bytes (in %s)\n", file);
   }
-  
+
 #if RM_TEST_DEPTH > 0
   /* remove old block from list */
   DelBlk((begin *)(((char *)p)-START_SPACE), file);
@@ -1127,9 +1204,9 @@ static flag to avoid warning */
    Date:		11/16/1995
 
    Return:		---
-   
+
    Parameter:		p		block to free (user pos.)
-   			file		called from
+			file		called from
 
    Purpose:		Wrapper function for free()
 
@@ -1156,8 +1233,8 @@ RMALLOC_API void RMALLOC_APIENTRY Rfree(void *p, const char *file)
 #endif
   /* free block */
   free(((char *)p)-START_SPACE);
-  
-}    	
+
+}
 
 
 
@@ -1167,26 +1244,26 @@ RMALLOC_API void RMALLOC_APIENTRY Rfree(void *p, const char *file)
    Date:		11/16/1995
 
    Return:		New memory with copied string.
-   
+
    Parameter:		s		string to copy
-   			file		called from
+			file		called from
 
    Purpose:		Wrapper function for strdup()
    ============================================================================= */
-RMALLOC_API char RMALLOC_APIENTRY *Rstrdup(const char *s, const char *file) 
+RMALLOC_API char* RMALLOC_APIENTRY Rstrdup(const char *s, const char *file)
 {
   size_t size;	/* needed memory */
   char *ret;
-  
+
   if (s == NULL) {
     fprintf(stderr, HEAD "Calling strdup(NULL) (in %s)\n", file);
     abort();
   }
   size = strlen(s)+1;
-    
+
   /* Rmalloc() does nearly all the work */
   ret = Rmalloc(size, file);
-  
+
   if (ret) {
     /* copy string */
     strcpy(ret, s);
@@ -1199,8 +1276,8 @@ RMALLOC_API char RMALLOC_APIENTRY *Rstrdup(const char *s, const char *file)
     fprintf(stderr,
 	    HEAD "WARNING: Out of memory! Returning NULL (in %s)\n", file);
     return NULL;
-  }    
-    
+  }
+
 }
 
 
@@ -1211,19 +1288,15 @@ RMALLOC_API char RMALLOC_APIENTRY *Rstrdup(const char *s, const char *file)
 
    Return:		New memory with copied string depending on input (if
                         buffer == NULL)
-   
+
    Parameter:	        buffer		buffer for write (or NULL)
                         size		buffer size
-   			file		called from
+			file		called from
 
    Purpose:		Wrapper function for getcwd() which sometimes returns
 			memory from heap.
    ============================================================================= */
-#if _MSC_VER
-# include <Windows.h>
-# define getcwd		_getcwd
-#endif
-RMALLOC_API char RMALLOC_APIENTRY *Rgetcwd(char *buffer, size_t size, const char *file) 
+RMALLOC_API char* RMALLOC_APIENTRY Rgetcwd(char *buffer, size_t size, const char *file)
 {
   char *ret = getcwd(buffer, size);
 
@@ -1234,7 +1307,7 @@ RMALLOC_API char RMALLOC_APIENTRY *Rgetcwd(char *buffer, size_t size, const char
     ret = newret;		/* this was missing before 1.14 */
 				/* thanks to Greg Silverman who discovered it! */
   }
-  
+
   return ret;
 }
 
@@ -1245,10 +1318,10 @@ RMALLOC_API char RMALLOC_APIENTRY *Rgetcwd(char *buffer, size_t size, const char
    Date:		04/11/1995
 
    Return:		---
-   
+
    Parameter:		file		called from
 
-   Purpose:		Explicitely test all blocks for integrity 
+   Purpose:		Explicitely test all blocks for integrity
 
    ============================================================================= */
 void Rmalloc_test(const char *file)
@@ -1256,7 +1329,7 @@ void Rmalloc_test(const char *file)
 #if RM_TEST_DEPTH > 0
   TestAll(file);
 #else
-  fprintf(stderr, HEAD __FILE__ 
+  fprintf(stderr, HEAD __FILE__
 	  " not compiled with RM_TEST_DEPTH > 0, call in %s senseless.\n", file);
 #endif
 }
@@ -1269,23 +1342,23 @@ void Rmalloc_test(const char *file)
    Date:		04/15/1995
 
    Return:		< 0		A < B
-   			0		A == B
-   			> 0		A > B
-   
+			0		A == B
+			> 0		A > B
+
    Parameter:		A, B
-   
+
    Purpose:		sort function for qsort
 
    ============================================================================= */
 static int BlockSort(const begin **A, const begin **B)
 {
   int   ret;
-  
+
   /* Sort for adress of string (tricky!) */
   if ((ret = (*A)->File - (*B)->File)) {
     return ret;
   }
-  
+
   /* sort for size */
   return ((int)(*A)->Size - (int)(*B)->Size);
 }
@@ -1297,11 +1370,11 @@ static int BlockSort(const begin **A, const begin **B)
    Date:		04/22/2002
 
    Return:		< 0		A < B
-   			0		A == B
-   			> 0		A > B
-   
+			0		A == B
+			> 0		A > B
+
    Parameter:		A, B
-   
+
    Purpose:		sort function for qsort, using the generations counter
                         for sorting, too
 
@@ -1309,7 +1382,7 @@ static int BlockSort(const begin **A, const begin **B)
 static int BlockSortGenerations(const begin **A, const begin **B)
 {
   int   ret = BlockSort(A, B);
-  
+
   if (ret) {
     return ret;
   }
@@ -1326,7 +1399,7 @@ static int BlockSortGenerations(const begin **A, const begin **B)
    Date:		04/15/1995
 
    Return:		---
-   
+
    Parameter:		file		caled from
 
    Purpose:		Show statistic
@@ -1344,7 +1417,7 @@ void Rmalloc_stat(const char *file)
   }
   else {
     const begin	**BlockVec;
-    
+
     if ((BlockVec = (const begin **)malloc(Global.BlockCount*sizeof(begin *))) == NULL) {
       fprintf(stderr, STAT_HEAD "Couldn't allocate enough memory for statistics. Going on...\n");
     }
@@ -1354,14 +1427,14 @@ void Rmalloc_stat(const char *file)
       begin		*B;
       unsigned		 count;
       size_t		 Mem = 0;
-      unsigned         	 nrBlocks;
+      unsigned	 nrBlocks;
 #ifdef WITH_FLAGS
-      size_t      	 StaticMem = 0;
+      size_t	 StaticMem = 0;
 #endif
 #ifdef GENERATIONS
       unsigned		 gen;
 #endif
-      
+
       /* add all blocks to vector */
       for (j = 0;   j < HASHSIZE;   j++) {
 	for (B = Chain[j].Next;   B != &Chain[j];   B = B->Next) {
@@ -1383,18 +1456,18 @@ void Rmalloc_stat(const char *file)
       assert(i == Global.BlockCount);
 #endif
       nrBlocks = i;
-      
+
       /* --- sort --- */
 #ifdef GENERATIONS
-      qsort(BlockVec, nrBlocks, 
-	    sizeof(begin *), 
+      qsort(BlockVec, nrBlocks,
+	    sizeof(begin *),
 	    (int (*)(const void *, const void *))BlockSortGenerations);
 #else
-      qsort(BlockVec, nrBlocks, 
-	    sizeof(begin *), 
+      qsort(BlockVec, nrBlocks,
+	    sizeof(begin *),
 	    (int (*)(const void *, const void *))BlockSort);
 #endif
-      
+
       for (i = 0;   i < nrBlocks;   i = j) {
 	count = 1;
 	for (j = i+1;   j < nrBlocks;   j++) {
@@ -1457,20 +1530,27 @@ void Rmalloc_stat(const char *file)
    Date:		12/12/1997
 
    Return:		the pointer p for possible chaining
-   
+
    Parameter:		p		pointer to allocated block (user)
-   			file		called from
+			file		called from
 
    Purpose:		Change file position in header.
    ============================================================================= */
 void * Rmalloc_retag(void *p, const char *file)
 {
   if (p) {
+    if (!Global.isInitialized) {
+      fprintf(stderr, HEAD
+              "Calling RM_RETAG without having allocated block via rmalloc in\n%s",
+              file);
+      abort();
+    }
+
     begin *info = (begin *)(((char *)p)-START_SPACE);
-    
+
     /* --- test integrity --- */
     ControlBlock(info, file);
-    
+
     /* --- change file pos --- */
     info->File = file;
   }
@@ -1486,7 +1566,7 @@ void * Rmalloc_retag(void *p, const char *file)
    Date:		12/12/1997
 
    Return:		the pointer p for possible chaining
-   
+
    Parameter:		p               pointer to allocated block (user)
                         flags           Flags to set
                         file		called from
@@ -1497,11 +1577,18 @@ void * Rmalloc_set_flags(void *p, unsigned flags, const char *file)
 {
 #ifdef WITH_FLAGS
   if (p) {
+    if (!Global.isInitialized) {
+      fprintf(stderr, HEAD
+              "Calling RM_SET without having allocated block via rmalloc in\n%s",
+              file);
+      abort();
+    }
+
     begin *info = (begin *)(((char *)p)-START_SPACE);
-    
+
     /* --- test integrity --- */
     ControlBlock(info, file);
-    
+
     /* --- change flags --- */
     info->Flags |= flags;
   }
@@ -1520,17 +1607,17 @@ void * Rmalloc_set_flags(void *p, unsigned flags, const char *file)
    Date:		05/28/1998
 
    Return:		---
-   
+
    Parameter:		---
 
    Purpose:	        This reinits the lists. This is only for test purposes.
-   			DON'T USE THIS FUNCTION!
+			DON'T USE THIS FUNCTION!
    ============================================================================= */
 void Rmalloc_reinit(void)
 {
 #if RM_TEST_DEPTH > 0
   int i;
-  /* --- init list heads (discarding everything!) --- */  
+  /* --- init list heads (discarding everything!) --- */
   for (i = 0;   i < HASHSIZE;   i++) {
     memcpy(Chain+i, &ChainTempl, sizeof(begin));
     Chain[i].Next = Chain[i].Prev = Chain+i;
