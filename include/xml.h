@@ -114,6 +114,15 @@ XML_API void XML_APIENTRY xmlClose(void *);
 
 
 /**
+ * Test if the named subsection exsists.
+ *
+ * @param xid XML-id
+ * @param node path to the node containing the subsection
+ * @return true if the XML-subsection-id exsists, false otherwise.
+ */
+XML_API int XML_APIENTRY xmlNodeTest(const void *, const char *);
+
+/**
  * Locate a subsection of the xml tree for further processing.
  * This adds processing speed since the reuired nodes will only be searched
  * in the subsection.

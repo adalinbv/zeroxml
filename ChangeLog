@@ -1,6 +1,7 @@
-2013-09-01  Erik Hofman <tech@adalin.org
+2014-03-13  Erik Hofman <tech@adalin.org
  * Bump from rmalloc v1.17 to rmalloc v1.21
- * If a floating point number contains the wrong decimal makr, copy the
+ * Add the xmlNodeTest function which returns true if a node name exsists.
+ * If a floating point number contains the wrong decimal mark, copy the
    whole section, fix the decimal mark character and try again.
 
 2013-07-08  Erik Hofman <tech@adalin.org

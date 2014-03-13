@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2008-2011 by Erik Hofman.
- * Copyright (C) 2009-2011 by Adalin B.V.
+ * Copyright (C) 2008-2014 by Erik Hofman.
+ * Copyright (C) 2009-2014 by Adalin B.V.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -216,6 +216,25 @@ xmlClose(void *id)
 #endif
     free(rid);
     id = 0;
+}
+
+XML_API int XML_APIENTRY
+xmlNodeTest(const void *id, const char *path)
+{
+    struct _xml_id *xid = (struct _xml_id *)id;
+    size_t len, slen;
+    char *node;
+    void *nc, *nnc;
+
+    assert(id != 0);
+    assert(path != 0);
+
+    node = (char *)path;
+    len = xid->len;
+    slen = strlen(path);
+
+    nnc = nc = cacheNodeGet(xid);
+    return __xmlNodeGetPath(&nnc, xid->start, &len, &node, &slen) ? 1 : 0;
 }
 
 XML_API void * XML_APIENTRY
@@ -1718,7 +1737,7 @@ __xmlNodeGetPath(void **nc, const char *start, size_t *len, char **name, size_t 
 char *
 __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen, size_t *nodenum)
 {
-    char *cdata, *open_element = *name;
+    char *open_element = *name; // *cdata
     char *element, *start_tag=0;
     char *new, *cur, *ne, *ret = 0;
     size_t restlen, elementlen;
@@ -1736,7 +1755,7 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
     if (open_len == 0 || *name == 0)
         SET_ERROR_AND_RETURN((char *)start,(char *)start,XML_INVALID_NODE_NAME);
 
-    cdata = (char *)start;
+//  cdata = (char *)start;
     if (*rlen > *len)
         SET_ERROR_AND_RETURN((char *)start,(char *)start, XML_UNEXPECTED_EOF);
 
@@ -1857,7 +1876,7 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
             new = __xmlProcessCDATA(&start, &blocklen);
             if (new && start && open_len)			/* CDATA */
             {
-                cdata = ret;
+//              cdata = ret;
             }
             else if (!new)
                 SET_ERROR_AND_RETURN((char *)start,cur, XML_INVALID_COMMENT);
@@ -1893,7 +1912,7 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
                     {
                         *len = new-ret-1;
                         open_element = start_tag;
-                        cdata = (char *)start;
+//                      cdata = (char *)start;
                         start_tag = 0;
                     }
                     else /* report error */
@@ -1971,7 +1990,7 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
                     {
                         *len = new-ret-1;
                         open_element = start_tag;
-                        cdata = (char *)start;
+//                      cdata = (char *)start;
                         start_tag = 0;
                     }
                     else /* report error */
