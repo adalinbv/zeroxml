@@ -3,6 +3,7 @@
  * Add the xmlNodeTest function which returns true if a node name exsists.
  * If a floating point number contains the wrong decimal mark, copy the
    whole section, fix the decimal mark character and try again.
+ * Start working with C.UTF-8 unicode (which includes ANSII)
 
 2013-07-08  Erik Hofman <tech@adalin.org
  * Introduce XML_NONE as a possible return value for the GetInt functions

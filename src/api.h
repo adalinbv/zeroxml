@@ -103,6 +103,7 @@ struct _root_id
     char *start;
     off_t len;
     int fd;
+    char *locale;
 #ifdef XML_USE_NODECACHE
     void *node;
 #endif

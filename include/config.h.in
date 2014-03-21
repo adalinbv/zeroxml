@@ -54,3 +54,10 @@
 #undef HAVE_STRINGS_H
 #cmakedefine HAVE_STRINGS_H @HAVE_STRINGS_H@
 
+/* define if locale.h is available */
+#undef HAVE_LOCALE_H
+#cmakedefine HAVE_LOCALE_H @HAVE_LOCALE_H@
+
+/* define if langinfo.h is available */
+#undef HAVE_LANGINFO_H
+#cmakedefine HAVE_LANGINFO_H @HAVE_LANGINFO_H@
