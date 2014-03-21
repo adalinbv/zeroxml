@@ -29,8 +29,15 @@
  * policies, either expressed or implied, of Adalin B.V.
  */
 
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 #include <stdio.h>
 #include <malloc.h>
+#ifdef HAVE_LOCALE_H
+# include <locale.h>
+#endif
 
 #include "xml.h"
 
@@ -38,6 +45,10 @@ void print_xml(void *);
 
 int main(int argc, char **argv)
 {
+#ifdef HAVE_LOCALE_H
+  setlocale(LC_CTYPE, "");
+#endif
+
   if (argc < 1)
   {
     printf("usage: printxml <filename>\n\n");
