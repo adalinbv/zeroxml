@@ -2070,25 +2070,18 @@ __xml_memncasestr(const char *haystack,  size_t haystacklen,
         char *hs = (char *)haystack;
         char *ns = (char *)needle;
         size_t i = haystacklen;
-        char *hss = hs;
 
         do
         {
-            int cns = toupper(*ns);
-            while (--i && toupper(*hss++) != cns);
-            if (i)
+            char *hss = hs, *nss = ns;
+            int j = needlelen;
+            while (--i && --j && (toupper(*hss++) == toupper(*nss++)));
+            if (j == 0)
             {
-                char *nss = ns;
-                int j = needlelen;
-                hs = --hss;
-                while (--i && --j && toupper(*hss++) == toupper(*nss++));
-                if (j == 0)
-                {
-                    rptr = hs;
-                    break;
-                }
-                hs = hss;
+                rptr = hs;
+                break;
             }
+            hs = hss;
         }
         while (i && --i);
     }
