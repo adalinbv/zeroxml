@@ -56,6 +56,7 @@
 # include <langinfo.h>
 #endif
 #include <locale.h>
+#include <ctype.h>
 #include <fcntl.h>
 #include <ctype.h>
 #include <sys/stat.h>
@@ -1391,11 +1392,13 @@ __xmlAttributeGetDataPtr(const void *id, const char *name, size_t *len)
                         return 0;
                     }
 
-                    start = ps;
-                    while ((ps<pe) && (*ps != '"') && (*ps != '\'')) ps++;
+                    start = ps-1;
+                    while ((ps<pe) && (*ps != *start)) ps++;
                     if (ps<pe)
                     {
-                        ret = start;                        *len = ps-start;
+                        start++;
+                        ret = start;
+                        *len = ps-start;
                     }
                     else
                     {
@@ -2064,7 +2067,7 @@ static char *
 __xml_memncasestr(const char *haystack,  size_t haystacklen,
                   const char *needle)
 {
-    size_t needlelen = strlen(needle);
+    size_t needlelen = needle ? strlen(needle) : 0;
     char *rptr = 0;
 
     if (haystack && needle && haystacklen && needlelen)
@@ -2077,7 +2080,7 @@ __xml_memncasestr(const char *haystack,  size_t haystacklen,
         {
             char *hss = hs, *nss = ns;
             int j = needlelen;
-            while (--i && --j && (*hss++ == *nss++));
+            while (--i && --j && (toupper(*hss++) == toupper(*nss++)));
             if (j == 0)
             {
                 rptr = hs;
@@ -2085,7 +2088,7 @@ __xml_memncasestr(const char *haystack,  size_t haystacklen,
             }
             hs = hss;
         }
-        while (--i);
+        while (i && --i);
     }
 
     return rptr;
