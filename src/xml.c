@@ -1389,11 +1389,13 @@ __xmlAttributeGetDataPtr(const void *id, const char *name, size_t *len)
                         return 0;
                     }
 
-                    start = ps;
-                    while ((ps<pe) && (*ps != '"') && (*ps != '\'')) ps++;
+                    start = ps-1;
+                    while ((ps<pe) && (*ps != *start)) ps++;
                     if (ps<pe)
                     {
-                        ret = start;                        *len = ps-start;
+                        start++;
+                        ret = start;
+                        *len = ps-start;
                     }
                     else
                     {
