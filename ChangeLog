@@ -1,9 +1,11 @@
-2014-03-13  Erik Hofman <tech@adalin.org
+2015-02-20 Erik Hofman <tech@adalin.org
+ * Make sure the attribute quote end character matches the attribute
+   quote start character
  * Bump from rmalloc v1.17 to rmalloc v1.21
  * Add the xmlNodeTest function which returns true if a node name exsists.
  * If a floating point number contains the wrong decimal mark, copy the
    whole section, fix the decimal mark character and try again.
- * Start working with C.UTF-8 unicode (which includes ANSII)
+ * Start working with C.UTF-8 unicode (which includes ANSI)
 
 2013-07-08  Erik Hofman <tech@adalin.org
  * Introduce XML_NONE as a possible return value for the GetInt functions
@@ -29,7 +31,6 @@
   *   of the functions return false otherwise.
 
 2011-03-16  Erik Hofman <tech@adalin.org>
-
   * Release of ZeroXML version 1.0
   * Moved installable header files to $(topdir)/include
   * Split up header files into conditional includes (src/api.h) and globally
