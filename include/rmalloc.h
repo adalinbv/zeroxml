@@ -113,6 +113,7 @@ extern "C" {
 #  define FREE(p)         Rfree((p), RM_FILE_POS)
 #  define FREE0(p)        Rfree((p), RM_FILE_POS),(p)=NULL
 #  define STRDUP(s)       Rstrdup((s), RM_FILE_POS)
+#  define MALLOC_USABLE_SIZE(s) Rmalloc_usable_size(s, RM_FILE_POS)
 #else /* !RM_UPPERSTYLE */
 /* Wrap with our stuff: */
 #  ifdef malloc
@@ -147,8 +148,13 @@ extern "C" {
 
 #  ifdef getcwd
 #    undef getcwd
+#    define getcwd(b,s)	  Rgetcwd((b), (s), RM_FILE_POS)
 #  endif
-#  define getcwd(b,s)	  Rgetcwd((b), (s), RM_FILE_POS)
+
+#  ifdef malloc_usable_size
+#    undef malloc_usable_size
+#  endif
+#  define malloc_usable_size(s) Rmalloc_usable_size((s), RM_FILE_POS)
 #endif /* RM_UPPERSTYLE */
 #define RM_TEST           Rmalloc_test(RM_FILE_POS)
 #define RM_STAT           Rmalloc_stat(RM_FILE_POS)
@@ -191,6 +197,7 @@ RMALLOC_API void  RMALLOC_APIENTRY Rmalloc_test(const char *file);
 RMALLOC_API void  RMALLOC_APIENTRY Rmalloc_stat(const char *file);
 RMALLOC_API void* RMALLOC_APIENTRY Rmalloc_retag(void *p, const char *file);
 RMALLOC_API void* RMALLOC_APIENTRY Rmalloc_set_flags(void *p, unsigned flags, const char *file);
+RMALLOC_API size_t RMALLOC_APIENTRY Rmalloc_usable_size(void *p, const char *file);
 #endif /* MALLOC_DEBUG || RM_NEED_PROTOTYPES */
 
 #if defined(TARGET_OS_MAC) && TARGET_OS_MAC

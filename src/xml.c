@@ -42,6 +42,9 @@
 #include <stdio.h>
 #if HAVE_STRINGS_H
 # include <strings.h>	/* strncasecmp */
+# if defined(WIN32)
+#  define strncasecmp _strnicmp
+# endif
 #endif
 #if HAVE_UNISTD_H
 # include <unistd.h>
@@ -1552,12 +1555,14 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
     assert(rlen != 0);
     assert(nodenum != 0);
 
-    if (open_len == 0 || *name == 0)
+    if (open_len == 0 || *name == 0) {
         SET_ERROR_AND_RETURN((char *)start,(char *)start,XML_INVALID_NODE_NAME);
+    }
 
 //  cdata = (char *)start;
-    if (*rlen > *len)
+    if (*rlen > *len) {
         SET_ERROR_AND_RETURN((char *)start,(char *)start, XML_UNEXPECTED_EOF);
+    }
 
     found = 0;
     num = *nodenum;
@@ -1590,8 +1595,9 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
             char *start = cur;
             size_t blocklen = restlen;
             new = __xmlProcessCDATA(&start, &blocklen);
-            if (!new && start && open_len)                        /* CDATA */
+            if (!new && start && open_len) {                      /* CDATA */
                 SET_ERROR_AND_RETURN((char *)start,cur, XML_INVALID_COMMENT);
+            }
 
             restlen -= new-cur;
             cur = new;
@@ -1600,8 +1606,9 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
         else if (*cur == '?') /* info block */
         {
             new = __xmlInfoProcess(cur, restlen);
-            if (!new)
+            if (!new) {
                 SET_ERROR_AND_RETURN((char *)start,cur, XML_INVALID_INFO_BLOCK);
+            }
 
             restlen -= new-cur;
             cur = new;
@@ -1629,8 +1636,9 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
         else				/* different element name was foud */
         {
             new = cur + (len_remaining - restlen);
-            if (new >= ne)
+            if (new >= ne) {
                 SET_ERROR_AND_RETURN((char *)start,cur, XML_UNEXPECTED_EOF);
+            }
 
             element = *name;
         }
@@ -1663,8 +1671,9 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
         /* restlen -= new-cur; not necessary because of __xml_memncasecmp */
         cur = new;
         new = memchr(cur, '<', restlen);
-        if (!new)
+        if (!new) {
             SET_ERROR_AND_RETURN((char *)start,cur, XML_ELEMENT_NO_CLOSING_TAG);
+        }
 
         new++;
         restlen -= new-cur;
@@ -1678,8 +1687,9 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
             {
 //              cdata = ret;
             }
-            else if (!new)
+            else if (!new) {
                 SET_ERROR_AND_RETURN((char *)start,cur, XML_INVALID_COMMENT);
+            }
 
             restlen -= new-cur;
             cur = new;
@@ -1688,8 +1698,9 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
             * look for the closing tag of the cascading block
             */
             new = memchr(cur, '<', restlen);
-            if (!new)
+            if (!new) {
                 SET_ERROR_AND_RETURN((char *)start,cur, XML_ELEMENT_NO_CLOSING_TAG);
+            }
 
             new++;
             restlen -= new-cur;
@@ -1703,8 +1714,9 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
 #ifdef XML_USE_NODECACHE
                 cacheDataSet(nnc, element, elementlen, rptr, new-rptr-1);
 #endif
-                if (*(new+elementlen+1) != '>')
+                if (*(new+elementlen+1) != '>') {
                     SET_ERROR_AND_RETURN((char *)start,new+1, XML_ELEMENT_NO_CLOSING_TAG);
+                }
 
                 if (found == num)
                 {
@@ -1715,15 +1727,17 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
 //                      cdata = (char *)start;
                         start_tag = 0;
                     }
-                    else /* report error */
+                    else { /* report error */
                         SET_ERROR_AND_RETURN((char *)start,new, XML_ELEMENT_NO_OPENING_TAG);
+                    }
                 }
                 found++;
             }
 
             new = memchr(cur, '>', restlen);
-            if (!new)
+            if (!new) {
                 SET_ERROR_AND_RETURN((char *)start,cur, XML_ELEMENT_NO_CLOSING_TAG);
+            }
 
             restlen -= new-cur;
             cur = new;
@@ -1752,8 +1766,9 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
                     return 0;
                 }
 
-                if (slen == restlen)
+                if (slen == restlen) {
                     SET_ERROR_AND_RETURN((char *)start,cur, XML_UNEXPECTED_EOF);
+                }
 
                 slen--;
                 new = cur + slen;
@@ -1766,8 +1781,9 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
             */
             cur = new;
             new = memchr(cur, '<', restlen);
-            if (!new)
+            if (!new) {
                 SET_ERROR_AND_RETURN((char *)start,cur, XML_ELEMENT_NO_CLOSING_TAG);
+            }
 
             new++;
             restlen -= new-cur;
@@ -1778,8 +1794,9 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
         {
             if (!strncasecmp(new+1, element, elementlen))
             {
-                if (*(new+elementlen+1) != '>')
+                if (*(new+elementlen+1) != '>') {
                     SET_ERROR_AND_RETURN((char *)start,new+1, XML_ELEMENT_NO_CLOSING_TAG);
+                }
 
 #ifdef XML_USE_NODECACHE
                 cacheDataSet(nnc, element, elementlen, rptr, new-rptr-1);
@@ -1793,21 +1810,24 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
 //                      cdata = (char *)start;
                         start_tag = 0;
                     }
-                    else /* report error */
+                    else { /* report error */
                         SET_ERROR_AND_RETURN((char *)start,new, XML_ELEMENT_NO_OPENING_TAG);
+                    }
                 }
                 found++;
             }
 
             new = memchr(cur, '>', restlen);
-            if (!new)
+            if (!new) {
                 SET_ERROR_AND_RETURN((char *)start,cur, XML_ELEMENT_NO_CLOSING_TAG);
+            }
 
             restlen -= new-cur;
             cur = new;
         }
-        else
+        else {
             SET_ERROR_AND_RETURN((char *)start,cur, XML_ELEMENT_NO_CLOSING_TAG);
+        }
 
     } /* while */
 

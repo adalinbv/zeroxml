@@ -1236,7 +1236,17 @@ RMALLOC_API void RMALLOC_APIENTRY Rfree(void *p, const char *file)
 
 }
 
-
+size_t Rmalloc_usable_size(void *p, const char *file)
+{
+#ifdef ELOQUENT
+  fprintf(stderr, HEAD "UsableSize: %p (called from: %s)\n", p, file);
+#endif /* ELOQUENT */
+  if (!p)
+    return 0;
+  struct _begin *info = (struct _begin *)(((char *)p) - START_SPACE);
+  ControlBlock(info, file);
+  return info->Size;
+}
 
 /* =============================================================================
    Function:		Rstrdup		// external //
