@@ -433,6 +433,53 @@ xmlNodeCopyName(const void *id, char *buf, size_t buflen)
     return slen;
 }
 
+XML_API size_t XML_APIENTRY
+xmlAttributeCopyName(const void *id, char *buf, size_t buflen, size_t pos)
+{
+    struct _xml_id *xid = (struct _xml_id *)id;
+    size_t slen = 0;
+
+    assert(buf != 0);
+    assert(buflen > 0);
+
+    if (xid->name_len)
+    {
+        char *ps, *pe, *new;
+        size_t num = 0;
+
+        assert(xid->start > xid->name);
+
+        ps = xid->name + xid->name_len + 1;
+        pe = xid->start - 1;
+        while (ps<pe)
+        {
+            while ((ps<pe) && isspace(*ps)) ps++;
+
+            new = memchr(ps, '=', pe-ps);
+            if (!new) break;
+
+            if (num++ == pos)
+            {
+                slen = new-ps;
+                if (slen >= buflen)
+                {
+                    slen = buflen-1;
+                    xmlErrorSet(xid, 0, XML_TRUNCATE_RESULT);
+                }
+                memcpy(buf, ps, slen);
+                *(buf + slen) = 0;
+                break;
+            }
+
+            ps = new+2;
+            while ((ps<pe) && (*ps != '"' && *ps != '\'')) ps++;
+            ps++;
+        }
+    }
+
+    return slen;
+}
+
 static size_t
 __xmlNodeGetNum(const void *id, const char *path, char raw)
 {
@@ -506,6 +553,32 @@ xmlNodeGetNumRaw(const void *id, const char *path)
    return __xmlNodeGetNum(id, path, 1);
 }
 
+XML_API size_t XML_APIENTRY
+xmlAttributeGetNum(const void *id)
+{
+    struct _xml_id *xid = (struct _xml_id *)id;
+    size_t num = 0;
+
+    if (xid->name_len)
+    {
+        char *ps, *pe, *new;
+
+        assert(xid->start > xid->name);
+
+        ps = xid->name + xid->name_len + 1;
+        pe = xid->start - 1;
+        while (ps<pe)
+        {
+            new = memchr(ps, '=', pe-ps);
+            if (!new) break;
+
+            ps = new+1;
+            num++;
+        }
+    }
+    return num;
+}
+
 static void *
 __xmlNodeGetPos(const void *pid, void *id, const char *element, size_t num, char raw)
 {
@@ -561,6 +634,7 @@ xmlNodeGetPosRaw(const void *pid, void *id, const char *element, size_t num)
 {
    return __xmlNodeGetPos(pid, id, element, num, 1);
 }
+
 
 XML_API void * XML_APIENTRY
 xmlNodeCopyPos(const void *pid, void *id, const char *element, size_t num)
