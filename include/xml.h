@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2008-2012 by Erik Hofman.
- * Copyright (C) 2009-2012 by Adalin B.V.
+ * Copyright (C) 2008-2016 by Erik Hofman.
+ * Copyright (C) 2009-2016 by Adalin B.V.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -171,6 +171,18 @@ XML_API char* XML_APIENTRY xmlNodeGetName(const void *);
  */
 XML_API size_t XML_APIENTRY xmlNodeCopyName(const void *, char *, size_t);
 
+/**
+ * Copy the name of the nth attribute in a pre-allocated buffer.
+ *
+ * @param xid XML-id
+ * @param buffer the buffer to copy the string to
+ * @param buflen length of the destination buffer
+ * @param n position of the attribute in the attribute list.
+ * @return the length of the node name
+ */
+
+XML_API size_t XML_APIENTRY xmlAttributeCopyName(const void *, char *, size_t, size_t);
+
 
 /**
  * Create a marker XML-id that starts out with the same settings as the
@@ -203,6 +215,8 @@ XML_API void XML_APIENTRY xmlFree(void *);
  * @return the number count of the nodename
  */
 XML_API size_t XML_APIENTRY xmlNodeGetNum(const void *, const char *);
+XML_API size_t XML_APIENTRY xmlNodeGetNumRaw(const void *, const char *);
+XML_API size_t XML_APIENTRY xmlAttributeGetNum(const void *);
 
 /**
  * Get the nth occurrence of node in the parent node.
@@ -215,6 +229,7 @@ XML_API size_t XML_APIENTRY xmlNodeGetNum(const void *, const char *);
  * @return XML-subsection-id for further processing or NULL if unsuccessful
  */
 XML_API void* XML_APIENTRY xmlNodeGetPos(const void *, void *, const char *, size_t);
+XML_API void* XML_APIENTRY xmlNodeGetPosRaw(const void *, void *, const char *, size_t);
 
 /**
  * Copy the nth occurrence of node in the parent node.
@@ -238,6 +253,7 @@ XML_API void* XML_APIENTRY xmlNodeCopyPos(const void *, void *, const char *, si
  * @return a newly alocated string containing the contents of the node
  */
 XML_API char* XML_APIENTRY xmlGetString(const void *);
+XML_API char* XML_APIENTRY xmlGetStringRaw(const void *);
 
 /**
  * Get a string of characters from the current node.
