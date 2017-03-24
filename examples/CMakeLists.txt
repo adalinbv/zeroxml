@@ -12,5 +12,12 @@ INSTALL(TARGETS xmlgrep
           ARCHIVE DESTINATION "lib${LIB_SUFFIX}"
        )
 
+CREATE_TEST(xmlvalidate)
+INSTALL(TARGETS xmlvalidate
+          RUNTIME DESTINATION bin
+          LIBRARY DESTINATION "lib${LIB_SUFFIX}"
+          ARCHIVE DESTINATION "lib${LIB_SUFFIX}"
+       )
+
 CREATE_TEST(printtree)
 CREATE_TEST(printxml)

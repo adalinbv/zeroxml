@@ -166,10 +166,19 @@ xmlOpen(const char *filename)
                     size_t blen = statbuf.st_size;
 #ifdef XML_USE_NODECACHE
                     size_t num = 0, nlen = 1;
-                    char *n = "*";
+                    char *rv, *n = "*";
 
                     rid->node = cacheInit();
-                    __xmlNodeGet(rid->node, mm, &blen, &n, &nlen, &num, 0);
+                    rv = __xmlNodeGet(rid->node, mm, &blen, &n, &nlen, &num, 0);
+                    if (!rv)
+                    {
+                        simple_unmmap(rid->start, blen, &rid->un);
+                        close(fd);
+
+                        cacheFree(rid->node);
+                        free(rid);
+                        rid = 0;
+                    }
 #endif
                     rid->fd = fd;
                     rid->start = mm;
@@ -195,10 +204,16 @@ xmlInitBuffer(const char *buffer, size_t size)
 #ifdef XML_USE_NODECACHE
             size_t num = 0, nlen = 1;
             size_t blen = size;
-            char *n = "*";
+            char *rv, *n = "*";
 
             rid->node = cacheInit();
-            __xmlNodeGet(rid->node, buffer, &blen, &n, &nlen, &num, 0);
+            rv = __xmlNodeGet(rid->node, buffer, &blen, &n, &nlen, &num, 0);
+            if (!rv)
+            {
+                cacheFree(rid->node);
+                free(rid);
+                rid = 0;
+            }
 #endif
             rid->fd = -1;
             rid->start = (char *)buffer;
@@ -1786,6 +1801,7 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
         new = memchr(cur, '<', restlen);
         if (!new) {
             SET_ERROR_AND_RETURN((char *)start,cur, XML_ELEMENT_NO_CLOSING_TAG);
+            return 0;
         }
 
         new++;
@@ -1903,7 +1919,7 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
             cur = new;
         }
 
-        if (*cur == '/')				/* closing tag found */
+        if (*cur == '/')			/* closing tag found */
         {
             if (!strncasecmp(new+1, element, elementlen))
             {
@@ -2249,6 +2265,7 @@ __xml_memncasecmp(const char *haystack, size_t *haystacklen,
                 hs++;
                 ns++;
             }
+            if (!isspace(*hs) && (*hs != '/') && (*hs != '>')) ++i;
 
             if (i == nlen)
             {

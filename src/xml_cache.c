@@ -60,6 +60,7 @@ cacheNodeGet(void *id)
 
 #else
 
+/* number of pointers to allocate for every block increase */
 #define NODE_BLOCKSIZE             16
 
 struct _xml_node
