@@ -1639,7 +1639,7 @@ __xmlNodeGetPath(void **nc, const char *start, size_t *len, char **name, size_t 
 #else
         ret = __xmlNodeGetFromCache(nc, start, &blocklen, &node, &nodelen, &num);
 #endif
-        if (ret)
+        if (ret && blocklen)
         {
             if (path)
             {
@@ -1659,6 +1659,7 @@ __xmlNodeGetPath(void **nc, const char *start, size_t *len, char **name, size_t 
         {
             *len = 0;
             *nlen = 0;
+            ret = 0;
         }
     }
 
@@ -1688,8 +1689,13 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
     }
 
 //  cdata = (char *)start;
-    if (*rlen > *len) {
-        SET_ERROR_AND_RETURN((char *)start,(char *)start, XML_UNEXPECTED_EOF);
+    if (*rlen > *len)
+    {
+        *rlen = 0;
+        *name = start_tag;
+        *len = XML_NO_ERROR;    /* element not found, no real error */
+        return 0;
+//      SET_ERROR_AND_RETURN((char *)start,(char *)start, XML_UNEXPECTED_EOF);
     }
 
     found = 0;
@@ -1840,10 +1846,14 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
         {
             if (!strncasecmp(new+1, element, elementlen))
             {
+                char *pe = new+restlen;
+                char *ps = new+elementlen+1;
+                while ((ps<pe) && isspace(*ps)) ps++;
+
 #ifdef XML_USE_NODECACHE
                 cacheDataSet(nnc, element, elementlen, rptr, new-rptr-1);
 #endif
-                if (*(new+elementlen+1) != '>') {
+                if (*ps != '>') {
                     SET_ERROR_AND_RETURN((char *)start,new+1, XML_ELEMENT_NO_CLOSING_TAG);
                 }
 
@@ -1856,8 +1866,13 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
 //                      cdata = (char *)start;
                         start_tag = 0;
                     }
-                    else { /* report error */
-                        SET_ERROR_AND_RETURN((char *)start,new, XML_ELEMENT_NO_OPENING_TAG);
+                    else	/* element not found, no real error */
+                    {
+                        *rlen = 0;
+                        *name = start_tag;
+                        *len = XML_NO_ERROR;
+                        return 0;
+//                      SET_ERROR_AND_RETURN((char *)start,new, XML_ELEMENT_NO_OPENING_TAG);
                     }
                 }
                 found++;
@@ -1923,7 +1938,11 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
         {
             if (!strncasecmp(new+1, element, elementlen))
             {
-                if (*(new+elementlen+1) != '>') {
+                char *pe = new+restlen;
+                char *ps = new+elementlen+1;
+                while ((ps<pe) && isspace(*ps)) ps++;
+
+                if (*ps != '>') {
                     SET_ERROR_AND_RETURN((char *)start,new+1, XML_ELEMENT_NO_CLOSING_TAG);
                 }
 
