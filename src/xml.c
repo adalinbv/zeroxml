@@ -2265,7 +2265,7 @@ __xml_memncasecmp(const char *haystack, size_t *haystacklen,
                 hs++;
                 ns++;
             }
-            if (!isspace(*hs) && (*hs != '/') && (*hs != '>')) ++i;
+            if (!isspace(*hs) && (*hs != '/') && (*hs != '>')) i=0;
 
             if (i == nlen)
             {
