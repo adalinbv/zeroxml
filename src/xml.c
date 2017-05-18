@@ -2208,6 +2208,37 @@ __xmlErrorSet(const void *id, const char *pos, size_t err_no)
 }
 #endif
 
+#if 1
+static char *
+__xml_memncasestr(const char *s, size_t slen, const char *find)
+{
+   char c, sc;
+   size_t len;
+
+   if ((c = *find++) != '\0')
+   {
+      len = strlen(find);
+      do
+      {
+         do
+         {
+            if (slen-- < 1 || (sc = *s++) == '\0') {
+               return (NULL);
+            }
+         }
+         while (toupper(sc) != toupper(c));
+
+         if (len > slen) {
+            return (NULL);
+         }
+      }
+      while (strncasecmp(s, find, len) != 0);
+      s--;
+   }
+   return ((char *)s);
+}
+
+#else
 static char *
 __xml_memncasestr(const char *haystack,  size_t haystacklen,
                   const char *needle)
@@ -2238,6 +2269,7 @@ __xml_memncasestr(const char *haystack,  size_t haystacklen,
 
     return rptr;
 }
+#endif
 
 #define NOCASECMP(a,b)  ( ((a)^(b)) & 0xdf )
 static void *

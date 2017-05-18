@@ -1,3 +1,8 @@
+2017-03-30 Erik Hofman <tech@adalin.org
+ * Fix a segmentation fault when searching for a non-exsistent path
+ * Change a few situations where a non exsisting path was reported as an
+   invalid XML syntax.
+
 2015-02-20 Erik Hofman <tech@adalin.org
  * Make sure the attribute quote end character matches the attribute
    quote start character
