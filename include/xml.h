@@ -469,7 +469,7 @@ XML_API double XML_APIENTRY xmlAttributeGetDouble(const void *, const char *);
  * @param name name of the attribute to acquire
  * @return the contents of the node converted to an integer value
  */
-XML_API int XML_APIENTRY xmlAttributeExists(const void *, const char *, const char *);
+XML_API int XML_APIENTRY xmlAttributeExists(const void *, const char *);
 
 /**
  * Get the error number of the last error and clear it.
