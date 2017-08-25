@@ -1,5 +1,9 @@
+2017-08-25 Erik Hofman <tech@adalin.org
+ * Add the public domain unlicense as an option.
+ * Add the xmlAttributeExists function to test the presence of an attribute.
+
 2017-03-30 Erik Hofman <tech@adalin.org
- * Fix a segmentation fault when searching for a non-exsistent path
+ * Fix a segmentation fault when searching for a non-exsistent path.
  * Change a few situations where a non exsisting path was reported as an
    invalid XML syntax.
 

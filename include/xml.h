@@ -1,4 +1,8 @@
 /*
+ * This software is available under 2 licenses -- choose whichever you prefer.
+ *
+ * LTERNATIVE A - Modified BSD license
+ *
  * Copyright (C) 2008-2016 by Erik Hofman.
  * Copyright (C) 2009-2016 by Adalin B.V.
  * All rights reserved.
@@ -27,6 +31,29 @@
  * The views and conclusions contained in the software and documentation are
  * those of the authors and should not be interpreted as representing official
  * policies, either expressed or implied, of Adalin B.V.
+ *
+ * -----------------------------------------------------------------------------
+ * ALTERNATIVE B - Public Domain (www.unlicense.org)
+ *
+ * This is free and unencumbered software released into the public domain.
+ *
+ * Anyone is free to copy, modify, publish, use, compile, sell, or distribute
+ * this software, either in source code form or as a compiled binary, for any
+ * purpose, commercial or non-commercial, and by any means.
+ *
+ * In jurisdictions that recognize copyright laws, the author or authors of
+ * this software dedicate any and all copyright interest in the software to
+ * the public domain. We make this dedication for the benefit of the public at
+ * large and to the detriment of our heirs and successors. We intend this
+ * dedication to be an overt act of relinquishment in perpetuity of all
+ * present and future rights to this software under copyright law.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+ * AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN 
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION 
+ * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #ifndef __XML_CONFIG
@@ -434,6 +461,15 @@ XML_API double XML_APIENTRY xmlNodeGetDouble(const void *, const char *);
  */
 XML_API double XML_APIENTRY xmlAttributeGetDouble(const void *, const char *);
 
+
+/**
+ * Test whether the named attribute does exist.
+ *
+ * @param xid XML-id
+ * @param name name of the attribute to acquire
+ * @return the contents of the node converted to an integer value
+ */
+XML_API int XML_APIENTRY xmlAttributeExists(const void *, const char *, const char *);
 
 /**
  * Get the error number of the last error and clear it.
