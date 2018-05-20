@@ -301,7 +301,7 @@ XML_API size_t XML_APIENTRY xmlCopyString(const void *, char *, size_t);
  *
  * @param xid XML-id
  * @param str the string to compare to
- * @return an integer less than, equal to, ro greater than zero if the value
+ * @return an integer less than, equal to, or greater than zero if the value
  * of the node is found, respectively, to be less than, to match, or be greater
  * than str
  */
@@ -338,7 +338,7 @@ XML_API size_t XML_APIENTRY xmlNodeCopyString(const void *, const char *, char *
  * @param xid XML-id
  * @param path path to the xml node to compare to
  * @param str the string to compare to
- * @return an integer less than, equal to, ro greater than zero if the value
+ * @return an integer less than, equal to, or greater than zero if the value
  * of the node is found, respectively, to be less than, to match, or be greater
  * than str
  */
@@ -375,7 +375,7 @@ XML_API size_t XML_APIENTRY xmlAttributeCopyString(const void *, const char *, c
  * @param xid XML-id
  * @param name name of the attribute to acquire.
  * @param str the string to compare to
- * @return an integer less than, equal to, ro greater than zero if the value
+ * @return an integer less than, equal to, or greater than zero if the value
  * of the node is found, respectively, to be less than, to match, or be greater
  * than str
  */
