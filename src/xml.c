@@ -130,8 +130,8 @@ static char *__xmlCommentSkip(const char *, size_t);
 static char *__xmlInfoProcess(const char *, size_t);
 static int __xmlDecodeBoolean(const char *, const char *);
 static void __xmlPrepareData(char **, size_t *, char);
-static double __xmlGetDoubleLocale(const char*, const char*, size_t);
 
+static char *__xml_memmem(const char *, size_t, const char *, size_t);
 static char *__xml_memncasestr(const char *, size_t, const char *);
 static void *__xml_memncasecmp(const char *, size_t *, char **, size_t *);
 #ifdef WIN32
@@ -1108,9 +1108,6 @@ xmlGetDouble(const void *id)
     {
         char *end = xid->start + xid->len;
         d = strtod(xid->start, &end);
-        if (((end - xid->start) != xid->len) && *end == 46) {
-           d = __xmlGetDoubleLocale(xid->start, end, xid->len);
-        }
     }
 
     return d;
@@ -1140,9 +1137,6 @@ xmlNodeGetDouble(const void *id, const char *path)
         {
             char *end = str+len;
             d = strtod(str, &end);
-            if (((end - str) != len) && *end == 46) {
-               d = __xmlGetDoubleLocale(str, end, len);
-            }
         }
         else if (slen == 0)
         {
@@ -1605,37 +1599,6 @@ __xmlDecodeBoolean(const char *start, const char *end)
 }
 
 
-#define DOUBLE_STR_LEN		128
-static double
-__xmlGetDoubleLocale(const char* str, const char* dot, size_t len)
-{						/* fix a wrong locale */
-    struct lconv *lc = localeconv();
-    char *ptr, buf[DOUBLE_STR_LEN];
-    size_t plen;
-
-    assert((dot-str) <= len);
-
-    if (len > DOUBLE_STR_LEN) len = DOUBLE_STR_LEN;
-
-    ptr = buf;
-    plen = dot-str;
-    memcpy(ptr, str, plen);			/* integer part */
-    ptr += plen;
-    dot++;
-
-    plen = strlen(lc->decimal_point);
-    memcpy(ptr, lc->decimal_point, plen);	/* decimal point */
-    ptr += plen;
-    
-    plen = len-(dot-str);
-    memcpy(ptr, dot, plen);			/* mantissa */
-    ptr += plen;
-    /* *ptr = 0; not needed */
-
-    return strtod(buf, &ptr);
-}
-
-
 char *
 __xmlNodeGetPath(void **nc, const char *start, size_t *len, char **name, size_t *nlen)
 {
@@ -2052,34 +2015,19 @@ __xmlProcessCDATA(char **start, size_t *len, char raw)
     if (restlen < 12) return 0;                        /* ![CDATA[ ]]> */
 
     cur = *start;
-    new = 0;
-
     if (!raw && memcmp(cur, "![CDATA[", 8) == 0)
     {
+        *len = 0;
         *start = cur+8;
         cur += 8;
         restlen -= 8;
-        do
+
+        new = __xml_memmem(cur, restlen, "]]>", 3);
+        if (new)
         {
-            new = memchr(cur, ']', restlen);
-            if (new)
-            {
-                if ((restlen > 3) && (memcmp(new, "]]>", 3) == 0))
-                {
-                    *len = new - *start;
-                    restlen -= 3;
-                    new += 3;
-                    break;
-                }
-                cur = new+1;
-            }
-            else
-            {
-                *len = 0;
-                break;
-            }
+           *len = new - *start;
+           new += 3;
         }
-        while (new && (restlen > 2));
     }
 
     return new;
@@ -2099,26 +2047,11 @@ __xmlCommentSkip(const char *start, size_t len)
     {
         cur += 3;
         len -= 3;
-        do
-        {
-            new = memchr(cur, '-', len);
-            if (new)
-            {
-                len -= new-cur;
-                if ((len >= 3) && (memcmp(new, "-->", 3) == 0))
-                {
-                    new += 3;
-                    /* len -= 3; */
-                    break;
-                }
-                cur = new+1;
-                len -= cur-new;
-            }
-            else break;
+        new = __xml_memmem(cur, len, "-->", 3);
+        if (new) {
+           new += 3;
         }
-        while (new && (len > 2));
     }
-
     return new;
 }
 
@@ -2242,6 +2175,35 @@ __xmlErrorSet(const void *id, const char *pos, size_t err_no)
     }
 }
 #endif
+
+static char *
+__xml_memmem(const char *cur, size_t len, const char *str, size_t slen)
+{
+    char *rv = NULL;
+
+    if (str && str[0] != '\0')
+    {
+        char *new;
+        do
+        {
+            new = memchr(cur, str[0], len);
+            if (new)
+            {
+                len -= (new-cur);
+                if ((len >= 3) && (memcmp(new, str, slen) == 0))
+                {
+                    rv = new;
+                    break;
+                }
+                cur = new+1;
+                len -= cur-new;
+            }
+            else break;
+        }
+        while (new && (len > 2));
+    }
+    return rv;
+}
 
 #if 1
 static char *
