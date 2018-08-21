@@ -1637,7 +1637,7 @@ __xmlNodeGetPath(void **nc, const char *start, size_t *len, char **name, size_t 
 #else
         ret = __xmlNodeGetFromCache(nc, start, &blocklen, &node, &nodelen, &num);
 #endif
-        if (ret && blocklen)
+        if (ret)
         {
             if (path)
             {
@@ -1652,12 +1652,6 @@ __xmlNodeGetPath(void **nc, const char *start, size_t *len, char **name, size_t 
                 *nlen = nodelen;
                 *len = blocklen;
             }
-        }
-        else
-        {
-            *len = 0;
-            *nlen = 0;
-            ret = 0;
         }
     }
 
@@ -2091,9 +2085,12 @@ __xmlInfoProcess(const char *start, size_t len)
                new = memchr(cur, '"', len);
                if (new)
                {
-                   if (__xml_memncasestr(cur, new-cur, "UTF-8")
+                   size_t slen = strlen("UTF-8");
+                   size_t restlen = new-cur;
+                   char *str = "UTF-8";
+                   if (!__xml_memncasecmp(cur, &restlen, &str, &slen)
 #ifdef HAVE_LANGINFO_H
-                       && strcmp(nl_langinfo(CODESET), "UTF-8")
+                       && !strcmp(nl_langinfo(CODESET), "UTF-8")
 #endif
                       )
                    {
@@ -2205,7 +2202,6 @@ __xml_memmem(const char *cur, size_t len, const char *str, size_t slen)
     return rv;
 }
 
-#if 1
 static char *
 __xml_memncasestr(const char *s, size_t slen, const char *find)
 {
@@ -2234,39 +2230,6 @@ __xml_memncasestr(const char *s, size_t slen, const char *find)
    }
    return ((char *)s);
 }
-
-#else
-static char *
-__xml_memncasestr(const char *haystack,  size_t haystacklen,
-                  const char *needle)
-{
-    size_t needlelen = needle ? strlen(needle) : 0;
-    char *rptr = 0;
-
-    if (haystack && needle && haystacklen && needlelen)
-    {
-        char *hs = (char *)haystack;
-        char *ns = (char *)needle;
-        size_t i = haystacklen;
-
-        do
-        {
-            char *hss = hs, *nss = ns;
-            int j = needlelen;
-            while (--i && --j && (toupper(*hss++) == toupper(*nss++)));
-            if (j == 0)
-            {
-                rptr = hs;
-                break;
-            }
-            hs = hss;
-        }
-        while (i && --i);
-    }
-
-    return rptr;
-}
-#endif
 
 #define NOCASECMP(a,b)  ( ((a)^(b)) & 0xdf )
 static void *
