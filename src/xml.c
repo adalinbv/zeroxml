@@ -1607,13 +1607,14 @@ __xmlNodeGetPath(void **nc, const char *start, size_t *len, char **name, size_t 
 
     assert(start != 0);
     assert(len != 0);
-    assert(*len != 0);
     assert(name != 0);
     assert(*name != 0);
     assert(nlen != 0);
     assert(*nlen != 0);
 
-    if (*nlen > *len) return 0;
+    if (*len == 0 || *nlen > *len) {
+        return ret;
+    }
 
     path = *name;
     if (*path == '/') path++;
