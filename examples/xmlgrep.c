@@ -377,7 +377,7 @@ void grep_file(unsigned num)
             size_t n = xmlErrorGetLineNo(xrid, 0);
             size_t c = xmlErrorGetColumnNo(xrid, 0);
             const char *s = xmlErrorGetString(xrid, 1); /* clear the error */
-            printf("%s: at line %u, column %u: '%s'\n",_filenames[num], n,c, s);
+            printf("%s: at line %zu, column %zu: '%s'\n",_filenames[num], n,c, s);
        }
 
        free(xrid);
@@ -434,7 +434,7 @@ void grep_file_buffer(unsigned num)
             size_t n = xmlErrorGetLineNo(xrid, 0);
             size_t c = xmlErrorGetColumnNo(xrid, 0);
             const char *s = xmlErrorGetString(xrid, 1); /* clear the error */
-            printf("%s: at line %u, column %u: '%s'\n",_filenames[num], n,c, s);
+            printf("%s: at line %zu, column %zu: '%s'\n",_filenames[num], n,c, s);
        }
 
        free(xrid);
