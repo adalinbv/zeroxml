@@ -1,6 +1,7 @@
 /* =====================================================================
    File:	rmalloc.h
    Author:	Rammi
+   URL:		http://www.hexco.de/rmdebug/
    Date:	11/16/1995
 
    License:	(This is the open source ISC license, see 
