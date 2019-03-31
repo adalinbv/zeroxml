@@ -224,7 +224,7 @@
  * I still consider this an error in my progs because I use
  * NULL always as a very special value.
  */
-#define ALLOW_FREE_NULL
+/* #define ALLOW_FREE_NULL */
 
 
 /* ================================================================== */
@@ -892,6 +892,7 @@ found_actual_block:
   /* test integrity of actual block */
   ControlBlock(Blk, file);
 #endif
+  Blk->StpA  = 0xFADEDBAD;
 
   /* remove: */
   Blk->Next->Prev = Blk->Prev;

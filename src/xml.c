@@ -9,23 +9,23 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  *    1. Redistributions of source code must retain the above copyright notice,
  *        this list of conditions and the following disclaimer.
- * 
+ *
  *    2. Redistributions in binary form must reproduce the above copyright
  *        notice, this list of conditions and the following disclaimer in the
  *        documentation and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY ADALIN B.V. ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
  * NO EVENT SHALL ADALIN B.V. OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
  * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR 
- * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUTOF THE USE 
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+ * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUTOF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * The views and conclusions contained in the software and documentation are
@@ -48,11 +48,11 @@
  * dedication to be an overt act of relinquishment in perpetuity of all
  * present and future rights to this software under copyright law.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
- * AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN 
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
@@ -134,6 +134,7 @@ static void __xmlPrepareData(char **, size_t *, char);
 static char *__xml_memmem(const char *, size_t, const char *, size_t);
 static char *__xml_memncasestr(const char *, size_t, const char *);
 static void *__xml_memncasecmp(const char *, size_t *, char **, size_t *);
+static long __xml_strtol(const char *, char **, int);
 #ifdef WIN32
 /*
  * map 'filename' and return a pointer to it.
@@ -260,27 +261,29 @@ xmlClose(void *id)
 {
     struct _root_id *rid = (struct _root_id *)id;
 
-    assert(rid != 0);
-    assert(rid->name == 0);
-
-    if (rid->fd != -1)
+    if (rid)
     {
-        simple_unmmap(rid->start, (size_t)rid->len, &rid->un);
-        close(rid->fd);
-    }
+        assert(rid->name == 0);
+
+        if (rid->fd != -1)
+        {
+            simple_unmmap(rid->start, (size_t)rid->len, &rid->un);
+            close(rid->fd);
+        }
 
 #ifdef XML_USE_NODECACHE
-    if (rid->node) cacheFree(rid->node);
+        if (rid->node) cacheFree(rid->node);
 #endif
 #ifndef XML_NONVALIDATING
-    if (rid->info) free(rid->info);
+        if (rid->info) free(rid->info);
 #endif
 
 #ifdef HAVE_LOCALE_H
-    setlocale(LC_CTYPE, rid->locale);
+        setlocale(LC_CTYPE, rid->locale);
 #endif
-    free(rid);
-    id = 0;
+        free(rid);
+        id = 0;
+    }
 }
 
 XML_API int XML_APIENTRY
@@ -360,7 +363,7 @@ xmlNodeCopy(const void *id, const char *path)
     size_t slen, len;
     void *ret = 0;
     void *nc, *nnc;
-    
+
 
     node = (char *)path;
     len = xid->len;
@@ -459,7 +462,7 @@ xmlNodeCopyName(const void *id, char *buf, size_t buflen)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     size_t slen = 0;
- 
+
     assert(buf != 0);
     assert(buflen > 0);
 
@@ -790,7 +793,7 @@ __xmlGetString(const void *id, char raw)
                 memcpy(str, ps, len);
                 *(str+len) = 0;
             }
-            
+
             else
             {
                 xmlErrorSet(xid, 0, XML_OUT_OF_MEMORY);
@@ -818,7 +821,7 @@ xmlCopyString(const void *id, char *buffer, size_t buflen)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     size_t ret = 0;
- 
+
     assert(xid != 0);
     assert(buffer != 0);
     assert(buflen > 0);
@@ -1056,7 +1059,7 @@ xmlGetInt(const void *id)
     if (xid->len)
     {
         char *end = xid->start + xid->len;
-        li = strtol(xid->start, &end, 10);
+        li = __xml_strtol(xid->start, &end, 10);
     }
 
     return li;
@@ -1085,7 +1088,7 @@ xmlNodeGetInt(const void *id, const char *path)
         if (str)
         {
             char *end = str+len;
-            li = strtol(str, &end, 10);
+            li = __xml_strtol(str, &end, 10);
         }
         else if (slen == 0)
         {
@@ -1187,7 +1190,7 @@ xmlMarkId(const void *id)
 XML_API void XML_APIENTRY
 xmlFree(void *id)
 {
-    free(id);
+    if (id) free(id);
 }
 
 XML_API int XML_APIENTRY
@@ -1244,7 +1247,7 @@ xmlAttributeGetInt(const void *id, const char *name)
     if (ptr)
     {
         char *eptr = ptr+len;
-        ret = strtol(ptr, &eptr, 10);
+        ret = __xml_strtol(ptr, &eptr, 10);
     }
 
     return ret;
@@ -1310,7 +1313,7 @@ xmlAttributeCompareString(const void *id, const char *name, const char *s)
     int ret = -1;
     size_t len;
     char *ptr;
- 
+
     assert(s != 0);
 
     ptr = __xmlAttributeGetDataPtr(xid, name, &len);
@@ -1379,7 +1382,7 @@ xmlErrorGetLineNo(const void *id, int clear)
                 if (new) ret++;
                 else break;
                 ps = new+1;
-            }        
+            }
 
             if (clear) err->err_no = 0;
         }
@@ -1582,7 +1585,7 @@ __xmlDecodeBoolean(const char *start, const char *end)
     char *ptr;
 
     ptr = (char *)end;
-    if (strtol(start, &ptr, 10) == 0)
+    if (__xml_strtol(start, &ptr, 10) == 0)
     {
         size_t len = end-start;
         if (!strncasecmp(start, "on", len) || !strncasecmp(start, "yes", len)
@@ -1913,9 +1916,9 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
             }
             else restlen -= slen;
 
-            /* 
-            * look for the closing tag of the cascading block
-            */
+            /*
+             * look for the closing tag of the cascading block
+             */
             cur = new;
             new = memchr(cur, '<', restlen);
             if (!new) {
@@ -2174,6 +2177,17 @@ __xmlErrorSet(const void *id, const char *pos, size_t err_no)
 }
 #endif
 
+static long
+__xml_strtol(const char *str, char **end, int base)
+{
+    size_t len = *end - str;
+
+    if (len > 2 && str[1] == 'x' && (str[0] == '0' || str[0] == '\\')) {
+        return strtol(str+2, end, 16);
+    }
+    return strtol(str, end, base);
+}
+
 static char *
 __xml_memmem(const char *cur, size_t len, const char *str, size_t slen)
 {
@@ -2262,7 +2276,7 @@ __xml_memncasecmp(const char *haystack, size_t *haystacklen,
             ns = memchr(hs, '>', he-hs);
             if (ns) hs = ns+1;
             else hs = he;
-    
+
             rptr = hs;
         }
         else
