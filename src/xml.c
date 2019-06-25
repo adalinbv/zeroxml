@@ -1995,7 +1995,7 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
 char *
 __xmlProcessCDATA(char **start, size_t *len, char raw)
 {
-    char *cur, *new;
+    char *cur, *new = NULL;
     size_t restlen = *len;
 
     cur = *start;
