@@ -279,7 +279,9 @@ xmlClose(void *id)
 #endif
 
 #ifdef HAVE_LOCALE_H
-        setlocale(LC_CTYPE, rid->locale);
+        if (rid->locale) {
+           setlocale(LC_CTYPE, rid->locale);
+        }
 #endif
         free(rid);
         id = 0;
