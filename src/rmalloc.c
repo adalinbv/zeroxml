@@ -218,7 +218,7 @@
  * Posix allows this but there are some old malloc libraries
  * which crash on this. Switch on if you want to be compatible.
  */
-/* #define ALLOW_REALLOC_NULL */
+#define ALLOW_REALLOC_NULL
 
 /* Allows free(NULL)
  * I still consider this an error in my progs because I use
@@ -1128,6 +1128,63 @@ RMALLOC_API void* RMALLOC_APIENTRY Rcalloc(size_t nelem, size_t size, const char
   }
 }
 
+
+
+/* =============================================================================
+   Function:            Raligned_alloc // external //
+   Author:              EMH
+   Date:                19/12/2019
+
+   Return:              New prepared memory block with size size (user)
+                        alligned to align
+
+   Parameter:           align		allignent
+                        size            demanded size
+                        file            called from where?
+
+   Purpose:             wrapper for malloc
+   ============================================================================= */
+void *Raligned_malloc(size_t align, size_t size, const char *file)
+{
+  void *ret;                    /* ret val */
+
+  if (size == 0) {
+    fprintf(stderr, HEAD "WARNING: malloc() demands 0 Bytes (in %s)\n", file);
+  }
+
+
+#if __MINGW32__
+# if defined(_aligned_malloc)
+   ret = _aligned_malloc(size+EXTRA_SPACE, align);
+# else
+   ret = _mm_malloc(size+EXTRA_SPACE, align);
+# endif
+#elif ISOC11_SOURCE 
+   ret = aligned_alloc(align, size+EXTRA_SPACE);
+#elif  _POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600
+   if (posix_memalign(&ret, align, size+EXTRA_SPACE) != 0) {
+      ret = NULL;
+   }
+#elif _MSC_VER
+   ret = _aligned_malloc(size+EXTRA_SPACE, align);
+#else
+   assert(1 == 0);
+#endif
+
+  if (ret) {
+    /* initialize */
+#ifdef WITH_FLAGS
+    return SetBlk(ret, size, file, 0);
+#else
+    return SetBlk(ret, size, file);
+#endif
+  }
+  else {
+    fprintf(stderr,
+            HEAD "WARNING: Out of memory! Returning NULL (in %s)\n", file);
+    return NULL;
+  }
+}
 
 
 /* =============================================================================

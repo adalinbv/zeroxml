@@ -184,7 +184,7 @@ xmlOpen(const char *filename)
 
                 /* UTF-8 unicode support */
 #ifdef HAVE_LOCALE_H
-                rid->locale = setlocale(LC_CTYPE, "");
+//              rid->locale = setlocale(LC_CTYPE, "");
 #endif
 
                 fstat(fd, &statbuf);
@@ -248,7 +248,7 @@ xmlInitBuffer(const char *buffer, size_t size)
             rid->len = size;
 
 #ifdef HAVE_LOCALE_H
-            rid->locale = setlocale(LC_CTYPE, "");
+//          rid->locale = setlocale(LC_CTYPE, "");
 #endif
         }
     }
@@ -279,9 +279,9 @@ xmlClose(void *id)
 #endif
 
 #ifdef HAVE_LOCALE_H
-        if (rid->locale) {
-           setlocale(LC_CTYPE, rid->locale);
-        }
+//      if (rid->locale) {
+//         setlocale(LC_CTYPE, rid->locale);
+//      }
 #endif
         free(rid);
         id = 0;
@@ -2101,7 +2101,7 @@ __xmlInfoProcess(const char *start, size_t len)
                       )
                    {
 #ifdef HAVE_LOCALE_H
-                       setlocale(LC_CTYPE, "C.UTF-8");
+//                     setlocale(LC_CTYPE, "C.UTF-8");
 #endif
                    }
                }
