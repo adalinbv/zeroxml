@@ -126,6 +126,16 @@ extern "C" {
 #  endif
 #  define calloc(n,s)     Rcalloc((n), (s), RM_FILE_POS)
 
+#  ifdef aligned_alloc
+#    undef aligned_alloc
+#  endif
+#  define aligned_alloc(n,s) Raligned_alloc((n), (s), RM_FILE_POS)
+
+#  ifdef _aligned_malloc
+#    undef _aligned_malloc
+#  endif
+#  define _aligned_malloc(n,s) Raligned_alloc((n), (s), RM_FILE_POS)
+
 #  ifdef realloc
 #    undef realloc
 #  endif
