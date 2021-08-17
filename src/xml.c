@@ -2165,16 +2165,15 @@ __xmlErrorSet(const void *id, const char *pos, size_t err_no)
 
     assert(rid != 0);
     assert(rid->name == 0);
-    if (rid->info == 0)
-    {
-    rid->info = malloc(sizeof(struct _zeroxml_error));
+    if (rid->info == 0) {
+        rid->info = malloc(sizeof(struct _zeroxml_error));
     }
 
     if (rid->info)
     {
-    struct _zeroxml_error *err = rid->info;
-    err->pos = (char *)pos;
-    err->err_no = err_no;
+        struct _zeroxml_error *err = rid->info;
+        err->pos = (char *)pos;
+        err->err_no = err_no;
     }
 }
 #endif
