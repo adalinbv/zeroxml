@@ -3,8 +3,8 @@
  *
  * ALTERNATIVE A - Modified BSD license
  *
- * Copyright (C) 2008-2016 by Erik Hofman.
- * Copyright (C) 2009-2016 by Adalin B.V.
+ * Copyright (C) 2008-2022 by Erik Hofman.
+ * Copyright (C) 2009-2022 by Adalin B.V.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -102,13 +102,14 @@ static void __xmlErrorSet(const void *, const char *, size_t);
 # define xmlErrorSet(a, b, c)	__xmlErrorSet(a, b, c)
 
 # ifndef NDEBUG
+static char _xml_filename[1024];
 #  define PRINT_INFO(a, b, c) \
     if (0 < (c) && (c) < XML_MAX_ERROR) { \
-        fprintf(stderr, "detected in %s at line %i:\n\t%s at %li\n", \
-            __func__, __LINE__, __zeroxml_error_str[(c)], (long)(b-a)); \
+        fprintf(stderr, "%s: detected in %s at line %i:\n\t%s at %li\n", \
+            _xml_filename, __func__, __LINE__, __zeroxml_error_str[(c)], (long)(b-a)); \
     } else { \
-        fprintf(stderr, "in %s at line %i: Unknown error number!\n", \
-                        __func__, __LINE__); \
+        fprintf(stderr, "%s: in %s at line %i: Unknown error number!\n", \
+                        _xml_filename, __func__, __LINE__); \
     }
 # else
 #  define PRINT_INFO(a, b, c)
@@ -181,6 +182,10 @@ xmlOpen(const char *filename)
             {
                 struct stat statbuf;
                 void *mm;
+
+#ifndef NDEBUG
+                snprintf(_xml_filename, 1023, "%s", filename);
+#endif
 
                 /* UTF-8 unicode support */
 #ifdef HAVE_LOCALE_H
