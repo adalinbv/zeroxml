@@ -3,8 +3,8 @@
  *
  * LTERNATIVE A - Modified BSD license
  *
- * Copyright (C) 2008-2016 by Erik Hofman.
- * Copyright (C) 2009-2016 by Adalin B.V.
+ * Copyright (C) 2008-2022 by Erik Hofman.
+ * Copyright (C) 2009-2022 by Adalin B.V.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -120,7 +120,7 @@ enum
  * @param fname path to the file 
  * @return XML-id which is used for further processing
  */
-XML_API void* XML_APIENTRY xmlOpen(const char *);
+XML_API void* XML_APIENTRY xmlOpen(const char *fname);
 
 /**
  * Process a section of XML code in a preallocated buffer.
@@ -130,29 +130,37 @@ XML_API void* XML_APIENTRY xmlOpen(const char *);
  * @param size size of the buffer
  * @return XML-id which is used for further processing
  */
-XML_API void* XML_APIENTRY xmlInitBuffer(const char *, size_t);
+XML_API void* XML_APIENTRY xmlInitBuffer(const char *buffer, size_t size);
 
 /**
  * Close the XML file after which no further processing is possible.
  *
  * @param xid XML-id
  */
-XML_API void XML_APIENTRY xmlClose(void *);
+XML_API void XML_APIENTRY xmlClose(void *xid);
 
 
 /**
- * Test if the named subsection exsists.
+ * Test whether the node path exsists.
+ *
+ * A node path may be a solitary node name, a node path separated by the
+ * slash character '/' (in which case the code walks the XML tree) or an
+ * asterisk character '*' to indicate that any name is acceptable.
  *
  * @param xid XML-id
  * @param node path to the node containing the subsection
  * @return true if the XML-subsection-id exsists, false otherwise.
  */
-XML_API int XML_APIENTRY xmlNodeTest(const void *, const char *);
+XML_API int XML_APIENTRY xmlNodeTest(const void *xid, const char *node);
 
 /**
  * Locate a subsection of the xml tree for further processing.
- * This adds processing speed since the reuired nodes will only be searched
+ * This adds processing speed since the required nodes will only be searched
  * in the subsection.
+ *
+ * A node path may be a solitary node name, a node path separated by the
+ * slash character '/' (in which case the code walks the XML tree) or an
+ * asterisk character '*' to indicate that any name is acceptable.
  *
  * The memory allocated for the XML-subsection-id has to be freed by the
  * calling process.
@@ -161,7 +169,7 @@ XML_API int XML_APIENTRY xmlNodeTest(const void *, const char *);
  * @param node path to the node containing the subsection
  * @return XML-subsection-id for further processing
  */
-XML_API void* XML_APIENTRY xmlNodeGet(const void *, const char *);
+XML_API void* XML_APIENTRY xmlNodeGet(const void *xid, const char *node);
 
 /**
  * Copy a subsection of the xml tree for further processing.
@@ -169,6 +177,10 @@ XML_API void* XML_APIENTRY xmlNodeGet(const void *, const char *);
  * after the file has been closed. The drawback is the added memory
  * requirements.
  *
+ * A node path may be a solitary node name, a node path separated by the
+ * slash character '/' (in which case the code walks the XML tree) or an
+ * asterisk character '*' to indicate that any name is acceptable.
+ *
  * The memory allocated for the XML-subsection-id has to be freed by the
  * calling process.
  *
@@ -176,7 +188,7 @@ XML_API void* XML_APIENTRY xmlNodeGet(const void *, const char *);
  * @param node path to the node containing the subsection
  * @return XML-subsection-id for further processing
  */
-XML_API void* XML_APIENTRY xmlNodeCopy(const void *, const char *);
+XML_API void* XML_APIENTRY xmlNodeCopy(const void *xid, const char *node);
 
 
 /**
@@ -186,7 +198,7 @@ XML_API void* XML_APIENTRY xmlNodeCopy(const void *, const char *);
  * @param xid XML-id
  * @return a newly alocated string containing the node name
  */
-XML_API char* XML_APIENTRY xmlNodeGetName(const void *);
+XML_API char* XML_APIENTRY xmlNodeGetName(const void *xid);
 
 /**
  * Copy the name of this node in a pre-allocated buffer.
@@ -196,7 +208,7 @@ XML_API char* XML_APIENTRY xmlNodeGetName(const void *);
  * @param buflen length of the destination buffer
  * @return the length of the node name
  */
-XML_API size_t XML_APIENTRY xmlNodeCopyName(const void *, char *, size_t);
+XML_API size_t XML_APIENTRY xmlNodeCopyName(const void *xid, char *buffer, size_t buflen);
 
 /**
  * Copy the name of the nth attribute in a pre-allocated buffer.
@@ -208,7 +220,7 @@ XML_API size_t XML_APIENTRY xmlNodeCopyName(const void *, char *, size_t);
  * @return the length of the node name
  */
 
-XML_API size_t XML_APIENTRY xmlAttributeCopyName(const void *, char *, size_t, size_t);
+XML_API size_t XML_APIENTRY xmlAttributeCopyName(const void *xid, char *buffer, size_t buflen, size_t n);
 
 
 /**
@@ -224,7 +236,7 @@ XML_API size_t XML_APIENTRY xmlAttributeCopyName(const void *, char *, size_t, s
  * @param xid reference XML-id
  * @return a copy of the reference XML-id
  */
-XML_API void* XML_APIENTRY xmlMarkId(const void *);
+XML_API void* XML_APIENTRY xmlMarkId(const void *xid);
 
 
 /**
@@ -232,18 +244,28 @@ XML_API void* XML_APIENTRY xmlMarkId(const void *);
  *
  * @param xid XML-id to be freed.
  */
-XML_API void XML_APIENTRY xmlFree(void *);
+XML_API void XML_APIENTRY xmlFree(void *xid);
 
 /**
- * Get the number of nodes with the same name from a specified xml path.
+ * Get the number of nodes with the same name from a specified XML path.
+ *
+ * An XML path may be a solitary node name or a node path separated by the
+ * slash character '/' in which case the code walks the XML tree.
  *
  * @param xid XML-id
  * @param path path to the xml node
  * @return the number count of the nodename
  */
-XML_API size_t XML_APIENTRY xmlNodeGetNum(const void *, const char *);
-XML_API size_t XML_APIENTRY xmlNodeGetNumRaw(const void *, const char *);
-XML_API size_t XML_APIENTRY xmlAttributeGetNum(const void *);
+XML_API size_t XML_APIENTRY xmlNodeGetNum(const void *xid, const char *path);
+XML_API size_t XML_APIENTRY xmlNodeGetNumRaw(const void *xid, const char *path);
+
+/**
+ * Get the number of attributes for this node.
+ *
+ * @param xid XML-id
+ * @return the number count of the node
+ */
+XML_API size_t XML_APIENTRY xmlAttributeGetNum(const void *xid);
 
 /**
  * Get the nth occurrence of node in the parent node.
@@ -255,8 +277,8 @@ XML_API size_t XML_APIENTRY xmlAttributeGetNum(const void *);
  * @param num specify which occurence to return
  * @return XML-subsection-id for further processing or NULL if unsuccessful
  */
-XML_API void* XML_APIENTRY xmlNodeGetPos(const void *, void *, const char *, size_t);
-XML_API void* XML_APIENTRY xmlNodeGetPosRaw(const void *, void *, const char *, size_t);
+XML_API void* XML_APIENTRY xmlNodeGetPos(const void *pid, void *xid, const char *node, size_t num);
+XML_API void* XML_APIENTRY xmlNodeGetPosRaw(const void *pid, void *xid, const char *node, size_t num);
 
 /**
  * Copy the nth occurrence of node in the parent node.
@@ -269,18 +291,21 @@ XML_API void* XML_APIENTRY xmlNodeGetPosRaw(const void *, void *, const char *, 
  * @param num specify which occurence to return
  * @return XML-subsection-id for further processing or NULL if unsuccessful
  */
-XML_API void* XML_APIENTRY xmlNodeCopyPos(const void *, void *, const char *, size_t);
+XML_API void* XML_APIENTRY xmlNodeCopyPos(const void *pid, void *xid, const char *node, size_t num);
 
 
 /**
  * Get a string of characters from the current node.
  * The returned string has to be freed by the calling process.
  *
+ * xmlGetStringRaw includes the ![CDATA[]] sequence in the result.
+ * xmlGetString does not include the ![CDATA[]] sequence in the result.
+ *
  * @param xid XML-id
  * @return a newly alocated string containing the contents of the node
  */
-XML_API char* XML_APIENTRY xmlGetString(const void *);
-XML_API char* XML_APIENTRY xmlGetStringRaw(const void *);
+XML_API char* XML_APIENTRY xmlGetString(const void *xid);
+XML_API char* XML_APIENTRY xmlGetStringRaw(const void *xid);
 
 /**
  * Get a string of characters from the current node.
@@ -293,7 +318,7 @@ XML_API char* XML_APIENTRY xmlGetStringRaw(const void *);
  * @param buflen length of the destination buffer
  * @return the length of the string
  */
-XML_API size_t XML_APIENTRY xmlCopyString(const void *, char *, size_t);
+XML_API size_t XML_APIENTRY xmlCopyString(const void *xid, char *buffer, size_t buflen);
 
 /**
  * Compare the value of this node to a reference string.
@@ -305,23 +330,31 @@ XML_API size_t XML_APIENTRY xmlCopyString(const void *, char *, size_t);
  * of the node is found, respectively, to be less than, to match, or be greater
  * than str
  */
-XML_API int XML_APIENTRY xmlCompareString(const void *, const char *);
+XML_API int XML_APIENTRY xmlCompareString(const void *xid, const char *str);
 
 /**
- * Get a string of characters from a specified xml path.
+ * Get a string of characters from a specified XML path.
+ *
+ * An XML path may be a solitary node name or a node path separated by the
+ * slash character '/' in which case the code walks the XML tree.
+ *
  * The returned string has to be freed by the calling process.
  *
  * @param xid XML-id
  * @param path path to the xml node
  * @return a newly alocated string containing the contents of the node
  */
-XML_API char* XML_APIENTRY xmlNodeGetString(const void *, const char *);
+XML_API char* XML_APIENTRY xmlNodeGetString(const void *xid, const char *path);
 
 /**
- * Get a string of characters from a specified xml path.
+ * Get a string of characters from a specified XML path.
+ *
  * This function has the advantage of not allocating its own return buffer,
  * keeping the memory management to an absolute minimum but the disadvantage
  * is that it's unreliable in multithread environments.
+ *
+ * An XML path may be a solitary node name or a node path separated by the
+ * slash character '/' in which case the code walks the XML tree.
  *
  * @param xid XML-id
  * @param path path to the xml node
@@ -329,11 +362,14 @@ XML_API char* XML_APIENTRY xmlNodeGetString(const void *, const char *);
  * @param buflen length of the destination buffer
  * @return the length of the string
  */
-XML_API size_t XML_APIENTRY xmlNodeCopyString(const void *, const char *, char *, size_t);
+XML_API size_t XML_APIENTRY xmlNodeCopyString(const void *xid, const char *path, char *buffer, size_t buflen);
 
 /**
- * Compare the value of a node to a reference string.
+ * Compare the value of a node to the value of a node at a specified XML path.
  * Comparing is done in a case insensitive way.
+ *
+ * An XML path may be a solitary node name or a node path separated by the
+ * slash character '/' in which case the code walks the XML tree.
  *
  * @param xid XML-id
  * @param path path to the xml node to compare to
@@ -342,7 +378,7 @@ XML_API size_t XML_APIENTRY xmlNodeCopyString(const void *, const char *, char *
  * of the node is found, respectively, to be less than, to match, or be greater
  * than str
  */
-XML_API int XML_APIENTRY xmlNodeCompareString(const void *, const char *, const char *);
+XML_API int XML_APIENTRY xmlNodeCompareString(const void *xid, const char *path, const char *str);
 
 /**
  * Get a string of characters from a named attribute.
@@ -352,7 +388,7 @@ XML_API int XML_APIENTRY xmlNodeCompareString(const void *, const char *, const 
  * @param name name of the attribute to acquire
  * @return the contents of the node converted to an integer value
  */
-XML_API char* XML_APIENTRY xmlAttributeGetString(const void *, const char *);
+XML_API char* XML_APIENTRY xmlAttributeGetString(const void *xid, const char *name);
 
 /**
  * Get a string of characters from a named attribute.
@@ -366,7 +402,7 @@ XML_API char* XML_APIENTRY xmlAttributeGetString(const void *, const char *);
  * @param buflen length of the destination buffer
  * @return the length of the string
  */
-XML_API size_t XML_APIENTRY xmlAttributeCopyString(const void *, const char *, char *, size_t);
+XML_API size_t XML_APIENTRY xmlAttributeCopyString(const void *xid, const char *name, char *buffer, size_t buflen);
 
 /**
  * Compare the value of an attribute to a reference string.
@@ -379,7 +415,7 @@ XML_API size_t XML_APIENTRY xmlAttributeCopyString(const void *, const char *, c
  * of the node is found, respectively, to be less than, to match, or be greater
  * than str
  */
-XML_API int XML_APIENTRY xmlAttributeCompareString(const void *, const char *, const char *);
+XML_API int XML_APIENTRY xmlAttributeCompareString(const void *xid, const char *name, const char *str);
 
 
 /**
@@ -388,25 +424,34 @@ XML_API int XML_APIENTRY xmlAttributeCompareString(const void *, const char *, c
  * @param xid XML-id
  * @return the contents of the node converted to an boolean value
  */
-XML_API int XML_APIENTRY xmlGetBool(const void *);
+XML_API int XML_APIENTRY xmlGetBool(const void *xid);
 
 /**
- * Get an boolean value from a specified xml path.
+ * Get an boolean value from a specified XML path.
+ *
+ * An XML path may be a solitary node name or a node path separated by the
+ * slash character '/' in which case the code walks the XML tree.
+ *
+ * Boolean values for true are (without quotes) 'on', 'yes', 'true' or
+ * any non-zero number. Boolean values for false is anything else.
  *
  * @param xid XML-id
  * @param path path to the xml node
  * @return the contents of the node converted to an boolean value
  */
-XML_API int XML_APIENTRY xmlNodeGetBool(const void *, const char *);
+XML_API int XML_APIENTRY xmlNodeGetBool(const void *xid, const char *path);
 
 /**
  * Get the boolean value from the named attribute.
+ *
+ * Boolean values for true are (without quotes) 'on', 'yes', 'true' or
+ * any non-zero number. Boolean values for false is anything else.
  *
  * @param xid XML-id
  * @param name name of the attribute to acquire
  * @return the contents of the node converted to an boolean value
  */
-XML_API int XML_APIENTRY xmlAttributeGetBool(const void *, const char *);
+XML_API int XML_APIENTRY xmlAttributeGetBool(const void *xid, const char *name);
 
 /**
  * Get the integer value from the current node/
@@ -414,16 +459,19 @@ XML_API int XML_APIENTRY xmlAttributeGetBool(const void *, const char *);
  * @param xid XML-id
  * @return the contents of the node converted to an integer value
  */
-XML_API long int XML_APIENTRY xmlGetInt(const void *);
+XML_API long int XML_APIENTRY xmlGetInt(const void *xid);
 
 /**
- * Get an integer value from a specified xml path.
+ * Get an integer value from a specified XML path.
+ *
+ * An XML path may be a solitary node name or a node path separated by the
+ * slash character '/' in which case the code walks the XML tree.
  *
  * @param xid XML-id
  * @param path path to the xml node
  * @return the contents of the node converted to an integer value
  */
-XML_API long int XML_APIENTRY xmlNodeGetInt(const void *, const char *);
+XML_API long int XML_APIENTRY xmlNodeGetInt(const void *xid, const char *path);
 
 /**
  * Get the integer value from the named attribute.
@@ -432,7 +480,7 @@ XML_API long int XML_APIENTRY xmlNodeGetInt(const void *, const char *);
  * @param name name of the attribute to acquire
  * @return the contents of the node converted to an integer value
  */
-XML_API long int XML_APIENTRY xmlAttributeGetInt(const void *, const char *);
+XML_API long int XML_APIENTRY xmlAttributeGetInt(const void *xid, const char *name);
 
 
 /**
@@ -441,16 +489,19 @@ XML_API long int XML_APIENTRY xmlAttributeGetInt(const void *, const char *);
  * @param xid XML-id
  * @return the contents of the node converted to a double value
  */
-XML_API double XML_APIENTRY xmlGetDouble(const void *);
+XML_API double XML_APIENTRY xmlGetDouble(const void *xid);
 
 /**
- * Get a double value from a specified xml path/
+ * Get a double value from a specified XML path/
+ *
+ * An XML path may be a solitary node name or a node path separated by the
+ * slash character '/' in which case the code walks the XML tree.
  *
  * @param xid XML-id
  * @param path path to the xml node
  * @return the contents of the node converted to a double value
  */
-XML_API double XML_APIENTRY xmlNodeGetDouble(const void *, const char *);
+XML_API double XML_APIENTRY xmlNodeGetDouble(const void *xid, const char *path);
 
 /**
  * Get the double value from the named attribute.
@@ -459,7 +510,7 @@ XML_API double XML_APIENTRY xmlNodeGetDouble(const void *, const char *);
  * @param name name of the attribute to acquire
  * @return the contents of the node converted to an integer value
  */
-XML_API double XML_APIENTRY xmlAttributeGetDouble(const void *, const char *);
+XML_API double XML_APIENTRY xmlAttributeGetDouble(const void *xid, const char *name);
 
 
 /**
@@ -469,7 +520,7 @@ XML_API double XML_APIENTRY xmlAttributeGetDouble(const void *, const char *);
  * @param name name of the attribute to acquire
  * @return the contents of the node converted to an integer value
  */
-XML_API int XML_APIENTRY xmlAttributeExists(const void *, const char *);
+XML_API int XML_APIENTRY xmlAttributeExists(const void *xid, const char *name);
 
 /**
  * Get the error number of the last error and clear it.
@@ -478,7 +529,7 @@ XML_API int XML_APIENTRY xmlAttributeExists(const void *, const char *);
  * @param clear clear the error state if non zero
  * @return the numer of the last error, 0 means no error detected.
  */
-XML_API size_t XML_APIENTRY xmlErrorGetNo(const void *, size_t);
+XML_API size_t XML_APIENTRY xmlErrorGetNo(const void *xid, int clear);
 
 /**
  * Get the line number of the last detected syntax error in the xml file.
@@ -487,7 +538,7 @@ XML_API size_t XML_APIENTRY xmlErrorGetNo(const void *, size_t);
  * @param clear clear the error state if non zero
  * @return the line number of the detected syntax error.
  */
-XML_API size_t XML_APIENTRY xmlErrorGetLineNo(const void *, int);
+XML_API size_t XML_APIENTRY xmlErrorGetLineNo(const void *xid, int clear);
 
 /**
  * Get the column number of the last detected syntax error in the xml file.
@@ -496,7 +547,7 @@ XML_API size_t XML_APIENTRY xmlErrorGetLineNo(const void *, int);
  * @param clear clear the error state if non zero
  * @return the line number of the detected syntax error.
  */
-XML_API size_t XML_APIENTRY xmlErrorGetColumnNo(const void *, int);
+XML_API size_t XML_APIENTRY xmlErrorGetColumnNo(const void *xid, int clear);
 
 /**
  * Get a string that explains the last error.
@@ -505,7 +556,7 @@ XML_API size_t XML_APIENTRY xmlErrorGetColumnNo(const void *, int);
  * @param clear clear the error state if non zero
  * @return a string that explains the last error.
  */
-XML_API const char* XML_APIENTRY xmlErrorGetString(const void *, int);
+XML_API const char* XML_APIENTRY xmlErrorGetString(const void *xid, int clear);
 
 #if defined(TARGET_OS_MAC) && TARGET_OS_MAC
 # pragma export off
