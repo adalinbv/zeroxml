@@ -1,13 +1,16 @@
-2017-08-25 Erik Hofman <tech@adalin.org
+2022-12-06 Erik Hofman <tech@adalin.org>
+ * Introduce xmlId as a replacement for void* when dealing with XML-ids.
+
+2017-08-25 Erik Hofman <tech@adalin.org>
  * Add the public domain unlicense as an option.
  * Add the xmlAttributeExists function to test the presence of an attribute.
 
-2017-03-30 Erik Hofman <tech@adalin.org
+2017-03-30 Erik Hofman <tech@adalin.org>
  * Fix a segmentation fault when searching for a non-exsistent path.
  * Change a few situations where a non exsisting path was reported as an
    invalid XML syntax.
 
-2015-02-20 Erik Hofman <tech@adalin.org
+2015-02-20 Erik Hofman <tech@adalin.org>
  * Make sure the attribute quote end character matches the attribute
    quote start character
  * Bump from rmalloc v1.17 to rmalloc v1.21
@@ -16,7 +19,7 @@
    whole section, fix the decimal mark character and try again.
  * Start working with C.UTF-8 unicode (which includes ANSI)
 
-2013-07-08  Erik Hofman <tech@adalin.org
+2013-07-08  Erik Hofman <tech@adalin.org>
  * Introduce XML_NONE as a possible return value for the GetInt functions
    when the particular XML-node is not available.
    This requires XML_NONEVALUE to be set at compile time.
@@ -24,7 +27,7 @@
    when the particular XML-node is not available.
    This requires XML_NONEVALUE to be set at compile time.
 
-2012-05-21  Erik Hofman <tech@adalin.org
+2012-05-21  Erik Hofman <tech@adalin.org>
  * Reroganzie the mmap code (simplify it)
  * fix a lingering segmentation fault for windows
 

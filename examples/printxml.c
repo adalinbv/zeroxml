@@ -41,7 +41,7 @@
 
 #include "xml.h"
 
-void print_xml(void *);
+void print_xml(xmlId*);
 
 int main(int argc, char **argv)
 {
@@ -55,7 +55,7 @@ int main(int argc, char **argv)
   }
   else
   {
-    void *rid;
+    xmlId *rid;
 
     rid = xmlOpen(argv[1]);
     if (xmlErrorGetNo(rid, 0) != XML_NO_ERROR)
@@ -65,7 +65,7 @@ int main(int argc, char **argv)
     else if (rid)
     {
       unsigned int i, num;
-      void *xid;
+      xmlId *xid;
  
       xid = xmlMarkId(rid);
       num = xmlNodeGetNum(xid, "*");
@@ -93,10 +93,10 @@ int main(int argc, char **argv)
   return 0;
 }
 
-void print_xml(void *id)
+void print_xml(xmlId *id)
 {
   static int level = 1;
-  void *xid = xmlMarkId(id);
+  xmlId *xid = xmlMarkId(id);
   unsigned int num;
   
   num = xmlNodeGetNum(xid, "*");

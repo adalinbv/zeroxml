@@ -98,11 +98,12 @@
 #ifndef XML_NONVALIDATING
 static const char *__zeroxml_error_str[XML_MAX_ERROR];
 
-static void __xmlErrorSet(const void *, const char *, size_t);
+static void __xmlErrorSet(const struct _xml_id*, const char *, size_t);
 # define xmlErrorSet(a, b, c)	__xmlErrorSet(a, b, c)
 
 # ifndef NDEBUG
-static char _xml_filename[1024];
+#define FILENAME_LEN		1024
+static char _xml_filename[FILENAME_LEN+1];
 #  define PRINT_INFO(a, b, c) \
     if (0 < (c) && (c) < XML_MAX_ERROR) { \
         fprintf(stderr, "%s: detected in %s at line %i:\n\t%s at %li\n", \
@@ -125,7 +126,7 @@ static char _xml_filename[1024];
 
 static char *__xmlNodeGetPath(void **, const char *, size_t *, char **, size_t *);
 static char *__xmlNodeGet(void *, const char *, size_t *, char **, size_t *, size_t *, char);
-static char *__xmlAttributeGetDataPtr(const void *, const char *, size_t *);
+static char *__xmlAttributeGetDataPtr(const struct _xml_id*, const char *, size_t *);
 static char *__xmlProcessCDATA(char **, size_t *, char);
 static char *__xmlCommentSkip(const char *, size_t);
 static char *__xmlInfoProcess(const char *, size_t);
@@ -167,10 +168,14 @@ static void simple_unmmap(void*, size_t, SIMPLE_UNMMAP *);
 }
 #endif
 
-XML_API void * XML_APIENTRY
+XML_API struct _root_id* XML_APIENTRY
 xmlOpen(const char *filename)
 {
     struct _root_id *rid = 0;
+
+# ifndef NDEBUG
+    snprintf(_xml_filename, FILENAME_LEN, "%s", filename);
+#endif
 
     if (filename)
     {
@@ -182,10 +187,6 @@ xmlOpen(const char *filename)
             {
                 struct stat statbuf;
                 void *mm;
-
-#ifndef NDEBUG
-                snprintf(_xml_filename, 1023, "%s", filename);
-#endif
 
                 /* UTF-8 unicode support */
 #ifdef HAVE_LOCALE_H
@@ -224,10 +225,14 @@ xmlOpen(const char *filename)
     return (void *)rid;
 }
 
-XML_API void * XML_APIENTRY
+XML_API struct _root_id* XML_APIENTRY
 xmlInitBuffer(const char *buffer, size_t size)
 {
     struct _root_id *rid = 0;
+
+# ifndef NDEBUG
+    snprintf(_xml_filename, FILENAME_LEN, "XML buffer");
+#endif
 
     if (buffer && (size > 0))
     {
@@ -262,7 +267,7 @@ xmlInitBuffer(const char *buffer, size_t size)
 }
 
 XML_API void XML_APIENTRY
-xmlClose(void *id)
+xmlClose(struct _root_id *id)
 {
     struct _root_id *rid = (struct _root_id *)id;
 
@@ -294,7 +299,7 @@ xmlClose(void *id)
 }
 
 XML_API int XML_APIENTRY
-xmlNodeTest(const void *id, const char *path)
+xmlNodeTest(const struct _root_id *id, const char *path)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     size_t len, slen;
@@ -313,7 +318,7 @@ xmlNodeTest(const void *id, const char *path)
 }
 
 XML_API void * XML_APIENTRY
-xmlNodeGet(const void *id, const char *path)
+xmlNodeGet(const struct _root_id *id, const char *path)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     struct _xml_id *xsid = 0;
@@ -363,7 +368,7 @@ xmlNodeGet(const void *id, const char *path)
 }
 
 XML_API void * XML_APIENTRY
-xmlNodeCopy(const void *id, const char *path)
+xmlNodeCopy(const struct _root_id *id, const char *path)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     char *ptr, *node;
@@ -441,7 +446,7 @@ xmlNodeCopy(const void *id, const char *path)
 }
 
 XML_API char * XML_APIENTRY
-xmlNodeGetName(const void *id)
+xmlNodeGetName(const struct _root_id *id)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     size_t len;
@@ -465,7 +470,7 @@ xmlNodeGetName(const void *id)
 }
 
 XML_API size_t XML_APIENTRY
-xmlNodeCopyName(const void *id, char *buf, size_t buflen)
+xmlNodeCopyName(const struct _root_id *id, char *buf, size_t buflen)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     size_t slen = 0;
@@ -486,7 +491,7 @@ xmlNodeCopyName(const void *id, char *buf, size_t buflen)
 }
 
 XML_API size_t XML_APIENTRY
-xmlAttributeCopyName(const void *id, char *buf, size_t buflen, size_t pos)
+xmlAttributeCopyName(const struct _root_id *id, char *buf, size_t buflen, size_t pos)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     size_t slen = 0;
@@ -533,7 +538,7 @@ xmlAttributeCopyName(const void *id, char *buf, size_t buflen, size_t pos)
 }
 
 static size_t
-__xmlNodeGetNum(const void *id, const char *path, char raw)
+__xmlNodeGetNum(const struct _root_id *id, const char *path, char raw)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     size_t num = 0;
@@ -594,19 +599,19 @@ __xmlNodeGetNum(const void *id, const char *path, char raw)
 }
 
 XML_API size_t XML_APIENTRY
-xmlNodeGetNum(const void *id, const char *path)
+xmlNodeGetNum(const struct _root_id *id, const char *path)
 {
    return __xmlNodeGetNum(id, path, 0);
 }
 
 XML_API size_t XML_APIENTRY
-xmlNodeGetNumRaw(const void *id, const char *path)
+xmlNodeGetNumRaw(const struct _root_id *id, const char *path)
 {
    return __xmlNodeGetNum(id, path, 1);
 }
 
 XML_API size_t XML_APIENTRY
-xmlAttributeGetNum(const void *id)
+xmlAttributeGetNum(const struct _root_id *id)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     size_t num = 0;
@@ -632,7 +637,7 @@ xmlAttributeGetNum(const void *id)
 }
 
 static void *
-__xmlNodeGetPos(const void *pid, void *id, const char *element, size_t num, char raw)
+__xmlNodeGetPos(const void *pid, struct _root_id *id, const char *element, size_t num, char raw)
 {
     struct _xml_id *xpid = (struct _xml_id *)pid;
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -676,20 +681,20 @@ __xmlNodeGetPos(const void *pid, void *id, const char *element, size_t num, char
 }
 
 XML_API void * XML_APIENTRY
-xmlNodeGetPos(const void *pid, void *id, const char *element, size_t num)
+xmlNodeGetPos(const void *pid, struct _root_id *id, const char *element, size_t num)
 {
    return __xmlNodeGetPos(pid, id, element, num, 0);
 }
 
 XML_API void * XML_APIENTRY
-xmlNodeGetPosRaw(const void *pid, void *id, const char *element, size_t num)
+xmlNodeGetPosRaw(const void *pid, struct _root_id *id, const char *element, size_t num)
 {
    return __xmlNodeGetPos(pid, id, element, num, 1);
 }
 
 
 XML_API void * XML_APIENTRY
-xmlNodeCopyPos(const void *pid, void *id, const char *element, size_t num)
+xmlNodeCopyPos(const void *pid, struct _root_id *id, const char *element, size_t num)
 {
     struct _xml_id *xpid = (struct _xml_id *)pid;
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -777,7 +782,7 @@ xmlNodeCopyPos(const void *pid, void *id, const char *element, size_t num)
 }
 
 static char *
-__xmlGetString(const void *id, char raw)
+__xmlGetString(const struct _root_id *id, char raw)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     char *str = 0;
@@ -812,19 +817,19 @@ __xmlGetString(const void *id, char raw)
 }
 
 XML_API char * XML_APIENTRY
-xmlGetString(const void *id)
+xmlGetString(const struct _root_id *id)
 {
    return __xmlGetString(id, 0);
 }
 
 XML_API char* XML_APIENTRY
-xmlGetStringRaw(const void *id)
+xmlGetStringRaw(const struct _root_id *id)
 {
    return __xmlGetString(id, 1);
 }
 
 XML_API size_t XML_APIENTRY
-xmlCopyString(const void *id, char *buffer, size_t buflen)
+xmlCopyString(const struct _root_id *id, char *buffer, size_t buflen)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     size_t ret = 0;
@@ -859,7 +864,7 @@ xmlCopyString(const void *id, char *buffer, size_t buflen)
 }
 
 XML_API int XML_APIENTRY
-xmlCompareString(const void *id, const char *s)
+xmlCompareString(const struct _root_id *id, const char *s)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     int ret = -1;
@@ -882,7 +887,7 @@ xmlCompareString(const void *id, const char *s)
 }
 
 XML_API char * XML_APIENTRY
-xmlNodeGetString(const void *id, const char *path)
+xmlNodeGetString(const struct _root_id *id, const char *path)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     char *str = 0;
@@ -923,7 +928,7 @@ xmlNodeGetString(const void *id, const char *path)
 }
 
 XML_API size_t XML_APIENTRY
-xmlNodeCopyString(const void *id, const char *path, char *buffer, size_t buflen)
+xmlNodeCopyString(const struct _root_id *id, const char *path, char *buffer, size_t buflen)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     size_t ret = 0;
@@ -969,7 +974,7 @@ xmlNodeCopyString(const void *id, const char *path, char *buffer, size_t buflen)
 }
 
 XML_API int XML_APIENTRY
-xmlNodeCompareString(const void *id, const char *path, const char *s)
+xmlNodeCompareString(const struct _root_id *id, const char *path, const char *s)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     int ret = -1;
@@ -1005,7 +1010,7 @@ xmlNodeCompareString(const void *id, const char *path, const char *s)
 }
 
 XML_API int XML_APIENTRY
-xmlGetBool(const void *id)
+xmlGetBool(const struct _root_id *id)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     int li = 0;
@@ -1022,7 +1027,7 @@ xmlGetBool(const void *id)
 }
 
 XML_API int XML_APIENTRY
-xmlNodeGetBool(const void *id, const char *path)
+xmlNodeGetBool(const struct _root_id *id, const char *path)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     int li = 0;
@@ -1056,7 +1061,7 @@ xmlNodeGetBool(const void *id, const char *path)
 }
 
 XML_API long int XML_APIENTRY
-xmlGetInt(const void *id)
+xmlGetInt(const struct _root_id *id)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     long int li = __XML_NONE;
@@ -1073,7 +1078,7 @@ xmlGetInt(const void *id)
 }
 
 XML_API long int XML_APIENTRY
-xmlNodeGetInt(const void *id, const char *path)
+xmlNodeGetInt(const struct _root_id *id, const char *path)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     long int li = __XML_NONE;
@@ -1107,7 +1112,7 @@ xmlNodeGetInt(const void *id, const char *path)
 }
 
 XML_API double XML_APIENTRY
-xmlGetDouble(const void *id)
+xmlGetDouble(const struct _root_id *id)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     double d = __XML_FPNONE;
@@ -1124,7 +1129,7 @@ xmlGetDouble(const void *id)
 }
 
 XML_API double XML_APIENTRY
-xmlNodeGetDouble(const void *id, const char *path)
+xmlNodeGetDouble(const struct _root_id *id, const char *path)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     double d = __XML_FPNONE;
@@ -1158,7 +1163,7 @@ xmlNodeGetDouble(const void *id, const char *path)
 }
 
 XML_API  void * XML_APIENTRY
-xmlMarkId(const void *id)
+xmlMarkId(const struct _root_id *id)
 {
     struct _xml_id *xmid = 0;
 
@@ -1188,7 +1193,7 @@ xmlMarkId(const void *id)
     }
     else
     {
-        xmlErrorSet(id, 0, XML_OUT_OF_MEMORY);
+        xmlErrorSet((struct _xml_id*)id, 0, XML_OUT_OF_MEMORY);
     }
 
     return (void *)xmid;
@@ -1201,7 +1206,7 @@ xmlFree(void *id)
 }
 
 XML_API int XML_APIENTRY
-xmlAttributeExists(const void *id, const char *name)
+xmlAttributeExists(const struct _root_id *id, const char *name)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     size_t len;
@@ -1209,7 +1214,7 @@ xmlAttributeExists(const void *id, const char *name)
 }
 
 XML_API double XML_APIENTRY
-xmlAttributeGetDouble(const void *id, const char *name)
+xmlAttributeGetDouble(const struct _root_id *id, const char *name)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     double ret = __XML_FPNONE;
@@ -1226,7 +1231,7 @@ xmlAttributeGetDouble(const void *id, const char *name)
 }
 
 XML_API int XML_APIENTRY
-xmlAttributeGetBool(const void *id, const char *name)
+xmlAttributeGetBool(const struct _root_id *id, const char *name)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     int ret = 0;
@@ -1243,7 +1248,7 @@ xmlAttributeGetBool(const void *id, const char *name)
 }
 
 XML_API long int XML_APIENTRY
-xmlAttributeGetInt(const void *id, const char *name)
+xmlAttributeGetInt(const struct _root_id *id, const char *name)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     long int ret = __XML_NONE;
@@ -1261,7 +1266,7 @@ xmlAttributeGetInt(const void *id, const char *name)
 }
 
 XML_API char * XML_APIENTRY
-xmlAttributeGetString(const void *id, const char *name)
+xmlAttributeGetString(const struct _root_id *id, const char *name)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     char *ret = 0;
@@ -1286,7 +1291,7 @@ xmlAttributeGetString(const void *id, const char *name)
 }
 
 XML_API size_t XML_APIENTRY
-xmlAttributeCopyString(const void *id, const char *name,
+xmlAttributeCopyString(const struct _root_id *id, const char *name,
                                         char *buffer, size_t buflen)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -1314,7 +1319,7 @@ xmlAttributeCopyString(const void *id, const char *name,
 }
 
 XML_API int XML_APIENTRY
-xmlAttributeCompareString(const void *id, const char *name, const char *s)
+xmlAttributeCompareString(const struct _root_id *id, const char *name, const char *s)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     int ret = -1;
@@ -1334,7 +1339,7 @@ xmlAttributeCompareString(const void *id, const char *name, const char *s)
 
 #ifndef XML_NONVALIDATING
 XML_API size_t XML_APIENTRY
-xmlErrorGetNo(const void *id, size_t clear)
+xmlErrorGetNo(const struct _root_id *id, int clear)
 {
     size_t ret = 0;
 
@@ -1361,7 +1366,7 @@ xmlErrorGetNo(const void *id, size_t clear)
 }
 
 XML_API size_t XML_APIENTRY
-xmlErrorGetLineNo(const void *id, int clear)
+xmlErrorGetLineNo(const struct _root_id *id, int clear)
 {
     size_t ret = 0;
 
@@ -1399,7 +1404,7 @@ xmlErrorGetLineNo(const void *id, int clear)
 }
 
 XML_API size_t XML_APIENTRY
-xmlErrorGetColumnNo(const void *id, int clear)
+xmlErrorGetColumnNo(const struct _root_id *id, int clear)
 {
     size_t ret = 0;
 
@@ -1438,7 +1443,7 @@ xmlErrorGetColumnNo(const void *id, int clear)
 }
 
 XML_API const char * XML_APIENTRY
-xmlErrorGetString(const void *id, int clear)
+xmlErrorGetString(const struct _root_id *id, int clear)
 {
     char *ret = 0;
 
@@ -1474,25 +1479,25 @@ xmlErrorGetString(const void *id, int clear)
 #else
 
 XML_API int XML_APIENTRY
-xmlErrorGetNo(const void *id, int clear)
+xmlErrorGetNo(const struct _root_id *id, int clear)
 {
     return XML_NO_ERROR;
 }
 
 XML_API size_t XML_APIENTRY
-xmlErrorGetLineNo(const void *id, int clear)
+xmlErrorGetLineNo(const struct _root_id *id, int clear)
 {
     return 0;
 }
 
 XML_API size_t XML_APIENTRY
-xmlErrorGetColumnNo(const void *id, int clear)
+xmlErrorGetColumnNo(const struct _root_id *id, int clear)
 {
     return 0;
 }
 
 XML_API const char * XML_APIENTRY
-xmlErrorGetString(const void *id, int clear)
+xmlErrorGetString(const struct _root_id *id, int clear)
 {
     return "error detection was not enabled at compile time: no error.";
 }
@@ -1519,7 +1524,7 @@ static const char *__zeroxml_error_str[XML_MAX_ERROR] =
 #endif
 
 static char *
-__xmlAttributeGetDataPtr(const void *id, const char *name, size_t *len)
+__xmlAttributeGetDataPtr(const struct _xml_id *id, const char *name, size_t *len)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     char *ret = 0;
@@ -1691,14 +1696,12 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
         SET_ERROR_AND_RETURN((char *)start,(char *)start,XML_INVALID_NODE_NAME);
     }
 
-//  cdata = (char *)start;
     if (*rlen > *len)
     {
         *rlen = 0;
         *name = start_tag;
         *len = XML_NO_ERROR;    /* element not found, no real error */
         return 0;
-//      SET_ERROR_AND_RETURN((char *)start,(char *)start, XML_UNEXPECTED_EOF);
     }
 
     found = 0;
@@ -1821,11 +1824,7 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
             char *start = cur;
             size_t blocklen = restlen;
             new = __xmlProcessCDATA(&start, &blocklen, raw);
-            if (new && start && open_len)			/* CDATA */
-            {
-//              cdata = ret;
-            }
-            else if (!new) {
+            if (!new) {
                 SET_ERROR_AND_RETURN((char *)start,cur, XML_INVALID_COMMENT);
             }
 
@@ -1866,7 +1865,6 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
                     {
                         *len = new-ret-1;
                         open_element = start_tag;
-//                      cdata = (char *)start;
                         start_tag = 0;
                     }
                     else	/* element not found, no real error */
@@ -1875,7 +1873,6 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
                         *name = start_tag;
                         *len = XML_NO_ERROR;
                         return 0;
-//                      SET_ERROR_AND_RETURN((char *)start,new, XML_ELEMENT_NO_OPENING_TAG);
                     }
                 }
                 found++;
@@ -1958,7 +1955,6 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
                     {
                         *len = new-ret-1;
                         open_element = start_tag;
-//                      cdata = (char *)start;
                         start_tag = 0;
                     }
                     else { /* report error */
@@ -2158,7 +2154,7 @@ __xmlPrepareData(char **start, size_t *blocklen, char raw)
 
 #ifndef XML_NONVALIDATING
 void
-__xmlErrorSet(const void *id, const char *pos, size_t err_no)
+__xmlErrorSet(const struct _xml_id *id, const char *pos, size_t err_no)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     struct _root_id *rid;

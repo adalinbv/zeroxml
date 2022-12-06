@@ -114,13 +114,18 @@ enum
     XML_MAX_ERROR
 };
 
+typedef struct _root_id xmlId;
+
 /**
  * Open an XML file for processing.
+ *
+ * No data is being allocated for the file. All actions are in mmap-ed
+ * file buffers.
  *
  * @param fname path to the file 
  * @return XML-id which is used for further processing
  */
-XML_API void* XML_APIENTRY xmlOpen(const char *fname);
+XML_API xmlId* XML_APIENTRY xmlOpen(const char *fname);
 
 /**
  * Process a section of XML code in a preallocated buffer.
@@ -130,14 +135,14 @@ XML_API void* XML_APIENTRY xmlOpen(const char *fname);
  * @param size size of the buffer
  * @return XML-id which is used for further processing
  */
-XML_API void* XML_APIENTRY xmlInitBuffer(const char *buffer, size_t size);
+XML_API xmlId* XML_APIENTRY xmlInitBuffer(const char *buffer, size_t size);
 
 /**
  * Close the XML file after which no further processing is possible.
  *
  * @param xid XML-id
  */
-XML_API void XML_APIENTRY xmlClose(void *xid);
+XML_API void XML_APIENTRY xmlClose(xmlId *xid);
 
 
 /**
@@ -151,7 +156,7 @@ XML_API void XML_APIENTRY xmlClose(void *xid);
  * @param node path to the node containing the subsection
  * @return true if the XML-subsection-id exsists, false otherwise.
  */
-XML_API int XML_APIENTRY xmlNodeTest(const void *xid, const char *node);
+XML_API int XML_APIENTRY xmlNodeTest(const xmlId *xid, const char *node);
 
 /**
  * Locate a subsection of the xml tree for further processing.
@@ -169,7 +174,7 @@ XML_API int XML_APIENTRY xmlNodeTest(const void *xid, const char *node);
  * @param node path to the node containing the subsection
  * @return XML-subsection-id for further processing
  */
-XML_API void* XML_APIENTRY xmlNodeGet(const void *xid, const char *node);
+XML_API void* XML_APIENTRY xmlNodeGet(const xmlId *xid, const char *node);
 
 /**
  * Copy a subsection of the xml tree for further processing.
@@ -188,7 +193,7 @@ XML_API void* XML_APIENTRY xmlNodeGet(const void *xid, const char *node);
  * @param node path to the node containing the subsection
  * @return XML-subsection-id for further processing
  */
-XML_API void* XML_APIENTRY xmlNodeCopy(const void *xid, const char *node);
+XML_API void* XML_APIENTRY xmlNodeCopy(const xmlId *xid, const char *node);
 
 
 /**
@@ -198,7 +203,7 @@ XML_API void* XML_APIENTRY xmlNodeCopy(const void *xid, const char *node);
  * @param xid XML-id
  * @return a newly alocated string containing the node name
  */
-XML_API char* XML_APIENTRY xmlNodeGetName(const void *xid);
+XML_API char* XML_APIENTRY xmlNodeGetName(const xmlId *xid);
 
 /**
  * Copy the name of this node in a pre-allocated buffer.
@@ -208,7 +213,7 @@ XML_API char* XML_APIENTRY xmlNodeGetName(const void *xid);
  * @param buflen length of the destination buffer
  * @return the length of the node name
  */
-XML_API size_t XML_APIENTRY xmlNodeCopyName(const void *xid, char *buffer, size_t buflen);
+XML_API size_t XML_APIENTRY xmlNodeCopyName(const xmlId *xid, char *buffer, size_t buflen);
 
 /**
  * Copy the name of the nth attribute in a pre-allocated buffer.
@@ -220,7 +225,7 @@ XML_API size_t XML_APIENTRY xmlNodeCopyName(const void *xid, char *buffer, size_
  * @return the length of the node name
  */
 
-XML_API size_t XML_APIENTRY xmlAttributeCopyName(const void *xid, char *buffer, size_t buflen, size_t n);
+XML_API size_t XML_APIENTRY xmlAttributeCopyName(const xmlId *xid, char *buffer, size_t buflen, size_t n);
 
 
 /**
@@ -236,7 +241,7 @@ XML_API size_t XML_APIENTRY xmlAttributeCopyName(const void *xid, char *buffer, 
  * @param xid reference XML-id
  * @return a copy of the reference XML-id
  */
-XML_API void* XML_APIENTRY xmlMarkId(const void *xid);
+XML_API void* XML_APIENTRY xmlMarkId(const xmlId *xid);
 
 
 /**
@@ -256,8 +261,8 @@ XML_API void XML_APIENTRY xmlFree(void *xid);
  * @param path path to the xml node
  * @return the number count of the nodename
  */
-XML_API size_t XML_APIENTRY xmlNodeGetNum(const void *xid, const char *path);
-XML_API size_t XML_APIENTRY xmlNodeGetNumRaw(const void *xid, const char *path);
+XML_API size_t XML_APIENTRY xmlNodeGetNum(const xmlId *xid, const char *path);
+XML_API size_t XML_APIENTRY xmlNodeGetNumRaw(const xmlId *xid, const char *path);
 
 /**
  * Get the number of attributes for this node.
@@ -265,7 +270,7 @@ XML_API size_t XML_APIENTRY xmlNodeGetNumRaw(const void *xid, const char *path);
  * @param xid XML-id
  * @return the number count of the node
  */
-XML_API size_t XML_APIENTRY xmlAttributeGetNum(const void *xid);
+XML_API size_t XML_APIENTRY xmlAttributeGetNum(const xmlId *xid);
 
 /**
  * Get the nth occurrence of node in the parent node.
@@ -277,8 +282,8 @@ XML_API size_t XML_APIENTRY xmlAttributeGetNum(const void *xid);
  * @param num specify which occurence to return
  * @return XML-subsection-id for further processing or NULL if unsuccessful
  */
-XML_API void* XML_APIENTRY xmlNodeGetPos(const void *pid, void *xid, const char *node, size_t num);
-XML_API void* XML_APIENTRY xmlNodeGetPosRaw(const void *pid, void *xid, const char *node, size_t num);
+XML_API void* XML_APIENTRY xmlNodeGetPos(const void *pid, xmlId *xid, const char *node, size_t num);
+XML_API void* XML_APIENTRY xmlNodeGetPosRaw(const void *pid, xmlId *xid, const char *node, size_t num);
 
 /**
  * Copy the nth occurrence of node in the parent node.
@@ -291,7 +296,7 @@ XML_API void* XML_APIENTRY xmlNodeGetPosRaw(const void *pid, void *xid, const ch
  * @param num specify which occurence to return
  * @return XML-subsection-id for further processing or NULL if unsuccessful
  */
-XML_API void* XML_APIENTRY xmlNodeCopyPos(const void *pid, void *xid, const char *node, size_t num);
+XML_API void* XML_APIENTRY xmlNodeCopyPos(const void *pid, xmlId *xid, const char *node, size_t num);
 
 
 /**
@@ -304,8 +309,8 @@ XML_API void* XML_APIENTRY xmlNodeCopyPos(const void *pid, void *xid, const char
  * @param xid XML-id
  * @return a newly alocated string containing the contents of the node
  */
-XML_API char* XML_APIENTRY xmlGetString(const void *xid);
-XML_API char* XML_APIENTRY xmlGetStringRaw(const void *xid);
+XML_API char* XML_APIENTRY xmlGetString(const xmlId *xid);
+XML_API char* XML_APIENTRY xmlGetStringRaw(const xmlId *xid);
 
 /**
  * Get a string of characters from the current node.
@@ -318,7 +323,7 @@ XML_API char* XML_APIENTRY xmlGetStringRaw(const void *xid);
  * @param buflen length of the destination buffer
  * @return the length of the string
  */
-XML_API size_t XML_APIENTRY xmlCopyString(const void *xid, char *buffer, size_t buflen);
+XML_API size_t XML_APIENTRY xmlCopyString(const xmlId *xid, char *buffer, size_t buflen);
 
 /**
  * Compare the value of this node to a reference string.
@@ -330,7 +335,7 @@ XML_API size_t XML_APIENTRY xmlCopyString(const void *xid, char *buffer, size_t 
  * of the node is found, respectively, to be less than, to match, or be greater
  * than str
  */
-XML_API int XML_APIENTRY xmlCompareString(const void *xid, const char *str);
+XML_API int XML_APIENTRY xmlCompareString(const xmlId *xid, const char *str);
 
 /**
  * Get a string of characters from a specified XML path.
@@ -344,7 +349,7 @@ XML_API int XML_APIENTRY xmlCompareString(const void *xid, const char *str);
  * @param path path to the xml node
  * @return a newly alocated string containing the contents of the node
  */
-XML_API char* XML_APIENTRY xmlNodeGetString(const void *xid, const char *path);
+XML_API char* XML_APIENTRY xmlNodeGetString(const xmlId *xid, const char *path);
 
 /**
  * Get a string of characters from a specified XML path.
@@ -362,7 +367,7 @@ XML_API char* XML_APIENTRY xmlNodeGetString(const void *xid, const char *path);
  * @param buflen length of the destination buffer
  * @return the length of the string
  */
-XML_API size_t XML_APIENTRY xmlNodeCopyString(const void *xid, const char *path, char *buffer, size_t buflen);
+XML_API size_t XML_APIENTRY xmlNodeCopyString(const xmlId *xid, const char *path, char *buffer, size_t buflen);
 
 /**
  * Compare the value of a node to the value of a node at a specified XML path.
@@ -378,7 +383,7 @@ XML_API size_t XML_APIENTRY xmlNodeCopyString(const void *xid, const char *path,
  * of the node is found, respectively, to be less than, to match, or be greater
  * than str
  */
-XML_API int XML_APIENTRY xmlNodeCompareString(const void *xid, const char *path, const char *str);
+XML_API int XML_APIENTRY xmlNodeCompareString(const xmlId *xid, const char *path, const char *str);
 
 /**
  * Get a string of characters from a named attribute.
@@ -388,7 +393,7 @@ XML_API int XML_APIENTRY xmlNodeCompareString(const void *xid, const char *path,
  * @param name name of the attribute to acquire
  * @return the contents of the node converted to an integer value
  */
-XML_API char* XML_APIENTRY xmlAttributeGetString(const void *xid, const char *name);
+XML_API char* XML_APIENTRY xmlAttributeGetString(const xmlId *xid, const char *name);
 
 /**
  * Get a string of characters from a named attribute.
@@ -402,7 +407,7 @@ XML_API char* XML_APIENTRY xmlAttributeGetString(const void *xid, const char *na
  * @param buflen length of the destination buffer
  * @return the length of the string
  */
-XML_API size_t XML_APIENTRY xmlAttributeCopyString(const void *xid, const char *name, char *buffer, size_t buflen);
+XML_API size_t XML_APIENTRY xmlAttributeCopyString(const xmlId *xid, const char *name, char *buffer, size_t buflen);
 
 /**
  * Compare the value of an attribute to a reference string.
@@ -415,7 +420,7 @@ XML_API size_t XML_APIENTRY xmlAttributeCopyString(const void *xid, const char *
  * of the node is found, respectively, to be less than, to match, or be greater
  * than str
  */
-XML_API int XML_APIENTRY xmlAttributeCompareString(const void *xid, const char *name, const char *str);
+XML_API int XML_APIENTRY xmlAttributeCompareString(const xmlId *xid, const char *name, const char *str);
 
 
 /**
@@ -424,7 +429,7 @@ XML_API int XML_APIENTRY xmlAttributeCompareString(const void *xid, const char *
  * @param xid XML-id
  * @return the contents of the node converted to an boolean value
  */
-XML_API int XML_APIENTRY xmlGetBool(const void *xid);
+XML_API int XML_APIENTRY xmlGetBool(const xmlId *xid);
 
 /**
  * Get an boolean value from a specified XML path.
@@ -439,7 +444,7 @@ XML_API int XML_APIENTRY xmlGetBool(const void *xid);
  * @param path path to the xml node
  * @return the contents of the node converted to an boolean value
  */
-XML_API int XML_APIENTRY xmlNodeGetBool(const void *xid, const char *path);
+XML_API int XML_APIENTRY xmlNodeGetBool(const xmlId *xid, const char *path);
 
 /**
  * Get the boolean value from the named attribute.
@@ -451,7 +456,7 @@ XML_API int XML_APIENTRY xmlNodeGetBool(const void *xid, const char *path);
  * @param name name of the attribute to acquire
  * @return the contents of the node converted to an boolean value
  */
-XML_API int XML_APIENTRY xmlAttributeGetBool(const void *xid, const char *name);
+XML_API int XML_APIENTRY xmlAttributeGetBool(const xmlId *xid, const char *name);
 
 /**
  * Get the integer value from the current node/
@@ -459,7 +464,7 @@ XML_API int XML_APIENTRY xmlAttributeGetBool(const void *xid, const char *name);
  * @param xid XML-id
  * @return the contents of the node converted to an integer value
  */
-XML_API long int XML_APIENTRY xmlGetInt(const void *xid);
+XML_API long int XML_APIENTRY xmlGetInt(const xmlId *xid);
 
 /**
  * Get an integer value from a specified XML path.
@@ -471,7 +476,7 @@ XML_API long int XML_APIENTRY xmlGetInt(const void *xid);
  * @param path path to the xml node
  * @return the contents of the node converted to an integer value
  */
-XML_API long int XML_APIENTRY xmlNodeGetInt(const void *xid, const char *path);
+XML_API long int XML_APIENTRY xmlNodeGetInt(const xmlId *xid, const char *path);
 
 /**
  * Get the integer value from the named attribute.
@@ -480,7 +485,7 @@ XML_API long int XML_APIENTRY xmlNodeGetInt(const void *xid, const char *path);
  * @param name name of the attribute to acquire
  * @return the contents of the node converted to an integer value
  */
-XML_API long int XML_APIENTRY xmlAttributeGetInt(const void *xid, const char *name);
+XML_API long int XML_APIENTRY xmlAttributeGetInt(const xmlId *xid, const char *name);
 
 
 /**
@@ -489,7 +494,7 @@ XML_API long int XML_APIENTRY xmlAttributeGetInt(const void *xid, const char *na
  * @param xid XML-id
  * @return the contents of the node converted to a double value
  */
-XML_API double XML_APIENTRY xmlGetDouble(const void *xid);
+XML_API double XML_APIENTRY xmlGetDouble(const xmlId *xid);
 
 /**
  * Get a double value from a specified XML path/
@@ -501,7 +506,7 @@ XML_API double XML_APIENTRY xmlGetDouble(const void *xid);
  * @param path path to the xml node
  * @return the contents of the node converted to a double value
  */
-XML_API double XML_APIENTRY xmlNodeGetDouble(const void *xid, const char *path);
+XML_API double XML_APIENTRY xmlNodeGetDouble(const xmlId *xid, const char *path);
 
 /**
  * Get the double value from the named attribute.
@@ -510,7 +515,7 @@ XML_API double XML_APIENTRY xmlNodeGetDouble(const void *xid, const char *path);
  * @param name name of the attribute to acquire
  * @return the contents of the node converted to an integer value
  */
-XML_API double XML_APIENTRY xmlAttributeGetDouble(const void *xid, const char *name);
+XML_API double XML_APIENTRY xmlAttributeGetDouble(const xmlId *xid, const char *name);
 
 
 /**
@@ -520,7 +525,7 @@ XML_API double XML_APIENTRY xmlAttributeGetDouble(const void *xid, const char *n
  * @param name name of the attribute to acquire
  * @return the contents of the node converted to an integer value
  */
-XML_API int XML_APIENTRY xmlAttributeExists(const void *xid, const char *name);
+XML_API int XML_APIENTRY xmlAttributeExists(const xmlId *xid, const char *name);
 
 /**
  * Get the error number of the last error and clear it.
@@ -529,7 +534,7 @@ XML_API int XML_APIENTRY xmlAttributeExists(const void *xid, const char *name);
  * @param clear clear the error state if non zero
  * @return the numer of the last error, 0 means no error detected.
  */
-XML_API size_t XML_APIENTRY xmlErrorGetNo(const void *xid, int clear);
+XML_API size_t XML_APIENTRY xmlErrorGetNo(const xmlId *xid, int clear);
 
 /**
  * Get the line number of the last detected syntax error in the xml file.
@@ -538,7 +543,7 @@ XML_API size_t XML_APIENTRY xmlErrorGetNo(const void *xid, int clear);
  * @param clear clear the error state if non zero
  * @return the line number of the detected syntax error.
  */
-XML_API size_t XML_APIENTRY xmlErrorGetLineNo(const void *xid, int clear);
+XML_API size_t XML_APIENTRY xmlErrorGetLineNo(const xmlId *xid, int clear);
 
 /**
  * Get the column number of the last detected syntax error in the xml file.
@@ -547,7 +552,7 @@ XML_API size_t XML_APIENTRY xmlErrorGetLineNo(const void *xid, int clear);
  * @param clear clear the error state if non zero
  * @return the line number of the detected syntax error.
  */
-XML_API size_t XML_APIENTRY xmlErrorGetColumnNo(const void *xid, int clear);
+XML_API size_t XML_APIENTRY xmlErrorGetColumnNo(const xmlId *xid, int clear);
 
 /**
  * Get a string that explains the last error.
@@ -556,7 +561,7 @@ XML_API size_t XML_APIENTRY xmlErrorGetColumnNo(const void *xid, int clear);
  * @param clear clear the error state if non zero
  * @return a string that explains the last error.
  */
-XML_API const char* XML_APIENTRY xmlErrorGetString(const void *xid, int clear);
+XML_API const char* XML_APIENTRY xmlErrorGetString(const xmlId *xid, int clear);
 
 #if defined(TARGET_OS_MAC) && TARGET_OS_MAC
 # pragma export off

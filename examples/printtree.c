@@ -35,7 +35,7 @@
 #include <types.h>
 #include "xml.h"
 
-void print_xml(void *, char *, unsigned int);
+void print_xml(xmlId*, char*, unsigned int);
 
 int main(int argc, char **argv)
 {
@@ -45,7 +45,7 @@ int main(int argc, char **argv)
   }
   else
   {
-    void *rid;
+    xmlId *rid;
 
     rid = xmlOpen(argv[1]);
     if (xmlErrorGetNo(rid, 0) != XML_NO_ERROR)
@@ -55,7 +55,7 @@ int main(int argc, char **argv)
     else if (rid)
     {
       unsigned int i, num;
-      void *xid;
+      xmlId *xid;
  
       xid = xmlMarkId(rid);
       num = xmlNodeGetNum(xid, "*");
@@ -80,9 +80,9 @@ int main(int argc, char **argv)
   return 0;
 }
 
-void print_xml(void *id, char *name, unsigned int len)
+void print_xml(xmlId *id, char *name, unsigned int len)
 {
-  void *xid = xmlMarkId(id);
+  xmlId *xid = xmlMarkId(id);
   unsigned int num;
   
   num = xmlNodeGetNum(xid, "*");

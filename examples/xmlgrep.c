@@ -230,13 +230,13 @@ parse_option(char **args, int n, int max)
     return 1;
 }
 
-void walk_the_tree(size_t num, void *xid, char *tree)
+void walk_the_tree(size_t num, xmlId *xid, char *tree)
 {
     unsigned int i, no_elements;
 
     if (!tree)					/* last node from the tree */
     {
-        void *xmid = xmlMarkId(xid);
+        xmlId *xmid = xmlMarkId(xid);
         if (xmid && _print)
         {
             no_elements = xmlNodeGetNum(xid, _print);
@@ -326,7 +326,7 @@ void walk_the_tree(size_t num, void *xid, char *tree)
     else if (xid)			 /* walk the rest of the tree */
     {
         char *elem, *next;
-        void *xmid;
+        xmlId *xmid;
 
         elem = tree;
         if (*elem == '/') elem++;
@@ -361,12 +361,12 @@ void walk_the_tree(size_t num, void *xid, char *tree)
 
 void grep_file(unsigned num)
 {
-    void *xid;
+    xmlId *xid;
 
     xid = xmlOpen(_filenames[num]);
     if (xid)
     {
-       void *xrid = xmlMarkId(xid);
+       xmlId *xrid = xmlMarkId(xid);
        int r = 0;
 
        walk_the_tree(num, xrid, _root);
@@ -394,8 +394,9 @@ void grep_file(unsigned num)
 void grep_file_buffer(unsigned num)
 {
     struct stat st;
-    void *xid, *buf;
     int fd, res;
+    xmlId *xid;
+    void *buf;
 
     fd = open(_filenames[num], O_RDONLY);
     if (fd == -1)
@@ -423,7 +424,7 @@ void grep_file_buffer(unsigned num)
     xid = xmlInitBuffer(buf, st.st_size);
     if (xid)
     {
-       void *xrid = xmlMarkId(xid);
+       xmlId *xrid = xmlMarkId(xid);
        int r = 0;
 
        walk_the_tree(num, xrid, _root);

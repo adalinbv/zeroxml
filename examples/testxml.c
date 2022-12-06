@@ -19,12 +19,12 @@
 
 int main()
 {
-   void *root_id;
+   xmlId *root_id;
 
    root_id = xmlOpen("sample.xml");
    if (root_id)
    {
-      void *path_id, *node_id;
+      xmlId *path_id, *node_id;
       char *s;
 
       printf("\nTesting xmlNodeGetString for /*/*/test:\t\t\t\t\t");
