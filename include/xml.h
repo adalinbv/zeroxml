@@ -174,7 +174,7 @@ XML_API int XML_APIENTRY xmlNodeTest(const xmlId *xid, const char *node);
  * @param node path to the node containing the subsection
  * @return XML-subsection-id for further processing
  */
-XML_API void* XML_APIENTRY xmlNodeGet(const xmlId *xid, const char *node);
+XML_API xmlId* XML_APIENTRY xmlNodeGet(const xmlId *xid, const char *node);
 
 /**
  * Copy a subsection of the xml tree for further processing.
@@ -193,7 +193,7 @@ XML_API void* XML_APIENTRY xmlNodeGet(const xmlId *xid, const char *node);
  * @param node path to the node containing the subsection
  * @return XML-subsection-id for further processing
  */
-XML_API void* XML_APIENTRY xmlNodeCopy(const xmlId *xid, const char *node);
+XML_API xmlId* XML_APIENTRY xmlNodeCopy(const xmlId *xid, const char *node);
 
 
 /**
@@ -241,7 +241,7 @@ XML_API size_t XML_APIENTRY xmlAttributeCopyName(const xmlId *xid, char *buffer,
  * @param xid reference XML-id
  * @return a copy of the reference XML-id
  */
-XML_API void* XML_APIENTRY xmlMarkId(const xmlId *xid);
+XML_API xmlId* XML_APIENTRY xmlMarkId(const xmlId *xid);
 
 
 /**
@@ -282,8 +282,8 @@ XML_API size_t XML_APIENTRY xmlAttributeGetNum(const xmlId *xid);
  * @param num specify which occurence to return
  * @return XML-subsection-id for further processing or NULL if unsuccessful
  */
-XML_API void* XML_APIENTRY xmlNodeGetPos(const void *pid, xmlId *xid, const char *node, size_t num);
-XML_API void* XML_APIENTRY xmlNodeGetPosRaw(const void *pid, xmlId *xid, const char *node, size_t num);
+XML_API xmlId* XML_APIENTRY xmlNodeGetPos(const xmlId *pid, xmlId *xid, const char *node, size_t num);
+XML_API xmlId* XML_APIENTRY xmlNodeGetPosRaw(const xmlId *pid, xmlId *xid, const char *node, size_t num);
 
 /**
  * Copy the nth occurrence of node in the parent node.
@@ -296,7 +296,7 @@ XML_API void* XML_APIENTRY xmlNodeGetPosRaw(const void *pid, xmlId *xid, const c
  * @param num specify which occurence to return
  * @return XML-subsection-id for further processing or NULL if unsuccessful
  */
-XML_API void* XML_APIENTRY xmlNodeCopyPos(const void *pid, xmlId *xid, const char *node, size_t num);
+XML_API xmlId* XML_APIENTRY xmlNodeCopyPos(const xmlId *pid, xmlId *xid, const char *node, size_t num);
 
 
 /**
