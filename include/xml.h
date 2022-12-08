@@ -1,7 +1,7 @@
 /*
  * This software is available under 2 licenses -- choose whichever you prefer.
  *
- * LTERNATIVE A - Modified BSD license
+ * ALTERNATIVE A - Modified BSD license
  *
  * Copyright (C) 2008-2022 by Erik Hofman.
  * Copyright (C) 2009-2022 by Adalin B.V.
