@@ -41,20 +41,24 @@
 
 #include "xml.h"
 
-void print_xml(xmlId *id)
+int print_xml(xmlId *id)
 {
     static int level = 1;
     xmlId *xid = xmlMarkId(id);
     unsigned int num;
+    int rv = 1;
 
     num = xmlNodeGetNum(xid, "*");
     if (num == 0)
     {
         char *s;
         s = xmlGetString(xid);
-        if (s)
+        if (!s) {
+            rv = 0;
+        }
+        else
         {
-            printf("%s", s);
+            printf(">%s", s);
             free(s);
         }
     }
@@ -70,7 +74,7 @@ void print_xml(xmlId *id)
 
                 xmlNodeCopyName(xid, (char *)&name, 256);
 
-                printf("\n");
+                printf(">\n");
                 for(q=0; q<level; q++) printf(" ");
 
                 printf("<%s", name);
@@ -87,19 +91,22 @@ void print_xml(xmlId *id)
                         if (q) printf("=\"%s\"", value);
                     }
                 }
-                printf(">");
 
                 level++;
-                print_xml(xid);
+                if (print_xml(xid)) {
+                    printf("</%s", name);
+                } else {
+                    printf("/");
+                }
                 level--;
-                printf("</%s>", name);
             }
             else printf("error\n");
         }
-        printf("\n");
+        printf(">\n");
         for(q=1; q<level; q++) printf(" ");
     }
     xmlFree(xid);
+    return rv;
 }
 
 
@@ -135,9 +142,9 @@ int main(int argc, char **argv)
                 {
                     char name[256];
                     xmlNodeCopyName(xid, (char *)&name, 256);
-                    printf("<%s>\n", name);
+                    printf("<%s", name);
                     print_xml(xid);
-                    printf("\n</%s>\n", name);
+                    printf("</%s>\n", name);
                 }
             }
             free(xid);
