@@ -106,8 +106,10 @@ static void __xmlErrorSet(const struct _xml_id*, const char *, size_t);
 static char _xml_filename[FILENAME_LEN+1];
 #  define PRINT_INFO(a, b, c) \
     if (0 < (c) && (c) < XML_MAX_ERROR) { \
-        fprintf(stderr, "%s: detected in %s at line %i:\n\t%s at %li\n", \
-            _xml_filename, __func__, __LINE__, __zeroxml_error_str[(c)], (long)(b-a)); \
+        int i, nl = 1; for (i=0; i<(b)-(a); ++i) if (a[i] == '\n') nl++; \
+        fprintf(stderr, "%s: ", _xml_filename); \
+        fprintf(stderr, "%s at line %i\n\t", __zeroxml_error_str[(c)], nl); \
+        fprintf(stderr ,"detected in %s at line %i\n", __func__, __LINE__);\
     } else { \
         fprintf(stderr, "%s: in %s at line %i: Unknown error number!\n", \
                         _xml_filename, __func__, __LINE__); \
@@ -155,15 +157,15 @@ static void simple_unmmap(void*, size_t, SIMPLE_UNMMAP *);
 #ifndef NDEBUG
 # define PRINT(a, b, c) { \
     size_t l1 = (b), l2 = (c); \
-    char *s = (a); \
+    const char *s = (a); \
     if (s) { \
     size_t q, len = l2; \
     if (l1 < l2) len = l1; \
     if (len < 50000) { \
-        printf("(%i) '", len); \
+        printf("(%li) '", len); \
         for (q=0; q<len; q++) printf("%c", s[q]); \
         printf("'\n"); \
-    } else printf("Length (%u) seems too large at line %i\n",len, __LINE__); \
+    } else printf("Length (%li) seems too large at line %i\n",len, __LINE__); \
     } else printf("NULL pointer at line %i\n", __LINE__); \
 }
 #endif
@@ -1534,17 +1536,17 @@ xmlErrorGetString(const xmlId *id, int clear)
 static const char *__zeroxml_error_str[XML_MAX_ERROR] =
 {
     "no error.",
-    "unable to allocate enough memory.",
-    "unable to open file for reading.",
-    "requested node name is invalid.",
-    "unexpected end of section.",
-    "buffer too small to hold all data, truncating.",
-    "incorrect comment section.",
-    "bad information block.",
-    "incompatible opening tag for element.",
-    "missing or invalid closing tag for element.",
-    "missing or invalid opening quote for attribute.",
-    "missing or invalid closing quote for attribute."
+    "unable to allocate enough memory",
+    "unable to open file for reading",
+    "requested node name is invalid",
+    "unexpected end of section",
+    "buffer too small to hold all data, truncating",
+    "incorrect comment section",
+    "bad information block",
+    "incompatible opening tag for element",
+    "missing or invalid closing tag for element",
+    "missing or invalid opening quote for attribute",
+    "missing or invalid closing quote for attribute"
 };
 #endif
 
@@ -1718,7 +1720,7 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
     assert(nodenum != 0);
 
     if (open_len == 0 || *name == 0) {
-        SET_ERROR_AND_RETURN((char *)start,(char *)start,XML_INVALID_NODE_NAME);
+        SET_ERROR_AND_RETURN(start,(char *)start,XML_INVALID_NODE_NAME);
     }
 
     if (*rlen > *len)
@@ -1761,7 +1763,7 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
             size_t blocklen = restlen;
             new = __xmlProcessCDATA(&start, &blocklen, raw);
             if (!new && start && open_len) {		/* CDATA */
-                SET_ERROR_AND_RETURN((char *)start,cur,XML_INVALID_COMMENT);
+                SET_ERROR_AND_RETURN(start,cur,XML_INVALID_COMMENT);
             }
 
             restlen -= new-cur;
@@ -1772,7 +1774,7 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
         {
             new = __xmlInfoProcess(cur, restlen);
             if (!new) {
-                SET_ERROR_AND_RETURN((char *)start,cur, XML_INVALID_INFO_BLOCK);
+                SET_ERROR_AND_RETURN(start,cur, XML_INVALID_INFO_BLOCK);
             }
 
             restlen -= new-cur;
@@ -1802,7 +1804,7 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
         {
             new = cur + (len_remaining - restlen);
             if (new >= ne) {
-                SET_ERROR_AND_RETURN((char *)start,cur, XML_UNEXPECTED_EOF);
+                SET_ERROR_AND_RETURN(start,cur, XML_UNEXPECTED_EOF);
             }
 
             element = *name;
@@ -1837,7 +1839,7 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
         cur = new;
         new = memchr(cur, '<', restlen);
         if (!new) {
-            SET_ERROR_AND_RETURN((char *)start,cur, XML_ELEMENT_NO_CLOSING_TAG);
+            SET_ERROR_AND_RETURN(start,cur, XML_ELEMENT_NO_OPENING_TAG);
             return 0;
         }
 
@@ -1850,7 +1852,7 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
             size_t blocklen = restlen;
             new = __xmlProcessCDATA(&start, &blocklen, raw);
             if (!new) {
-                SET_ERROR_AND_RETURN((char *)start,cur, XML_INVALID_COMMENT);
+                SET_ERROR_AND_RETURN(start,cur, XML_INVALID_COMMENT);
             }
 
             restlen -= new-cur;
@@ -1861,7 +1863,7 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
             */
             new = memchr(cur, '<', restlen);
             if (!new) {
-                SET_ERROR_AND_RETURN((char *)start,cur, XML_ELEMENT_NO_CLOSING_TAG);
+                SET_ERROR_AND_RETURN(start,cur, XML_ELEMENT_NO_CLOSING_TAG);
             }
 
             new++;
@@ -1881,7 +1883,7 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
                 cacheDataSet(nnc, element, elementlen, rptr, new-rptr-1);
 #endif
                 if (*ps != '>') {
-                    SET_ERROR_AND_RETURN((char *)start,new+1, XML_ELEMENT_NO_CLOSING_TAG);
+                    SET_ERROR_AND_RETURN(start,new+1, XML_ELEMENT_NO_CLOSING_TAG);
                 }
 
                 if (found == num)
@@ -1905,7 +1907,7 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
 
             new = memchr(cur, '>', restlen);
             if (!new) {
-                SET_ERROR_AND_RETURN((char *)start,cur, XML_ELEMENT_NO_CLOSING_TAG);
+                SET_ERROR_AND_RETURN(start,cur, XML_ELEMENT_NO_CLOSING_TAG);
             }
 
             restlen -= new-cur;
@@ -1936,7 +1938,7 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
                 }
 
                 if (slen == restlen) {
-                    SET_ERROR_AND_RETURN((char *)start,cur, XML_UNEXPECTED_EOF);
+                    SET_ERROR_AND_RETURN(start,cur, XML_UNEXPECTED_EOF);
                 }
 
                 slen--;
@@ -1951,7 +1953,7 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
             cur = new;
             new = memchr(cur, '<', restlen);
             if (!new) {
-                SET_ERROR_AND_RETURN((char *)start,cur, XML_ELEMENT_NO_CLOSING_TAG);
+                SET_ERROR_AND_RETURN(start,cur, XML_ELEMENT_NO_CLOSING_TAG);
             }
 
             new++;
@@ -1968,7 +1970,7 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
                 while ((ps<pe) && isspace(*ps)) ps++;
 
                 if (*ps != '>') {
-                    SET_ERROR_AND_RETURN((char *)start,new+1, XML_ELEMENT_NO_CLOSING_TAG);
+                    SET_ERROR_AND_RETURN(start,new+1, XML_ELEMENT_NO_CLOSING_TAG);
                 }
 
 #ifdef XML_USE_NODECACHE
@@ -1983,7 +1985,7 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
                         start_tag = 0;
                     }
                     else { /* report error */
-                        SET_ERROR_AND_RETURN((char *)start,new, XML_ELEMENT_NO_OPENING_TAG);
+                        SET_ERROR_AND_RETURN(start,new, XML_ELEMENT_NO_OPENING_TAG);
                     }
                 }
                 found++;
@@ -1991,14 +1993,14 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
 
             new = memchr(cur, '>', restlen);
             if (!new) {
-                SET_ERROR_AND_RETURN((char *)start,cur, XML_ELEMENT_NO_CLOSING_TAG);
+                SET_ERROR_AND_RETURN(start,cur, XML_ELEMENT_NO_CLOSING_TAG);
             }
 
             restlen -= new-cur;
             cur = new;
         }
         else {
-            SET_ERROR_AND_RETURN((char *)start,cur, XML_ELEMENT_NO_CLOSING_TAG);
+            SET_ERROR_AND_RETURN(start,cur, XML_ELEMENT_NO_CLOSING_TAG);
         }
 
     } /* while */
