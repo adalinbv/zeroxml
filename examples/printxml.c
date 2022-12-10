@@ -5,23 +5,23 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  *    1. Redistributions of source code must retain the above copyright notice,
  *       this list of conditions and the following disclaimer.
- * 
+ *
  *    2. Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY ADALIN B.V. ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
  * NO EVENT SHALL ADALIN B.V. OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
  * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR 
- * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUTOF THE USE 
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+ * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUTOF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * The views and conclusions contained in the software and documentation are
@@ -41,97 +41,114 @@
 
 #include "xml.h"
 
-void print_xml(xmlId*);
+void print_xml(xmlId *id)
+{
+    static int level = 1;
+    xmlId *xid = xmlMarkId(id);
+    unsigned int num;
+
+    num = xmlNodeGetNum(xid, "*");
+    if (num == 0)
+    {
+        char *s;
+        s = xmlGetString(xid);
+        if (s)
+        {
+            printf("%s", s);
+            free(s);
+        }
+    }
+    else
+    {
+        /* recusively walk the sub-nodes */
+        unsigned int i, j, q;
+        for (i=0; i<num; i++)
+        {
+            if (xmlNodeGetPos(id, xid, "*", i) != 0)
+            {
+                char name[256];
+
+                xmlNodeCopyName(xid, (char *)&name, 256);
+
+                printf("\n");
+                for(q=0; q<level; q++) printf(" ");
+
+                printf("<%s", name);
+
+                /* print the nodes attributes */
+                for (j=0; j<xmlAttributeGetNum(xid); ++j)
+                {
+                    char attr[256], value[256];
+                    q = xmlAttributeCopyName(xid, (char *)&attr, 256, j);
+                    if (q)
+                    {
+                        printf(" %s", attr);
+                        q = xmlAttributeCopyString(xid, attr, value, 256);
+                        if (q) printf("=\"%s\"", value);
+                    }
+                }
+                printf(">");
+
+                level++;
+                print_xml(xid);
+                level--;
+                printf("</%s>", name);
+            }
+            else printf("error\n");
+        }
+        printf("\n");
+        for(q=1; q<level; q++) printf(" ");
+    }
+    xmlFree(xid);
+}
+
 
 int main(int argc, char **argv)
 {
 #ifdef HAVE_LOCALE_H
-  setlocale(LC_CTYPE, "");
+    setlocale(LC_CTYPE, "");
 #endif
 
-  if (argc < 1)
-  {
-    printf("usage: printxml <filename>\n\n");
-  }
-  else
-  {
-    xmlId *rid;
-
-    rid = xmlOpen(argv[1]);
-    if (xmlErrorGetNo(rid, 0) != XML_NO_ERROR)
+    if (argc < 1)
     {
-       printf("%s\n", xmlErrorGetString(rid, 1));
-    }
-    else if (rid)
-    {
-      unsigned int i, num;
-      xmlId *xid;
- 
-      xid = xmlMarkId(rid);
-      num = xmlNodeGetNum(xid, "*");
-      for (i=0; i<num; i++)
-      {
-        if (xmlNodeGetPos(rid, xid, "*", i) != 0)
-        {
-          char name[256];
-          xmlNodeCopyName(xid, (char *)&name, 256);
-          printf("<%s>\n", name);
-          print_xml(xid);
-          printf("\n</%s>\n", name);
-        }
-      }
-      free(xid);
-
-      xmlClose(rid);
+        printf("usage: printxml <filename>\n\n");
     }
     else
     {
-      printf("Error while opening file for reading: '%s'\n", argv[1]);
+        xmlId *rid;
+
+        rid = xmlOpen(argv[1]);
+        if (xmlErrorGetNo(rid, 0) != XML_NO_ERROR)
+        {
+             printf("%s\n", xmlErrorGetString(rid, 1));
+        }
+        else if (rid)
+        {
+            unsigned int i, num;
+            xmlId *xid;
+
+            xid = xmlMarkId(rid);
+            num = xmlNodeGetNum(xid, "*");
+            for (i=0; i<num; i++)
+            {
+                if (xmlNodeGetPos(rid, xid, "*", i) != 0)
+                {
+                    char name[256];
+                    xmlNodeCopyName(xid, (char *)&name, 256);
+                    printf("<%s>\n", name);
+                    print_xml(xid);
+                    printf("\n</%s>\n", name);
+                }
+            }
+            free(xid);
+
+            xmlClose(rid);
+        }
+        else
+        {
+            printf("Error while opening file for reading: '%s'\n", argv[1]);
+        }
     }
-  }
 
-  return 0;
-}
-
-void print_xml(xmlId *id)
-{
-  static int level = 1;
-  xmlId *xid = xmlMarkId(id);
-  unsigned int num;
-  
-  num = xmlNodeGetNum(xid, "*");
-  if (num == 0)
-  {
-    char *s;
-    s = xmlGetString(xid);
-    if (s)
-    {
-      printf("%s", s);
-      free(s);
-    }
-  }
-  else
-  {
-    unsigned int i, q;
-    for (i=0; i<num; i++)
-    {
-      if (xmlNodeGetPos(id, xid, "*", i) != 0)
-      {
-        char name[256];
-
-        xmlNodeCopyName(xid, (char *)&name, 256);
-
-        printf("\n");
-        for(q=0; q<level; q++) printf(" ");
-        printf("<%s>", name);
-        level++;
-        print_xml(xid);
-        level--;
-        printf("</%s>", name);
-      }
-      else printf("error\n");
-    }
-    printf("\n");
-    for(q=1; q<level; q++) printf(" ");
-  }
+    return 0;
 }
