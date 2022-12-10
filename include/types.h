@@ -32,19 +32,17 @@ extern "C" {
 #if __STDC_VERSION__ < 199901L
 #  if __GNUC__ >= 2
 #    define __func__ __FUNCTION__
+#  elif defined(_MSC_VER)
+#    if _MSC_VER < 1300
+#      define __func__ "<unknown>"
+#    else
+#      define __func__ __FUNCTION__
+#    endif
+#  elif defined(__BORLANDC__)
+#    define __func__ __FUNC__
 #  else
 #    define __func__ "<unknown>"
 #  endif
-#elif defined(_MSC_VER)
-#  if _MSC_VER < 1300
-#    define __func__ "<unknown>"
-#  else
-#    define __func__ __FUNCTION__
-#  endif
-#elif defined(__BORLANDC__)
-#  define __func__ __FUNC__
-#else
-#  define __func__ "<unknown>"
 #endif
 
 #if _MSC_VER
