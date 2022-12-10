@@ -216,13 +216,23 @@ XML_API char* XML_APIENTRY xmlNodeGetName(const xmlId *xid);
 XML_API size_t XML_APIENTRY xmlNodeCopyName(const xmlId *xid, char *buffer, size_t buflen);
 
 /**
+ * Return the name of the nth attribute.
+ *
+ * @param xid XML-id
+ * @param n position of the attribute in the attribute list.
+ * @return a newly alocated string containing the name of the attribute.
+ */
+
+XML_API char* XML_APIENTRY xmlAttributeGetName(const xmlId *xid, size_t n);
+
+/**
  * Copy the name of the nth attribute in a pre-allocated buffer.
  *
  * @param xid XML-id
  * @param buffer the buffer to copy the string to
  * @param buflen length of the destination buffer
  * @param n position of the attribute in the attribute list.
- * @return the length of the node name
+ * @return the length of the attribute name
  */
 
 XML_API size_t XML_APIENTRY xmlAttributeCopyName(const xmlId *xid, char *buffer, size_t buflen, size_t n);

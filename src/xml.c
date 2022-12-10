@@ -537,6 +537,31 @@ xmlAttributeCopyName(const xmlId *id, char *buf, size_t buflen, size_t pos)
     return slen;
 }
 
+XML_API char * XML_APIENTRY
+xmlAttributeGetName(const xmlId *id, size_t pos)
+{
+   struct _xml_id *xid = (struct _xml_id *)id;
+   char buf[4096];
+   size_t len;
+   char *ret;
+
+    assert(xid != 0);
+
+    len = xmlAttributeCopyName(id, buf, 4096, pos);
+    ret = malloc(len+1);
+    if (ret)
+    {
+        memcpy(ret, xid->name, len);
+        *(ret + len) = 0;
+    }
+    else
+    {
+        xmlErrorSet(xid, 0, XML_OUT_OF_MEMORY);
+    }
+
+    return ret;
+}
+
 static size_t
 __xmlNodeGetNum(const xmlId *id, const char *path, char raw)
 {
