@@ -82,7 +82,6 @@
 #ifdef HAVE_LANGINFO_H
 # include <langinfo.h>
 #endif
-#include <locale.h>
 #include <ctype.h>
 #include <fcntl.h>
 #include <ctype.h>
@@ -96,20 +95,22 @@
 #include "api.h"
 
 #ifndef XML_NONVALIDATING
+#define FILENAME_LEN		1024
+#define BUF_LEN			2048
+
 static const char *__zeroxml_error_str[XML_MAX_ERROR];
+static char __zeroxml_strerror[BUF_LEN+1];
 
 static void __xmlErrorSet(const struct _xml_id*, const char *, size_t);
 # define xmlErrorSet(a, b, c)	__xmlErrorSet(a, b, c)
 
 # ifndef NDEBUG
-#define FILENAME_LEN		1024
 static char _xml_filename[FILENAME_LEN+1];
 #  define PRINT_INFO(a, b, c) \
     if (0 < (c) && (c) < XML_MAX_ERROR) { \
         int i, nl = 1; for (i=0; i<(b)-(a); ++i) if (a[i] == '\n') nl++; \
-        fprintf(stderr, "%s: ", _xml_filename); \
-        fprintf(stderr, "%s at line %i\n\t", __zeroxml_error_str[(c)], nl); \
-        fprintf(stderr ,"detected in %s at line %i\n", __func__, __LINE__);\
+        snprintf(__zeroxml_strerror, BUF_LEN, "%s: %s at line %i\n", _xml_filename, __zeroxml_error_str[(c)], nl); \
+        fprintf(stderr, "%s\tdetected in %s at line %i\n", __zeroxml_strerror, __func__, __LINE__); \
     } else { \
         fprintf(stderr, "%s: in %s at line %i: Unknown error number!\n", \
                         _xml_filename, __func__, __LINE__); \
@@ -126,19 +127,13 @@ static char _xml_filename[FILENAME_LEN+1];
 # define SET_ERROR_AND_RETURN(a, b, c)	return 0;
 #endif
 
-static char *__xmlNodeGetPath(void **, const char *, size_t *, char **, size_t *);
-static char *__xmlNodeGet(void *, const char *, size_t *, char **, size_t *, size_t *, char);
-static char *__xmlAttributeGetDataPtr(const struct _xml_id*, const char *, size_t *);
-static char *__xmlProcessCDATA(char **, size_t *, char);
-static char *__xmlCommentSkip(const char *, size_t);
-static char *__xmlInfoProcess(const char *, size_t);
-static int __xmlDecodeBoolean(const char *, const char *);
-static void __xmlPrepareData(char **, size_t *, char);
+static  const char *__xmlNodeGetPath(void**, const char*, size_t*,  const char**, size_t*);
+static  const char *__xmlNodeGet(void*, const char*, size_t*,  const char**, size_t*, size_t*, char);
+static  const char *__xmlAttributeGetDataPtr(const struct _xml_id*, const char *, size_t*);
+static int __xmlDecodeBoolean(const char*, const char*);
+static void __xmlPrepareData( const char**, size_t*, char);
 
-static char *__xml_memmem(const char *, size_t, const char *, size_t);
-static char *__xml_memncasestr(const char *, size_t, const char *);
-static void *__xml_memncasecmp(const char *, size_t *, char **, size_t *);
-static long __xml_strtol(const char *, char **, int);
+static long __xml_strtol(const char*, char**, int);
 #ifdef WIN32
 /*
  * map 'filename' and return a pointer to it.
@@ -202,12 +197,13 @@ xmlOpen(const char *filename)
                     size_t blen = statbuf.st_size;
 #ifdef XML_USE_NODECACHE
                     size_t num = 0, nlen = 1;
-                    char *rv, *n = "*";
+                     const char *rv, *n = "*";
 
                     rid->node = cacheInit();
                     rv = __xmlNodeGet(rid->node, mm, &blen, &n, &nlen, &num, 0);
                     if (!rv)
                     {
+                        __xmlErrorSet(rid, __zeroxml_strerror, strlen(__zeroxml_strerror));
                         simple_unmmap(rid->start, blen, &rid->un);
                         close(fd);
 
@@ -244,19 +240,20 @@ xmlInitBuffer(const char *buffer, size_t size)
 #ifdef XML_USE_NODECACHE
             size_t num = 0, nlen = 1;
             size_t blen = size;
-            char *rv, *n = "*";
+             const char *rv, *n = "*";
 
             rid->node = cacheInit();
             rv = __xmlNodeGet(rid->node, buffer, &blen, &n, &nlen, &num, 0);
             if (!rv)
             {
+                __xmlErrorSet(rid, __zeroxml_strerror, strlen(__zeroxml_strerror));
                 cacheFree(rid->node);
                 free(rid);
                 rid = 0;
             }
 #endif
             rid->fd = -1;
-            rid->start = (char *)buffer;
+            rid->start = (char*)buffer;
             rid->len = size;
 
 #ifdef HAVE_LOCALE_H
@@ -305,18 +302,25 @@ xmlNodeTest(const xmlId *id, const char *path)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     size_t len, slen;
-    char *node;
     void *nc, *nnc;
+     const char *node;
+    int rv;
 
     assert(id != 0);
     assert(path != 0);
 
-    node = (char *)path;
+    node = ( const char *)path;
     len = xid->len;
     slen = strlen(path);
 
     nnc = nc = cacheNodeGet(xid);
-    return __xmlNodeGetPath(&nnc, xid->start, &len, &node, &slen) ? 1 : 0;
+    rv = __xmlNodeGetPath(&nnc, xid->start, &len, &node, &slen) ? 1 : 0;
+
+    if (!rv) {
+        __xmlErrorSet(xid, __zeroxml_strerror, strlen(__zeroxml_strerror));
+    }
+
+    return rv;
 }
 
 XML_API xmlId* XML_APIENTRY
@@ -325,13 +329,13 @@ xmlNodeGet(const xmlId *id, const char *path)
     struct _xml_id *xid = (struct _xml_id *)id;
     struct _xml_id *xsid = 0;
     size_t len, slen;
-    char *ptr, *node;
+     const char *ptr, *node;
     void *nc, *nnc;
 
     assert(id != 0);
     assert(path != 0);
 
-    node = (char *)path;
+    node = ( const char *)path;
     len = xid->len;
     slen = strlen(path);
 
@@ -344,7 +348,7 @@ xmlNodeGet(const xmlId *id, const char *path)
         {
             xsid->name = node;
             xsid->name_len = slen;
-            xsid->start = ptr;
+            xsid->start = (char*)ptr;
             xsid->len = len;
 #ifdef XML_USE_NODECACHE
             xsid->node = nnc;
@@ -362,6 +366,8 @@ xmlNodeGet(const xmlId *id, const char *path)
     }
     else if (slen == 0) {
         xmlErrorSet(xid, node, len);
+    } else {
+        __xmlErrorSet(xid, __zeroxml_strerror, strlen(__zeroxml_strerror));
     }
 
     return (void *)xsid;
@@ -371,13 +377,13 @@ XML_API xmlId* XML_APIENTRY
 xmlNodeCopy(const xmlId *id, const char *path)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    char *ptr, *node;
+     const char *ptr, *node;
     size_t slen, len;
     void *ret = 0;
     void *nc, *nnc;
 
 
-    node = (char *)path;
+    node = (const char*)path;
     len = xid->len;
     slen = strlen(path);
 
@@ -438,12 +444,14 @@ xmlNodeCopy(const xmlId *id, const char *path)
     }
     else if (slen == 0) {
         xmlErrorSet(xid, node, len);
+    } else {
+        __xmlErrorSet(xid, __zeroxml_strerror, strlen(__zeroxml_strerror));
     }
 
     return ret;
 }
 
-XML_API char * XML_APIENTRY
+XML_API char* XML_APIENTRY
 xmlNodeGetName(const xmlId *id)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -498,7 +506,7 @@ xmlAttributeCopyName(const xmlId *id, char *buf, size_t buflen, size_t pos)
 
     if (xid->name_len)
     {
-        char *ps, *pe, *new;
+        const char *ps, *pe, *new;
         size_t num = 0;
 
         assert(xid->start > xid->name);
@@ -534,7 +542,7 @@ xmlAttributeCopyName(const xmlId *id, char *buf, size_t buflen, size_t pos)
     return slen;
 }
 
-XML_API char * XML_APIENTRY
+XML_API char* XML_APIENTRY
 xmlAttributeGetName(const xmlId *id, size_t pos)
 {
    struct _xml_id *xid = (struct _xml_id *)id;
@@ -569,12 +577,12 @@ __xmlNodeGetNum(const xmlId *id, const char *path, char raw)
 
     if (xid->len)
     {
-        char *nodename, *pathname;
+        const char *nodename, *pathname;
         size_t len, slen;
         void *nc;
-        char *p;
+        const char *p;
 
-        nodename = (char *)path;
+        nodename = (const char *)path;
         if (*path == '/') nodename++;
         slen = strlen(nodename);
 
@@ -582,7 +590,7 @@ __xmlNodeGetNum(const xmlId *id, const char *path, char raw)
         pathname = strchr(nodename, '/');
         if (pathname)
         {
-            char *node;
+            const char *node;
 
             len = xid->len;
             pathname++;
@@ -591,6 +599,9 @@ __xmlNodeGetNum(const xmlId *id, const char *path, char raw)
             p = __xmlNodeGetPath(&nc, xid->start, &len, &node, &slen);
             if (p == 0 && slen == 0) {
                 xmlErrorSet(xid, node, len);
+            }
+            if (!p) {
+                __xmlErrorSet(xid, __zeroxml_strerror, strlen(__zeroxml_strerror));
             }
         }
         else
@@ -601,7 +612,7 @@ __xmlNodeGetNum(const xmlId *id, const char *path, char raw)
 
         if (p)
         {
-            char *ret, *node = nodename;
+            const char *ret, *node = nodename;
 #ifndef XML_USE_NODECACHE
             ret = __xmlNodeGet(nc, p, &len, &node, &slen, &num, raw);
 #else
@@ -638,7 +649,7 @@ xmlAttributeGetNum(const xmlId *id)
 
     if (xid->name_len)
     {
-        char *ps, *pe, *new;
+        const char *ps, *pe, *new;
 
         assert(xid->start > xid->name);
 
@@ -662,7 +673,7 @@ __xmlNodeGetPos(const xmlId *pid, xmlId *id, const char *element, size_t num, ch
     struct _xml_id *xpid = (struct _xml_id *)pid;
     struct _xml_id *xid = (struct _xml_id *)id;
     size_t len, slen;
-    char *ptr, *node;
+    const char *ptr, *node;
     void *ret = 0;
     void *nc;
 
@@ -672,7 +683,7 @@ __xmlNodeGetPos(const xmlId *pid, xmlId *id, const char *element, size_t num, ch
 
     len = xpid->len;
     slen = strlen(element);
-    node = (char *)element;
+    node = (const char *)element;
     nc = cacheNodeGet(xpid);
 #ifndef XML_USE_NODECACHE
     ptr = __xmlNodeGet(nc, xpid->start, &len, &node, &slen, &num, raw);
@@ -682,7 +693,7 @@ __xmlNodeGetPos(const xmlId *pid, xmlId *id, const char *element, size_t num, ch
     if (ptr)
     {
         xid->len = len;
-        xid->start = ptr;
+        xid->start = (char*)ptr;
         xid->name = node;
         xid->name_len = slen;
 #ifdef XML_USE_NODECACHE
@@ -718,7 +729,7 @@ xmlNodeCopyPos(const xmlId *pid, xmlId *id, const char *element, size_t num)
     struct _xml_id *xpid = (struct _xml_id *)pid;
     struct _xml_id *xid = (struct _xml_id *)id;
     size_t len, slen;
-    char *ptr, *node;
+    const char *ptr, *node;
     void *ret = 0;
     void *nc;
 
@@ -728,7 +739,7 @@ xmlNodeCopyPos(const xmlId *pid, xmlId *id, const char *element, size_t num)
 
     len = xpid->len;
     slen = strlen(element);
-    node = (char *)element;
+    node = (const char *)element;
     nc = cacheNodeGet(xpid);
 #ifndef XML_USE_NODECACHE
     ptr = __xmlNodeGet(nc, xpid->start, &len, &node, &slen, &num, 0);
@@ -810,7 +821,7 @@ __xmlGetString(const xmlId *id, char raw)
     if (xid->len)
     {
         size_t len;
-        char *ps;
+        const char *ps;
 
         ps = xid->start;
         len = xid->len;
@@ -832,7 +843,7 @@ __xmlGetString(const xmlId *id, char raw)
     return str;
 }
 
-XML_API char * XML_APIENTRY
+XML_API char* XML_APIENTRY
 xmlGetString(const xmlId *id)
 {
    return __xmlGetString(id, 0);
@@ -858,7 +869,7 @@ xmlCopyString(const xmlId *id, char *buffer, size_t buflen)
     if (xid->len)
     {
         size_t len;
-        char *ps;
+        const char *ps;
 
         ps = xid->start;
         len = xid->len;
@@ -891,7 +902,7 @@ xmlCompareString(const xmlId *id, const char *s)
     if (xid->len && (strlen(s) > 0))
     {
         size_t len;
-        char *ps;
+        const char *ps;
 
         ps = xid->start;
         len = xid->len;
@@ -902,7 +913,7 @@ xmlCompareString(const xmlId *id, const char *s)
     return ret;
 }
 
-XML_API char * XML_APIENTRY
+XML_API char* XML_APIENTRY
 xmlNodeGetString(const xmlId *id, const char *path)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -913,7 +924,7 @@ xmlNodeGetString(const xmlId *id, const char *path)
 
     if (xid->len)
     {
-        char *ptr, *node = (char *)path;
+        const char *ptr, *node = (const char *)path;
         size_t slen = strlen(node);
         size_t len = xid->len;
         void *nc;
@@ -955,7 +966,7 @@ xmlNodeCopyString(const xmlId *id, const char *path, char *buffer, size_t buflen
     *buffer = '\0';
     if (xid->len)
     {
-        char *p, *node = (char *)path;
+        const char *p, *node = (const char *)path;
         size_t slen = strlen(node);
         size_t len = xid->len;
         void *nc;
@@ -998,13 +1009,13 @@ xmlNodeCompareString(const xmlId *id, const char *path, const char *s)
 
     if (xid->len && (strlen(s) > 0))
     {
-        char *node, *str, *ps;
+        const char *node, *str, *ps;
         size_t len, slen;
         void *nc;
 
         len = xid->len;
         slen = strlen(path);
-        node = (char *)path;
+        node = (const char *)path;
         nc = cacheNodeGet(xid);
         str = __xmlNodeGetPath(&nc, xid->start, &len, &node, &slen);
         if (str)
@@ -1031,7 +1042,7 @@ xmlGetBool(const xmlId *id)
 
     if (xid->len)
     {
-        char *end = xid->start + xid->len;
+        const char *end = xid->start + xid->len;
         li = __xmlDecodeBoolean(xid->start, end);
     }
 
@@ -1050,17 +1061,17 @@ xmlNodeGetBool(const xmlId *id, const char *path)
     if (xid->len)
     {
         size_t len, slen;
-        char *str, *node;
+        const char *str, *node;
         void *nc;
 
         len = xid->len;
         slen = strlen(path);
-        node = (char *)path;
+        node = (const char *)path;
         nc = cacheNodeGet(xid);
         str = __xmlNodeGetPath(&nc, xid->start, &len, &node, &slen);
         if (str)
         {
-            char *end = str+len;
+            const char *end = str+len;
             li = __xmlDecodeBoolean(str, end);
         }
         else if (slen == 0) {
@@ -1100,17 +1111,17 @@ xmlNodeGetInt(const xmlId *id, const char *path)
     if (xid->len)
     {
         size_t len, slen;
-        char *str, *node;
+        const char *str, *node;
         void *nc;
 
         len = xid->len;
         slen = strlen(path);
-        node = (char *)path;
+        node = (const char *)path;
         nc = cacheNodeGet(xid);
         str = __xmlNodeGetPath(&nc, xid->start, &len, &node, &slen);
         if (str)
         {
-            char *end = str+len;
+            char *end = (char*)str+len;
             li = __xml_strtol(str, &end, 10);
         }
         else if (slen == 0) {
@@ -1150,17 +1161,17 @@ xmlNodeGetDouble(const xmlId *id, const char *path)
     if (xid->len)
     {
         size_t len, slen;
-        char *str, *node;
+        const char *str, *node;
         void *nc;
 
         len = xid->len;
         slen = strlen(path);
-        node = (char *)path;
+        node = (const char *)path;
         nc = cacheNodeGet(xid);
         str = __xmlNodeGetPath(&nc, xid->start, &len, &node, &slen);
         if (str)
         {
-            char *end = str+len;
+            char *end = (char*)str+len;
             d = strtod(str, &end);
         }
         else if (slen == 0) {
@@ -1227,12 +1238,12 @@ xmlAttributeGetDouble(const xmlId *id, const char *name)
     struct _xml_id *xid = (struct _xml_id *)id;
     double ret = __XML_FPNONE;
     size_t len;
-    char *ptr;
+    const char *ptr;
 
     ptr = __xmlAttributeGetDataPtr(xid, name, &len);
     if (ptr)
     {
-        char *eptr = ptr+len;
+        char *eptr = (char*)ptr+len;
         ret = strtod(ptr, &eptr);
     }
     return ret;
@@ -1244,12 +1255,12 @@ xmlAttributeGetBool(const xmlId *id, const char *name)
     struct _xml_id *xid = (struct _xml_id *)id;
     int ret = 0;
     size_t len;
-    char *ptr;
+    const char *ptr;
 
     ptr = __xmlAttributeGetDataPtr(xid, name, &len);
     if (ptr)
     {
-        char *eptr = ptr+len;
+        const char *eptr = ptr+len;
         ret = __xmlDecodeBoolean(ptr, eptr);
     }
     return ret;
@@ -1261,12 +1272,12 @@ xmlAttributeGetInt(const xmlId *id, const char *name)
     struct _xml_id *xid = (struct _xml_id *)id;
     long int ret = __XML_NONE;
     size_t len;
-    char *ptr;
+    const char *ptr;
 
     ptr = __xmlAttributeGetDataPtr(xid, name, &len);
     if (ptr)
     {
-        char *eptr = ptr+len;
+        char *eptr = (char*)ptr+len;
         ret = __xml_strtol(ptr, &eptr, 10);
     }
 
@@ -1279,7 +1290,7 @@ xmlAttributeGetString(const xmlId *id, const char *name)
     struct _xml_id *xid = (struct _xml_id *)id;
     char *ret = 0;
     size_t len;
-    char *ptr;
+    const char *ptr;
 
     ptr = __xmlAttributeGetDataPtr(xid, name, &len);
     if (ptr)
@@ -1304,7 +1315,7 @@ xmlAttributeCopyString(const xmlId *id, const char *name,
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     size_t len, ret = 0;
-    char *ptr;
+    const char *ptr;
 
     assert(buffer != 0);
     assert(buflen > 0);
@@ -1332,7 +1343,7 @@ xmlAttributeCompareString(const xmlId *id, const char *name, const char *s)
     struct _xml_id *xid = (struct _xml_id *)id;
     int ret = -1;
     size_t len;
-    char *ptr;
+    const char *ptr;
 
     assert(s != 0);
 
@@ -1391,9 +1402,9 @@ xmlErrorGetLineNo(const xmlId *id, int clear)
         if (rid->info)
         {
             struct _zeroxml_error *err = rid->info;
-            char *ps = rid->start;
-            char *pe = err->pos;
-            char *new;
+            const char *ps = rid->start;
+            const char *pe = err->pos;
+            const char *new;
 
             ret++;
             while (ps<pe)
@@ -1429,9 +1440,9 @@ xmlErrorGetColumnNo(const xmlId *id, int clear)
         if (rid->info)
         {
             struct _zeroxml_error *err = rid->info;
-            char *ps = rid->start;
-            char *pe = err->pos;
-            char *new;
+            const char *ps = rid->start;
+            const char *pe = err->pos;
+            const char *new;
 
             while (ps<pe)
             {
@@ -1450,7 +1461,7 @@ xmlErrorGetColumnNo(const xmlId *id, int clear)
     return ret;
 }
 
-XML_API const char * XML_APIENTRY
+XML_API const char* XML_APIENTRY
 xmlErrorGetString(const xmlId *id, int clear)
 {
     char *ret = 0;
@@ -1470,7 +1481,7 @@ xmlErrorGetString(const xmlId *id, int clear)
             struct _zeroxml_error *err = rid->info;
             if (XML_NO_ERROR <= err->err_no && err->err_no < XML_MAX_ERROR)
             {
-                ret = (char *)__zeroxml_error_str[err->err_no];
+                ret = (char*)__zeroxml_error_str[err->err_no];
             }
             else
             {
@@ -1513,6 +1524,14 @@ xmlErrorGetString(const xmlId *id, int clear)
 
 /* -------------------------------------------------------------------------- */
 
+static const char *__xmlProcessCDATA(const char **, size_t *, char);
+static const char *__xmlCommentSkip(const char *, size_t);
+static const char *__xmlInfoProcess(const char *, size_t);
+
+static const char *__xml_memmem(const char *, size_t, const char *, size_t);
+static const char *__xml_memncasestr(const char *, size_t, const char *);
+static const char *__xml_memncasecmp(const char *, size_t *, const char **, size_t *);
+
 #ifndef XML_NONVALIDATING
 static const char *__zeroxml_error_str[XML_MAX_ERROR] =
 {
@@ -1531,11 +1550,11 @@ static const char *__zeroxml_error_str[XML_MAX_ERROR] =
 };
 #endif
 
-static char *
+static const char *
 __xmlAttributeGetDataPtr(const struct _xml_id *id, const char *name, size_t *len)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    char *ret = 0;
+    const char *ret = 0;
 
     assert(xid != 0);
     assert(name != 0);
@@ -1545,7 +1564,7 @@ __xmlAttributeGetDataPtr(const struct _xml_id *id, const char *name, size_t *len
     if (xid->name_len)
     {
         size_t slen = strlen(name);
-        char *ps, *pe;
+        const char *ps, *pe;
 
         assert(xid->start > xid->name);
 
@@ -1559,7 +1578,7 @@ __xmlAttributeGetDataPtr(const struct _xml_id *id, const char *name, size_t *len
                 ps += slen;
                 if ((ps<pe) && (*ps == '='))
                 {
-                    char *start;
+                    const char *start;
 
                     ps++;
                     if (*ps == '"' || *ps == '\'') ps++;
@@ -1604,7 +1623,7 @@ __xmlDecodeBoolean(const char *start, const char *end)
     int rv = 0;
     char *ptr;
 
-    ptr = (char *)end;
+    ptr = (char*)end;
     if (__xml_strtol(start, &ptr, 10) == 0)
     {
         size_t len = end-start;
@@ -1622,11 +1641,26 @@ __xmlDecodeBoolean(const char *start, const char *end)
 }
 
 
-char *
-__xmlNodeGetPath(void **nc, const char *start, size_t *len, char **name, size_t *nlen)
+/*
+ * Search for the subsection of the last node in the node path inside the
+ * current section.
+ *
+ * When finished *len will be set to the length of the requested subsection,
+ * *name will point to the actual name of the node (useful in case the name was
+ * a wildcard character) and *nlen will return the length of the actual name.
+ *
+ * @param nc node from the node cache
+ * @param start starting point of the current section
+ * @param len length of the current section
+ * @param name a pointer to the path to walk
+ * @param nlen length of the path string
+ * @retrun a pointer to the section containing the last node in the path
+ */
+const char *
+__xmlNodeGetPath(void **nc, const char *start, size_t *len, const char **name, size_t *nlen)
 {
-    char *path;
-    char *ret = 0;
+    const char *path;
+    const char *ret = 0;
 
     assert(start != 0);
     assert(len != 0);
@@ -1644,7 +1678,7 @@ __xmlNodeGetPath(void **nc, const char *start, size_t *len, char **name, size_t 
     if (*path != '\0')
     {
         size_t num, blocklen, pathlen, nodelen;
-        char *node;
+        const char *node;
 
         node = path;
         pathlen = strlen(path);
@@ -1682,12 +1716,29 @@ __xmlNodeGetPath(void **nc, const char *start, size_t *len, char **name, size_t 
     return ret;
 }
 
-char *
-__xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen, size_t *nodenum, char raw)
+/*
+ * Recursively walk the node tree to get te section with the '*name' name.
+ *
+ * When finished *len will be set to the length of the requested section,
+ * *name will point to the actual name of the node (useful in case the name was
+ * a wildcard character), *nlen will return the length of the actual name and
+ * *nodenum will return the current occurence number of the requested section.
+ *
+ * @param nc node from the node-cache
+ * @param start starting pointer for this section
+ * @param len length to the end of the buffer
+ * @param *name name of the node to look for
+ * @param rlen length of the name of the node to look for
+ * @param nodenum which occurence of the node name to look for
+ * @param raw process CDATA or not
+ * @return a pointer to the section with the requested name
+ */
+ const char *
+__xmlNodeGet(void *nc, const char *start, size_t *len, const char **name, size_t *rlen, size_t *nodenum, char raw)
 {
-    char *open_element = *name; // *cdata
-    char *element, *start_tag=0;
-    char *new, *cur, *ne, *ret = 0;
+    const char *open_element = *name; // *cdata
+    const char *element, *start_tag=0;
+    const char *new, *cur, *ne, *ret = 0;
     size_t restlen, elementlen;
     size_t open_len = *rlen;
     int found;
@@ -1701,21 +1752,15 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
     assert(nodenum != 0);
 
     if (open_len == 0 || *name == 0) {
-        SET_ERROR_AND_RETURN(start,(char *)start,XML_INVALID_NODE_NAME);
-    }
-
-    if (*rlen > *len)
-    {
-        *rlen = 0;
-        *name = start_tag;
-        *len = XML_NO_ERROR;    /* element not found, no real error */
-        return 0;
+        SET_ERROR_AND_RETURN(start, (const char *)start, XML_INVALID_NODE_NAME);
     }
 
     found = 0;
+    if (*rlen > *len) goto __xmlNodeGetExit;
+
     num = *nodenum;
     restlen = *len;
-    cur = (char *)start;
+    cur = (const char *)start;
     ne = cur + restlen;
 
 #ifdef XML_USE_NODECACHE
@@ -1726,32 +1771,34 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
     while ((new = memchr(cur, '<', restlen)) != 0)
     {
         size_t len_remaining;
-        char *rptr;
+        const char *rptr;
 
-        if (*(new+1) == '/')		/* end of section */
+        new++; /* skip '<' */
+        if (*new == '/')		/* end of a section: "</" */
         {
-            *len -= restlen;
+            *len -= (restlen-1);
             break;
         }
 
-        new++;
         restlen -= new-cur;
         cur = new;
 
-        if (*cur == '!') /* comment */
+        switch(*cur)
         {
-            char *start = cur;
+        case '!': /* comment: "<!--" or CDATA "<![CDATA[" */
+        {
+            const char *start = cur;
             size_t blocklen = restlen;
             new = __xmlProcessCDATA(&start, &blocklen, raw);
             if (!new && start && open_len) {		/* CDATA */
-                SET_ERROR_AND_RETURN(start, cur,XML_INVALID_COMMENT);
+                SET_ERROR_AND_RETURN(start, cur, XML_INVALID_COMMENT);
             }
 
             restlen -= new-cur;
             cur = new;
-            continue;
+            break;
         }
-        else if (*cur == '?') /* info block */
+        case '?': /* info block: "<?" */
         {
             new = __xmlInfoProcess(cur, restlen);
             if (!new) {
@@ -1760,233 +1807,235 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, char **name, size_t *rlen
 
             restlen -= new-cur;
             cur = new;
-            continue;
+            break;
         }
-
-        /*
-        * get element name and a pointer to after the opening tag
-        */
-        element = *name;
-        elementlen = *rlen;
-        len_remaining = restlen;
-        rptr = __xml_memncasecmp(cur, &restlen, &element, &elementlen);
-        if (rptr) 			/* requested element was found */
-        {
-            new = rptr;
-            if (found == num)
-            {
-                ret = new;
-                open_len = elementlen;
-                start_tag = element;
-            }
-            else start_tag = 0;
-        }
-        else				/* different element name was foud */
-        {
-            new = cur + (len_remaining - restlen);
-            if (new >= ne) {
-                SET_ERROR_AND_RETURN(start, cur, XML_UNEXPECTED_EOF);
-            }
-
+        default:
+            /*
+             * Get the element name and a pointer right after the opening tag
+             */
             element = *name;
-        }
-
-#ifdef XML_USE_NODECACHE
-        nnc = cacheNodeNew(nc);
-#endif
-
-        if (*(new-2) == '/')				/* e.g. <test/> */
-        {
-            cur = new;
-            if (rptr)
+            elementlen = *rlen;
+            len_remaining = restlen;
+            rptr = __xml_memncasecmp(cur, &restlen, &element, &elementlen);
+            if (rptr) 			/* the requested element was found */
             {
-#ifdef XML_USE_NODECACHE
-                cacheDataSet(nnc, element, elementlen, rptr, 0);
-#endif
+                new = rptr;
                 if (found == num)
                 {
-                    open_element = start_tag;
-                    *len = 0;
+                    ret = new;
+                    open_len = elementlen;
+                    start_tag = element;
                 }
-                found++;
+                else start_tag = 0;
             }
-            continue;
-        }
-
-        /*
-        * get the next xml tag
-        */
-        /* restlen -= new-cur; not necessary because of __xml_memncasecmp */
-        cur = new;
-        new = memchr(cur, '<', restlen);
-        if (!new) {
-PRINT(cur, restlen,8);
-            SET_ERROR_AND_RETURN(start, cur, XML_ELEMENT_NO_OPENING_TAG);
-            return 0;
-        }
-
-        new++;
-        restlen -= new-cur;
-        cur = new;
-        if (*cur == '!')				/* comment, CDATA */
-        {
-            char *start = cur;
-            size_t blocklen = restlen;
-            new = __xmlProcessCDATA(&start, &blocklen, raw);
-            if (!new) {
-                SET_ERROR_AND_RETURN(start, cur, XML_INVALID_COMMENT);
-            }
-
-            restlen -= new-cur;
-            cur = new;
-
-            /*
-            * look for the closing tag of the cascading block
-            */
-            new = memchr(cur, '<', restlen);
-            if (!new) {
-                SET_ERROR_AND_RETURN(start, cur, XML_ELEMENT_NO_CLOSING_TAG);
-            }
-
-            new++;
-            restlen -= new-cur;
-            cur = new;
-        }
-
-        if (*cur == '/')		/* closing tag of leaf node found */
-        {
-            if (!strncasecmp(new+1, element, elementlen))
+            else				/* a different element name was foud */
             {
-                char *pe = new+restlen;
-                char *ps = new+elementlen+1;
-                while ((ps<pe) && isspace(*ps)) ps++;
-
-#ifdef XML_USE_NODECACHE
-                cacheDataSet(nnc, element, elementlen, rptr, new-rptr-1);
-#endif
-                if (*ps != '>') {
-                    SET_ERROR_AND_RETURN(start, new+1, XML_ELEMENT_NO_CLOSING_TAG);
-                }
-
-                if (found == num)
-                {
-                    if (start_tag)
-                    {
-                        *len = new-ret-1;
-                        open_element = start_tag;
-                        start_tag = 0;
-                    }
-                    else	/* element not found, no real error */
-                    {
-                        *rlen = 0;
-                        *name = start_tag;
-                        *len = XML_NO_ERROR;
-                        return 0;
-                    }
-                }
-                found++;
-            }
-
-            new = memchr(cur, '>', restlen);
-            if (!new) {
-                SET_ERROR_AND_RETURN(start, cur, XML_ELEMENT_NO_CLOSING_TAG);
-            }
-
-            restlen -= new-cur;
-            cur = new;
-            continue;
-        }
-
-        /* no leaf node, continue */
-        if (*cur != '/')			/* cascading tag found */
-        {
-            char *node = "*";
-            size_t slen = restlen+1; /* due to cur-1 below*/
-            size_t nlen = 1;
-            size_t pos = -1;
-
-            /*
-            * recursively walk the xml tree from here
-            */
-            new = __xmlNodeGet(nnc, cur-1, &slen, &node, &nlen, &pos, 0);
-            if (!new)
-            {
-                if (nlen == 0)		/* error upstream */
-                {
-                    *rlen = nlen;
-                    *name = node;
-                    *len = slen;
-                    return 0;
-                }
-
-                if (slen == restlen) {
+                new = cur + (len_remaining - restlen);
+                if (new >= ne) {
                     SET_ERROR_AND_RETURN(start, cur, XML_UNEXPECTED_EOF);
                 }
 
-                slen--;
-                new = cur + slen;
-                restlen -= slen;
+                element = *name;
             }
-            else restlen -= slen;
+
+#ifdef XML_USE_NODECACHE
+            /* Add the node to the node-cache. */
+            nnc = cacheNodeNew(nc);
+#endif
+
+            if ((new-start) > 2 && *(new-2) == '/') /* e.g. <test n="1"/> */
+            {
+                cur = new;
+                if (rptr)
+                {
+#ifdef XML_USE_NODECACHE
+                    /* fill the node-cache node with info. */
+                    cacheDataSet(nnc, element, elementlen, rptr, 0);
+#endif
+                    if (found == num)
+                    {
+                        open_element = start_tag;
+                        *len = 0;
+                    }
+                    found++;
+                }
+                continue;
+            }
 
             /*
-             * look for the closing tag of the cascading block
+             * Skip the value of the node and get the next xml tag.
              */
+            /* restlen -= new-cur; not necessary because of __xml_memncasecmp */
             cur = new;
             new = memchr(cur, '<', restlen);
             if (!new) {
-                SET_ERROR_AND_RETURN(start, cur, XML_ELEMENT_NO_CLOSING_TAG);
+                SET_ERROR_AND_RETURN(start, cur, XML_ELEMENT_NO_OPENING_TAG);
             }
 
             new++;
             restlen -= new-cur;
             cur = new;
-        }
-
-        if (*cur == '/')			/* closing tag found */
-        {
-            if (!strncasecmp(new+1, element, elementlen))
+            if (*cur == '!')				/* comment, CDATA */
             {
-                char *pe = new+restlen;
-                char *ps = new+elementlen+1;
-                while ((ps<pe) && isspace(*ps)) ps++;
-
-                if (*ps != '>') {
-                    SET_ERROR_AND_RETURN(start, new+1, XML_ELEMENT_NO_CLOSING_TAG);
+                const char *start = cur;
+                size_t blocklen = restlen;
+                new = __xmlProcessCDATA(&start, &blocklen, raw);
+                if (!new) {
+                    SET_ERROR_AND_RETURN(start, cur, XML_INVALID_COMMENT);
                 }
+
+                restlen -= new-cur;
+                cur = new;
+
+                /*
+                * Search for the closing tag of the cascading block
+                */
+                new = memchr(cur, '<', restlen);
+                if (!new) {
+                    SET_ERROR_AND_RETURN(start, cur, XML_ELEMENT_NO_CLOSING_TAG);
+                }
+
+                new++;
+                restlen -= new-cur;
+                cur = new;
+            }
+
+            if (*cur == '/')		/* closing tag of leaf node found */
+            {
+                if (!strncasecmp(new+1, element, elementlen))
+                {
+                    const char *pe = new+restlen;
+                    const char *ps = new+elementlen+1;
+                    while ((ps<pe) && isspace(*ps)) ps++;
 
 #ifdef XML_USE_NODECACHE
-                cacheDataSet(nnc, element, elementlen, rptr, new-rptr-1);
+                    cacheDataSet(nnc, element, elementlen, rptr, new-rptr-1);
 #endif
-                if (found == num)
-                {
-                    if (start_tag)
+                    if (*ps != '>') {
+                        SET_ERROR_AND_RETURN(start, new+1, XML_ELEMENT_NO_CLOSING_TAG);
+                    }
+
+                    if (found == num)
                     {
-                        *len = new-ret-1;
-                        open_element = start_tag;
-                        start_tag = 0;
+                        if (start_tag)
+                        {
+                            *len = new-ret-1;
+                            open_element = start_tag;
+                            start_tag = 0;
+                        }
+                        else	/* element not found, no real error */
+                        {
+                            found = 0;
+                            break;
+                        }
                     }
-                    else { /* report error */
-                        SET_ERROR_AND_RETURN(start, new, XML_ELEMENT_NO_OPENING_TAG);
-                    }
+                    found++;
                 }
-                found++;
+
+                new = memchr(cur, '>', restlen);
+                if (!new) {
+                    SET_ERROR_AND_RETURN(start, cur, XML_ELEMENT_NO_CLOSING_TAG);
+                }
+
+                restlen -= new-cur;
+                cur = new;
+                continue;
             }
 
-            new = memchr(cur, '>', restlen);
-            if (!new) {
+            /* no leaf node, continue */
+            if (*cur != '/')			/* cascading tag found */
+            {
+                const char *node = "*";
+                size_t slen = restlen+1; /* due to cur-1 below*/
+                size_t nlen = 1;
+                size_t pos = -1;
+
+                /*
+                 * recursively walk the xml tree from here
+                 */
+                new = __xmlNodeGet(nnc, cur-1, &slen, &node, &nlen, &pos, 0);
+                if (!new)
+                {
+                    if (nlen == 0)		/* error upstream */
+                    {
+                        *rlen = nlen;
+                        *name = node;
+                        *len = slen;
+                        return 0;
+                    }
+
+                    if (slen == restlen) {
+                        SET_ERROR_AND_RETURN(start, cur, XML_UNEXPECTED_EOF);
+                    }
+
+                    slen--;
+                    new = cur + slen;
+                    restlen -= slen;
+                }
+                else {
+                    restlen -= slen;
+                }
+
+                /*
+                 * look for the closing tag of the cascading block
+                 */
+                cur = new;
+                new = memchr(cur, '<', restlen);
+                if (!new) {
+                    SET_ERROR_AND_RETURN(start, cur, XML_ELEMENT_NO_CLOSING_TAG);
+                }
+
+                new++;
+                restlen -= new-cur;
+                cur = new;
+            }
+
+            if (*cur == '/')			/* closing tag found */
+            {
+                if (!strncasecmp(new+1, element, elementlen))
+                {
+                    const char *pe = new+restlen;
+                    const char *ps = new+elementlen+1;
+                    while ((ps<pe) && isspace(*ps)) ps++;
+
+                    if (*ps != '>') {
+                        SET_ERROR_AND_RETURN(start, new+1, XML_ELEMENT_NO_CLOSING_TAG);
+                    }
+
+#ifdef XML_USE_NODECACHE
+                    cacheDataSet(nnc, element, elementlen, rptr, new-rptr-1);
+#endif
+                    if (found == num)
+                    {
+                        if (start_tag)
+                        {
+                            *len = new-ret-1;
+                            open_element = start_tag;
+                            start_tag = 0;
+                        }
+                        else { /* report error */
+                            SET_ERROR_AND_RETURN(start, new, XML_ELEMENT_NO_OPENING_TAG);
+                        }
+                    }
+                    found++;
+                }
+
+                new = memchr(cur, '>', restlen);
+                if (!new) {
+                    SET_ERROR_AND_RETURN(start, cur, XML_ELEMENT_NO_CLOSING_TAG);
+                }
+
+                restlen -= new-cur;
+                cur = new;
+            }
+            else {
                 SET_ERROR_AND_RETURN(start, cur, XML_ELEMENT_NO_CLOSING_TAG);
             }
-
-            restlen -= new-cur;
-            cur = new;
-        }
-        else {
-            SET_ERROR_AND_RETURN(start, cur, XML_ELEMENT_NO_CLOSING_TAG);
-        }
+        } // switch(*cur)
 
     } /* while */
 
+__xmlNodeGetExit:
     if (found == 0)
     {
         ret = 0;
@@ -2004,10 +2053,10 @@ PRINT(cur, restlen,8);
     return ret;
 }
 
-char *
-__xmlProcessCDATA(char **start, size_t *len, char raw)
+const char *
+__xmlProcessCDATA(const char **start, size_t *len, char raw)
 {
-    char *cur, *new = NULL;
+    const char *cur, *new = NULL;
     size_t restlen = *len;
 
     cur = *start;
@@ -2043,14 +2092,14 @@ __xmlProcessCDATA(char **start, size_t *len, char raw)
     return new;
 }
 
-char *
+const char *
 __xmlCommentSkip(const char *start, size_t len)
 {
-    char *cur, *new;
+    const char *cur, *new;
 
     if (len < 7) return 0;				 /* !-- --> */
 
-    cur = (char *)start;
+    cur = (const char *)start;
     new = 0;
 
     if (memcmp(cur, "!--", 3) == 0)
@@ -2065,18 +2114,18 @@ __xmlCommentSkip(const char *start, size_t len)
     return new;
 }
 
-char *
+const char *
 __xmlInfoProcess(const char *start, size_t len)
 {
-    char *cur, *new, *ret = 0;
+    const char *cur, *new, *ret = 0;
 
-    cur = (char *)start;
+    cur = (const char *)start;
     new = 0;
 
     // Note: http://www.w3.org/TR/REC-xml/#sec-guessing
     if (*cur == '?')
     {
-        char *element;
+        const char *element;
 
         if (len < 3) return 0;				/* <? ?> */
 
@@ -2103,7 +2152,7 @@ __xmlInfoProcess(const char *start, size_t len)
                {
                    size_t slen = strlen("UTF-8");
                    size_t restlen = new-cur;
-                   char *str = "UTF-8";
+                   const char *str = "UTF-8";
                    if (!__xml_memncasecmp(cur, &restlen, &str, &slen)
 #ifdef HAVE_LANGINFO_H
                        && !strcmp(nl_langinfo(CODESET), "UTF-8")
@@ -2123,10 +2172,10 @@ __xmlInfoProcess(const char *start, size_t len)
 }
 
 static void
-__xmlPrepareData(char **start, size_t *blocklen, char raw)
+__xmlPrepareData(const char **start, size_t *blocklen, char raw)
 {
     size_t len = *blocklen;
-    char *pe, *ps = *start;
+    const char *pe, *ps = *start;
 
     if (len > 1)
     {
@@ -2140,11 +2189,11 @@ __xmlPrepareData(char **start, size_t *blocklen, char raw)
     /* CDATA or comment */
     if ((len >= 2) && !strncmp(ps, "<!", 2))
     {
-        char *start = ps+1;
+        const char *start = ps+1;
         size_t blocklen = len-1;
         if (blocklen >= 6)                    /* !-- --> */
         {
-            char *new = __xmlProcessCDATA(&start, &len, raw);
+            const char *new = __xmlProcessCDATA(&start, &len, raw);
             if (new)
             {
                 ps = start;
@@ -2182,7 +2231,7 @@ __xmlErrorSet(const struct _xml_id *id, const char *pos, size_t err_no)
     if (rid->info)
     {
         struct _zeroxml_error *err = rid->info;
-        err->pos = (char *)pos;
+        err->pos = (const char *)pos;
         err->err_no = err_no;
     }
 }
@@ -2199,14 +2248,14 @@ __xml_strtol(const char *str, char **end, int base)
     return strtol(str, end, base);
 }
 
-static char *
+static const char *
 __xml_memmem(const char *cur, size_t len, const char *str, size_t slen)
 {
-    char *rv = NULL;
+    const char *rv = NULL;
 
     if (str && str[0] != '\0')
     {
-        char *new;
+        const char *new;
         do
         {
             new = memchr(cur, str[0], len);
@@ -2228,7 +2277,7 @@ __xml_memmem(const char *cur, size_t len, const char *str, size_t slen)
     return rv;
 }
 
-static char *
+static const char *
 __xml_memncasestr(const char *s, size_t slen, const char *find)
 {
    char c, sc;
@@ -2254,81 +2303,115 @@ __xml_memncasestr(const char *s, size_t slen, const char *find)
       while (strncasecmp(s, find, len) != 0);
       s--;
    }
-   return ((char *)s);
+   return ((const char *)s);
 }
 
-#define NOCASECMP(a,b)  ( ((a)^(b)) & 0xdf )
-static void *
+/*
+ * Search for a needle in the haystack.
+ *
+ * The needle is an XML node name.
+ * The haystack is an XML (sub)section.
+ *
+ * The needle may be the '*' wildcard character to find any node, or it may
+ * contain the '?' wildcard character to indicate that any character is
+ * acceptable at that position.
+ *
+ * When succesful *haystacklen is set to the length of the remaining of the
+ * haystack XML section without the node tag, *needle points to the real
+ * node name as found in the section and *needlelen is the length of the
+ * found node name.
+ *
+ * @param haystack pointer to the satrt of the XML section
+ * @param haystacklen length of the XML section
+ * @param needle node name to search for
+ * @param needlelen length of the node name to search for
+ * @retrun a pointer inside the XML section right after the node name tag
+ */
+#define CASECMP(a,b)	(tolower(a)==tolower(b))
+#define VALIDNAME(a)	(!strchr(" :~/\\;$&%@^=*+()|\"{}[]<>", (a)))
+#define ISSEPARATOR(a)	(strchr(" />", (a)))
+#define ISNUM(a)	(strchr("0123456789", (a)))
+static const char*
 __xml_memncasecmp(const char *haystack, size_t *haystacklen,
-                    char **needle, size_t *needlelen)
+                  const char **needle, size_t *needlelen)
 {
-    char *rptr = 0;
+    const char *rptr = 0;
 
-    if (haystack && needle && needlelen && (*needlelen > 0)
-        && (*haystacklen >= *needlelen))
+    assert(haystack);
+    assert(haystacklen);
+    assert(needle);
+    assert(needlelen);
+
+    if (*needlelen > 0 && *haystacklen >= *needlelen)
     {
-        char *hs = (char *)haystack;
-        char *ns;
-        size_t i;
+        const char *hs = (const char *)haystack;
+        const char *he = hs + *haystacklen;
+        const char *ns = *needle;
 
-        ns = *needle;
-
-        /* search for everything */
-        if ((*ns == '*') && (*needlelen == 1))
+        /* check for a valid starting character of the node name */
+        if (VALIDNAME(*hs) && !ISNUM(*hs))
         {
-            char *he = hs + *haystacklen;
+            /* search for any name */
+            if ((*ns == '*') && (*needlelen == 1))
+            {
+                while ((hs < he) && VALIDNAME(*hs)) ++hs;
+                if (ISSEPARATOR(*hs))
+                {
+                    *needle = (const char *)haystack;
+                    *needlelen = hs - haystack;
 
-            while ((hs < he) && !isspace(*hs) && (*hs != '>')) hs++;
-            if (*(hs-1) == '/') hs--;
+                    /* find the closing character */
+                    if ((ns = memchr(hs, '>', he-hs)) != NULL) hs = ns+1;
+                    else hs = he;
+                    rptr = hs;
+                }
+                else hs = he; /* invalid character in the node name */
+            }
+            else
+            {
+                // the above test assures *haystacklen >= *needlelen
+                size_t i = *needlelen;
+                do
+                {
+                    /* does it match or is it a wildcard character? */
+                    if (!CASECMP(*hs, *ns) && (*ns != '?')) break;
 
-            *needle = (char *)haystack;
-            *needlelen = hs - haystack;
+                    /* is it a character which is not part of the name? */
+                    if (!VALIDNAME(*hs)) break;
 
-            ns = memchr(hs, '>', he-hs);
-            if (ns) hs = ns+1;
-            else hs = he;
+                    hs++;
+                    ns++;
+                }
+                while(--i);
 
-            rptr = hs;
+                /* the next character may not be still part of a name */
+                if (i == 0 && ISSEPARATOR(*hs))
+                {
+                    *needle = (const char *)haystack;
+                    *needlelen = hs - haystack;
+
+                    /* find the closing character */
+                    if ((ns = memchr(hs, '>', he-hs)) != NULL) hs = ns+1;
+                    else hs = he;
+                    rptr = hs;
+                }
+                else /* not found */
+                {
+                    while((hs < he) && VALIDNAME(*hs)) ++hs;
+                    if (ISSEPARATOR(*hs))
+                    {
+                        *needle = (const char *)haystack;
+                        *needlelen = hs - haystack;
+
+                        /* find the closing character */
+                        if ((ns = memchr(hs, '>', he-hs)) != NULL) hs = ns+1;
+                        else hs = he;
+                    }
+                    else hs = he; /* invalid character in the node name */
+                }
+            }
         }
-        else
-        {
-            size_t nlen = *needlelen;
-            char *he = hs + *haystacklen;
-
-            for (i=0; i<nlen; i++)
-            {
-                if (NOCASECMP(*hs,*ns) && (*ns != '?')) break;
-                if (isspace(*hs) || (*hs == '/') || (*hs == '>')) break;
-                hs++;
-                ns++;
-            }
-            if (!isspace(*hs) && (*hs != '/') && (*hs != '>')) i=0;
-
-            if (i == nlen)
-            {
-                *needle = (char *)haystack;
-                *needlelen = hs - haystack;
-
-                ns = memchr(hs, '>', he-hs);
-                if (ns) hs = ns+1;
-                else hs = he;
-
-                rptr = hs;
-            }
-            else /* not found */
-            {
-                while((hs < he) && !isspace(*hs) && (*hs != '>')) hs++;
-                if (*(hs-1) == '/') hs--;
-
-                *needle = (char *)haystack;
-                *needlelen = hs - haystack;
-
-                ns = memchr(hs, '>', he-hs);
-                if (ns) hs = ns+1;
-                else hs = he;
-            }
-        }
-
+        else hs = he; /* invalid starting character in the node name */
         *haystacklen -= hs - haystack;
     }
 

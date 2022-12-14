@@ -87,7 +87,7 @@ typedef struct
 #ifndef XML_NONVALIDATING
 struct _zeroxml_error
 {
-    char *pos;
+    const char *pos;
     size_t err_no;
 };
 #endif
@@ -99,11 +99,11 @@ struct _zeroxml_error
  */
 struct _root_id
 {
-    char *name;
+    const char *name;
     char *start;
     off_t len;
     int fd;
-    char *locale;
+    const char *locale;
 #ifdef XML_USE_NODECACHE
     void *node;
 #endif
@@ -119,7 +119,7 @@ struct _root_id
 
 struct _xml_id
 {
-    char *name;
+    const char *name;
     char *start;
     off_t len;
     off_t name_len;
