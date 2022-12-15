@@ -1788,9 +1788,10 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, const char **name, size_t
     assert(rlen != 0);
     assert(nodenum != 0);
 
-    if (open_len == 0 || *name == 0) {
+    if (open_len == 0 || *name == 0)
+    {
         *name = start;
-        *len = XML_INVALID_NODE_NAME;
+        *len = XML_NO_ERROR;
         return NULL;
     }
 
@@ -1814,7 +1815,7 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, const char **name, size_t
         const char *rptr;
 
         new++; /* skip '<' */
-        if (*new == '/')		/* end of a section: "</" */
+        if (*new == '/') /* end of a section: "</" */
         {
             *len -= (restlen-1);
             break;
@@ -1830,7 +1831,8 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, const char **name, size_t
             const char *start = cur;
             size_t blocklen = restlen;
             new = __xmlProcessCDATA(&start, &blocklen, raw);
-            if (!new && start && open_len) {		/* CDATA */
+            if (!new && start && open_len) /* CDATA */
+            {
                 *name = start;
                 *len = XML_INVALID_COMMENT;
                 return NULL;
@@ -1843,7 +1845,8 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, const char **name, size_t
         case '?': /* info block: "<?" */
         {
             new = __xmlInfoProcess(cur, restlen);
-            if (!new) {
+            if (!new)
+            {
                 *name = cur;
                 *len = XML_INVALID_INFO_BLOCK;
                 return NULL;
@@ -1917,7 +1920,8 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, const char **name, size_t
             /* restlen -= new-cur; not necessary because of __xml_memncasecmp */
             cur = new;
             new = memchr(cur, '<', restlen);
-            if (!new) {
+            if (!new)
+            {
                 *name = cur;
                 *len = XML_ELEMENT_NO_OPENING_TAG;
                 return NULL;
@@ -1931,7 +1935,8 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, const char **name, size_t
                 const char *start = cur;
                 size_t blocklen = restlen;
                 new = __xmlProcessCDATA(&start, &blocklen, raw);
-                if (!new) {
+                if (!new)
+                {
                     *name = start;
                     *len = XML_INVALID_COMMENT;
                     return NULL;
@@ -1944,7 +1949,8 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, const char **name, size_t
                 * Search for the closing tag of the cascading block
                 */
                 new = memchr(cur, '<', restlen);
-                if (!new) {
+                if (!new)
+                {
                     *name = cur;
                     *len = XML_ELEMENT_NO_CLOSING_TAG;
                     return NULL;
@@ -1966,7 +1972,8 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, const char **name, size_t
 #ifdef XML_USE_NODECACHE
                     cacheDataSet(nnc, element, elementlen, rptr, new-rptr-1);
 #endif
-                    if (*ps != '>') {
+                    if (*ps != '>')
+                    {
                         *name = new+1;
                         *len = XML_ELEMENT_NO_CLOSING_TAG;
                         return NULL;
@@ -1997,7 +2004,8 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, const char **name, size_t
                 }
 
                 new = memchr(cur, '>', restlen);
-                if (!new) {
+                if (!new)
+                {
                     *name = cur;
                     *len = XML_ELEMENT_NO_CLOSING_TAG;
                     return NULL;
@@ -2030,7 +2038,8 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, const char **name, size_t
                         return 0;
                     }
 
-                    if (slen == restlen) {
+                    if (slen == restlen)
+                    {
                         SET_ERROR_AND_RETURN(start, cur, XML_UNEXPECTED_EOF);
                         *name = cur;
                         *len = XML_UNEXPECTED_EOF;
@@ -2050,7 +2059,8 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, const char **name, size_t
                  */
                 cur = new;
                 new = memchr(cur, '<', restlen);
-                if (!new) {
+                if (!new)
+                {
                     *name = cur;
                     *len = XML_ELEMENT_NO_CLOSING_TAG;
                     return NULL;
@@ -2069,7 +2079,8 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, const char **name, size_t
                     const char *ps = new+elementlen+1;
                     while ((ps<pe) && isspace(*ps)) ps++;
 
-                    if (*ps != '>') {
+                    if (*ps != '>')
+                    {
                         *name = new+1;
                         *len = XML_ELEMENT_NO_CLOSING_TAG;
                         return NULL;
@@ -2086,7 +2097,8 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, const char **name, size_t
                             open_element = start_tag;
                             start_tag = 0;
                         }
-                        else { /* report error */
+                        else /* report error */
+                        {
                             *name = new;
                             *len = XML_ELEMENT_NO_OPENING_TAG;
                             return NULL;
@@ -2096,7 +2108,8 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, const char **name, size_t
                 }
 
                 new = memchr(cur, '>', restlen);
-                if (!new) {
+                if (!new)
+                {
                     *name = cur;
                     *len = XML_ELEMENT_NO_CLOSING_TAG;
                     return NULL;
@@ -2105,7 +2118,8 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, const char **name, size_t
                 restlen -= new-cur;
                 cur = new;
             }
-            else {
+            else
+            {
                 *name = cur;
                 *len = XML_ELEMENT_NO_CLOSING_TAG;
                 return NULL;
