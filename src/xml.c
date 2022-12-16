@@ -316,7 +316,7 @@ xmlNodeTest(const xmlId *id, const char *path)
     nnc = nc = cacheNodeGet(xid);
     rv = __xmlNodeGetPath(&nnc, xid->start, &len, &node, &slen) ? 1 : 0;
 
-    if (!rv) {
+    if (!rv && xid->root) {
         PRINT_INFO(xid->root->start, node, len);
     }
 
@@ -364,9 +364,14 @@ xmlNodeGet(const xmlId *id, const char *path)
             xmlErrorSet(xid, 0, XML_OUT_OF_MEMORY);
         }
     }
-    else if (slen == 0) {
+    else if (slen == 0)
+    {
         xmlErrorSet(xid, node, len);
-    } else {
+        if (xid->root) {
+            PRINT_INFO(xid->root->start, node, len);
+        }
+    }
+    else if (xid->root) {
         PRINT_INFO(xid->root->start, node, len);
     }
 
@@ -442,9 +447,14 @@ xmlNodeCopy(const xmlId *id, const char *path)
             xmlErrorSet(xid, 0, XML_OUT_OF_MEMORY);
         }
     }
-    else if (slen == 0) {
+    else if (slen == 0)
+    {
         xmlErrorSet(xid, node, len);
-    } else {
+        if (xid->root) {
+            PRINT_INFO(xid->root->start, node, len);
+        }
+    }
+    else if (xid->root) {
         PRINT_INFO(xid->root->start, node, len);
     }
 
@@ -600,7 +610,7 @@ __xmlNodeGetNum(const xmlId *id, const char *path, char raw)
             if (p == 0 && slen == 0) {
                 xmlErrorSet(xid, node, len);
             }
-            if (!p) {
+            if (!p && xid->root) {
                 PRINT_INFO(xid->root->start, node, len);
             }
         }
@@ -621,7 +631,7 @@ __xmlNodeGetNum(const xmlId *id, const char *path, char raw)
             if (ret == 0 && slen == 0)
             {
                 xmlErrorSet(xid, node, len);
-                if (len) {
+                if (len && xid->root) {
                     PRINT_INFO(xid->root->start, node, len);
                 }
                 num = 0;
@@ -708,9 +718,11 @@ __xmlNodeGetPos(const xmlId *pid, xmlId *id, const char *element, size_t num, ch
     }
     else if (slen == 0) {
         xmlErrorSet(xpid, node, len);
-        PRINT_INFO(xid->root->start, node, len);
+        if (xid->root) {
+            PRINT_INFO(xid->root->start, node, len);
+        }
     }
-    else {
+    else if (xid->root) {
         PRINT_INFO(xid->root->start, node, len);
     }
 
@@ -951,9 +963,12 @@ xmlNodeGetString(const xmlId *id, const char *path)
                 xmlErrorSet(xid, 0, XML_OUT_OF_MEMORY);
             }
         }
-        else {
-            PRINT_INFO(xid->root->start, node, len);
+        else
+        {
             xmlErrorSet(xid, node, len);
+            if (xid->root) {
+                PRINT_INFO(xid->root->start, node, len);
+            }
         }
     }
 
@@ -997,11 +1012,14 @@ xmlNodeCopyString(const xmlId *id, const char *path, char *buffer, size_t buflen
             }
             ret = len;
         }
-        else if (slen == 0) {
+        else if (slen == 0)
+        {
             xmlErrorSet(xid, node, len);
-            PRINT_INFO(xid->root->start, node, len);
+            if (xid->root) {
+                PRINT_INFO(xid->root->start, node, len);
+            }
         }
-        else {
+        else if (xid->root) {
             PRINT_INFO(xid->root->start, node, len);
         }
     }
@@ -1036,11 +1054,14 @@ xmlNodeCompareString(const xmlId *id, const char *path, const char *s)
             __xmlPrepareData(&ps, &len, 0);
             ret = strncasecmp(ps, s, len);
         }
-        else if (slen == 0) {
+        else if (slen == 0)
+        {
             xmlErrorSet(xid, node, len);
-            PRINT_INFO(xid->root->start, node, len);
+            if (xid->root) {
+                PRINT_INFO(xid->root->start, node, len);
+            }
         }
-        else {
+        else if (xid->root) {
             PRINT_INFO(xid->root->start, node, len);
         }
     }
@@ -1090,11 +1111,14 @@ xmlNodeGetBool(const xmlId *id, const char *path)
             const char *end = str+len;
             li = __xmlDecodeBoolean(str, end);
         }
-        else if (slen == 0) {
+        else if (slen == 0)
+        {
             xmlErrorSet(xid, node, len);
-            PRINT_INFO(xid->root->start, node, len);
+            if (xid->root) {
+                PRINT_INFO(xid->root->start, node, len);
+            }
         }
-        else {
+        else if (xid->root) {
             PRINT_INFO(xid->root->start, node, len);
         }
     }
@@ -1144,11 +1168,14 @@ xmlNodeGetInt(const xmlId *id, const char *path)
             char *end = (char*)str+len;
             li = __xml_strtol(str, &end, 10);
         }
-        else if (slen == 0) {
+        else if (slen == 0)
+        {
             xmlErrorSet(xid, node, len);
-            PRINT_INFO(xid->root->start, node, len);
+            if (xid->root) {
+                PRINT_INFO(xid->root->start, node, len);
+            }
         }
-        else {
+        else if (xid->root) {
             PRINT_INFO(xid->root->start, node, len);
         }
     }
@@ -1198,11 +1225,14 @@ xmlNodeGetDouble(const xmlId *id, const char *path)
             char *end = (char*)str+len;
             d = strtod(str, &end);
         }
-        else if (slen == 0) {
+        else if (slen == 0)
+        {
             xmlErrorSet(xid, node, len);
-            PRINT_INFO(xid->root->start, node, len);
+            if (xid->root) {
+                PRINT_INFO(xid->root->start, node, len);
+            }
         }
-        else {
+        else if (xid->root) {
             PRINT_INFO(xid->root->start, node, len);
         }
     }
