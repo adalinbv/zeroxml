@@ -95,9 +95,10 @@
 #include "api.h"
 
 #ifndef XML_NONVALIDATING
-#define FILENAME_LEN		1024
-#define BUF_LEN			2048
+# define FILENAME_LEN		1024
+# define BUF_LEN		2048
 
+static char __zeroxml_strerror[BUF_LEN+1];
 static const char *__zeroxml_error_str[XML_MAX_ERROR];
 static void __xmlErrorSet(const struct _xml_id*, const char *, size_t);
 # define xmlErrorSet(a, b, c)	__xmlErrorSet(a, b, c)
@@ -107,7 +108,7 @@ static char _xml_filename[FILENAME_LEN+1];
 #  define PRINT_INFO(a, b, c) \
     if (0 < (c) && (c) < XML_MAX_ERROR) { \
         int i, nl = 1; for (i=0; i<(b)-(a); ++i) if (a[i] == '\n') nl++; \
-        snprintf(__zeroxml_strerror, BUF_LEN, "%s: %s at line %i\n", _xml_filename, __zeroxml_error_str[(c)], nl); \
+        snprintf(__zeroxml_strerror, BUF_LEN, "%s:\n\t%s at line %i\n", _xml_filename, __zeroxml_error_str[(c)], nl); \
         fprintf(stderr, "%s\tdetected in %s at line %i\n", __zeroxml_strerror, __func__, __LINE__); \
     } else { \
         fprintf(stderr, "%s: in %s at line %i: Unknown error number!\n", \
