@@ -99,14 +99,18 @@ struct _zeroxml_error
  */
 struct _root_id
 {
+#ifndef XML_NONVALIDATING
+    struct _root_id *root;
+#endif
     const char *name;
     char *start;
     off_t len;
-    int fd;
-    const char *locale;
 #ifdef XML_USE_NODECACHE
     void *node;
 #endif
+
+    int fd;
+    const char *locale;
 #ifndef XML_NONVALIDATING
     struct _zeroxml_error *info;
 #endif
@@ -119,16 +123,17 @@ struct _root_id
 
 struct _xml_id
 {
-    const char *name;
-    char *start;
-    off_t len;
-    off_t name_len;
 #ifndef XML_NONVALIDATING
     struct _root_id *root;
 #endif
+    const char *name;
+    char *start;
+    off_t len;
 #ifdef XML_USE_NODECACHE
     void *node;
 #endif
+
+    off_t name_len;
 };
 
 #endif /* __XML_API_H */

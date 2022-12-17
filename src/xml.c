@@ -215,6 +215,7 @@ xmlOpen(const char *filename)
                     rid->fd = fd;
                     rid->start = mm;
                     rid->len = blen;
+                    rid->root = rid;
                 }
             }
         }
@@ -255,6 +256,7 @@ xmlInitBuffer(const char *buffer, size_t size)
             rid->fd = -1;
             rid->start = (char*)buffer;
             rid->len = size;
+            rid->root = rid;
 
 #ifdef HAVE_LOCALE_H
 //          rid->locale = setlocale(LC_CTYPE, "");
@@ -270,10 +272,8 @@ xmlClose(xmlId *id)
 {
     struct _root_id *rid = (struct _root_id *)id;
 
-    if (rid)
+    if (rid && rid->root == rid)
     {
-        assert(rid->name == 0);
-
         if (rid->fd != -1)
         {
             simple_unmmap(rid->start, (size_t)rid->len, &rid->un);
@@ -367,11 +367,9 @@ xmlNodeGet(const xmlId *id, const char *path)
     else if (slen == 0)
     {
         xmlErrorSet(xid, node, len);
-        if (xid->root) {
-            PRINT_INFO(xid->root->start, node, len);
-        }
+        PRINT_INFO(xid->root->start, node, len);
     }
-    else if (xid->root) {
+    else {
         PRINT_INFO(xid->root->start, node, len);
     }
 
@@ -450,11 +448,9 @@ xmlNodeCopy(const xmlId *id, const char *path)
     else if (slen == 0)
     {
         xmlErrorSet(xid, node, len);
-        if (xid->root) {
-            PRINT_INFO(xid->root->start, node, len);
-        }
+        PRINT_INFO(xid->root->start, node, len);
     }
-    else if (xid->root) {
+    else {
         PRINT_INFO(xid->root->start, node, len);
     }
 
@@ -718,11 +714,9 @@ __xmlNodeGetPos(const xmlId *pid, xmlId *id, const char *element, size_t num, ch
     }
     else if (slen == 0) {
         xmlErrorSet(xpid, node, len);
-        if (xid->root) {
-            PRINT_INFO(xid->root->start, node, len);
-        }
+        PRINT_INFO(xid->root->start, node, len);
     }
-    else if (xid->root) {
+    else {
         PRINT_INFO(xid->root->start, node, len);
     }
 
@@ -966,9 +960,7 @@ xmlNodeGetString(const xmlId *id, const char *path)
         else
         {
             xmlErrorSet(xid, node, len);
-            if (xid->root) {
-                PRINT_INFO(xid->root->start, node, len);
-            }
+            PRINT_INFO(xid->root->start, node, len);
         }
     }
 
@@ -1015,11 +1007,9 @@ xmlNodeCopyString(const xmlId *id, const char *path, char *buffer, size_t buflen
         else if (slen == 0)
         {
             xmlErrorSet(xid, node, len);
-            if (xid->root) {
-                PRINT_INFO(xid->root->start, node, len);
-            }
+            PRINT_INFO(xid->root->start, node, len);
         }
-        else if (xid->root) {
+        else {
             PRINT_INFO(xid->root->start, node, len);
         }
     }
@@ -1057,11 +1047,9 @@ xmlNodeCompareString(const xmlId *id, const char *path, const char *s)
         else if (slen == 0)
         {
             xmlErrorSet(xid, node, len);
-            if (xid->root) {
-                PRINT_INFO(xid->root->start, node, len);
-            }
+            PRINT_INFO(xid->root->start, node, len);
         }
-        else if (xid->root) {
+        else {
             PRINT_INFO(xid->root->start, node, len);
         }
     }
@@ -1114,11 +1102,9 @@ xmlNodeGetBool(const xmlId *id, const char *path)
         else if (slen == 0)
         {
             xmlErrorSet(xid, node, len);
-            if (xid->root) {
-                PRINT_INFO(xid->root->start, node, len);
-            }
+            PRINT_INFO(xid->root->start, node, len);
         }
-        else if (xid->root) {
+        else {
             PRINT_INFO(xid->root->start, node, len);
         }
     }
@@ -1171,11 +1157,9 @@ xmlNodeGetInt(const xmlId *id, const char *path)
         else if (slen == 0)
         {
             xmlErrorSet(xid, node, len);
-            if (xid->root) {
-                PRINT_INFO(xid->root->start, node, len);
-            }
+            PRINT_INFO(xid->root->start, node, len);
         }
-        else if (xid->root) {
+        else {
             PRINT_INFO(xid->root->start, node, len);
         }
     }
@@ -1228,11 +1212,9 @@ xmlNodeGetDouble(const xmlId *id, const char *path)
         else if (slen == 0)
         {
             xmlErrorSet(xid, node, len);
-            if (xid->root) {
-                PRINT_INFO(xid->root->start, node, len);
-            }
+            PRINT_INFO(xid->root->start, node, len);
         }
-        else if (xid->root) {
+        else {
             PRINT_INFO(xid->root->start, node, len);
         }
     }
@@ -1251,7 +1233,7 @@ xmlMarkId(const xmlId *id)
     if (xmid)
     {
         struct _root_id *xrid = (struct _root_id *)id;
-        if (xrid->name == 0)
+        if (xrid->root == xrid)
         {
             xmid->name = "";
             xmid->name_len = 0;
@@ -1423,12 +1405,7 @@ xmlErrorGetNo(const xmlId *id, int clear)
     if (id)
     {
         struct _xml_id *xid = (struct _xml_id *)id;
-        struct _root_id *rid;
-
-        if (xid->name) rid = xid->root;
-        else rid = (struct _root_id *)xid;
-
-        assert(rid != 0);
+        struct _root_id *rid = xid->root;
 
         if (rid->info)
         {
@@ -2342,11 +2319,7 @@ __xmlErrorSet(const struct _xml_id *id, const char *pos, size_t err_no)
 
     assert(xid != 0);
 
-    if (xid->name) rid = xid->root;
-    else rid = (struct _root_id *)xid;
-
-    assert(rid != 0);
-    assert(rid->name == 0);
+    rid = xid->root;
     if (rid->info == 0) {
         rid->info = malloc(sizeof(struct _zeroxml_error));
     }
