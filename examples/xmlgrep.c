@@ -84,13 +84,13 @@ show_help ()
     printf("\t-v <string>\tfilter sections that contain this vale\n\n");
     printf(" To print the contents of the 'type' element of the XML section ");
     printf("that begins\n at '/printer/output' use the following command:\n\n");
-    printf("\txmlgrep -r /printer/output -p type sample.xml\n\n");
+    printf("\txmlgrep -r /printer/output -p type <file.xml>\n\n");
     printf(" To filter 'output' elements under '/printer' that have attribute");
     printf(" 'n' set to '1'\n use the following command:\n\n");
-    printf("\txmlgrep -r /printer -p output -a n -v 1 sample.xml\n\n");
+    printf("\txmlgrep -r /printer -p output -a n -v 1 <file.xml>\n\n");
     printf(" To filter out sections that contain the 'driver' element with ");
     printf("'generic' as\n it's value use the following command:");
-    printf("\n\n\txmlgrep -r /printer/output -e driver -v generic sample.xml");
+    printf("\n\n\txmlgrep -r /printer/output -e driver -v generic <file.xml>");
     printf("\n\n");
     free_and_exit(0);
 }

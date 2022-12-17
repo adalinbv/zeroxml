@@ -99,8 +99,6 @@
 #define BUF_LEN			2048
 
 static const char *__zeroxml_error_str[XML_MAX_ERROR];
-static char __zeroxml_strerror[BUF_LEN+1];
-
 static void __xmlErrorSet(const struct _xml_id*, const char *, size_t);
 # define xmlErrorSet(a, b, c)	__xmlErrorSet(a, b, c)
 
