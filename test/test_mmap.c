@@ -21,7 +21,7 @@
      const char *errstr = xmlErrorGetString(id, 0); \
      size_t column = xmlErrorGetColumnNo(id, 0); \
      size_t lineno = xmlErrorGetLineNo(id, 1); \
-     printf("Error at line %li, column %li: %s\n", lineno, column, errstr); \
+     printf("\n\tError at line %li, column %li: %s\n", lineno, column, errstr);\
      exit(-1); \
   }
 

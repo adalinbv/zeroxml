@@ -1,7 +1,15 @@
+
 #include <stdio.h>
+#include <stdlib.h>
 #include <malloc.h>
+#include <string.h>
 #include <assert.h>
+
 #include "xml.h"
+
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
 
 #define ROOTNODE	"/Configuration/output/menu"
 #define	LEAFNODE	"name"
@@ -9,19 +17,25 @@
 #define BUFLEN		4096
 
 #define PRINT_ERROR_AND_EXIT(id) \
-    if (xmlErrorGetNo(id, 0) != XML_NO_ERROR) { \
-         const char *errstr = xmlErrorGetString(id, 0); \
-         size_t column = xmlErrorGetColumnNo(id, 0); \
-         size_t lineno = xmlErrorGetLineNo(id, 1); \
-         printf("Error at line %i, column %i: %s\n", lineno, column, errstr); \
-         exit(-1); \
-      }
+  if (xmlErrorGetNo(id, 0) != XML_NO_ERROR) { \
+     const char *errstr = xmlErrorGetString(id, 0); \
+     size_t column = xmlErrorGetColumnNo(id, 0); \
+     size_t lineno = xmlErrorGetLineNo(id, 1); \
+     printf("\n\tError at line %li, column %li: %s\n", lineno, column, errstr);\
+     exit(-1); \
+  }
 
-int main()
+int main(int argc, char **argv)
 {
+   const char *fname = SOURCE_DIR"/test/sample.xml";
    xmlId *root_id;
 
-   root_id = xmlOpen("sample.xml");
+   if (argc == 2) {
+      fname = argv[1];
+   }
+
+
+   root_id = xmlOpen(fname);
    if (root_id)
    {
       xmlId *path_id, *node_id;
@@ -59,7 +73,6 @@ int main()
       if (path_id && node_id)
       {
          char buf[BUFLEN];
-         size_t len;
         
          xmlCopyString(path_id, buf, BUFLEN);
          printf("Testing xmlNodeCopyString against xmlGetString:\t\t\t\t");
@@ -177,10 +190,13 @@ int main()
          size_t column = xmlErrorGetColumnNo(root_id, 0);
          size_t lineno = xmlErrorGetLineNo(root_id, 1);
 
-         printf("Error at line %i, column %i: %s\n", lineno, column, errstr);
+         printf("Error at line %li, column %li: %s\n", lineno, column, errstr);
       }
 
       xmlClose(root_id);
+   }
+   else {
+      printf("File not found: %s\n", fname);
    }
    printf("\n");
 
