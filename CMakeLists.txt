@@ -244,7 +244,7 @@ if(RMALLOC)
   target_LINK_LIBRARIES(${LIBZEROXML_DEBUG} ${EXTRA_LIBS})
 
   # Add an install target here
-  install(targetS ${LIBZEROXML_DEBUG}
+  install(TARGETS ${LIBZEROXML_DEBUG}
         RUNTIME DESTINATION bin
         ARCHIVE DESTINATION "lib${LIB_POSTFIX}"
        )
