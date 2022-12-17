@@ -1,18 +1,13 @@
 cmake_minimum_required(VERSION 3.0.0)
-SET(cmake_verbose_makefile TRUE)
+set(cmake_verbose_makefile TRUE)
 
-IF(COMMAND CMAKE_POLICY)
-  CMAKE_POLICY(SET CMP0003 NEW)
-ENDIF(COMMAND CMAKE_POLICY)
+include(CheckIncludeFile)
+include(CheckIncludeFiles)
+include(CheckLibraryExists)
 
-
-INCLUDE(CheckIncludeFile)
-INCLUDE (CheckIncludeFiles)
-INCLUDE(CheckLibraryExists)
-
-PROJECT(ZeroXml C)
-SET(PACKAGE_NAME "ZeroXml")
-SET(PACKAGE "zeroxml")
+project(ZeroXml C)
+set(PACKAGE_NAME "ZeroXml")
+set(PACKAGE "zeroxml")
 
 OPTION(UTILS  "Build and install utility programs"       ON)
 OPTION(WERROR "Treat compile warnings as errors"         OFF)
@@ -21,254 +16,260 @@ OPTION(NONVALIDATING "Trun off XML validation"           OFF)
 OPTION(NONEVALUE "Allow NONE as a return value"          OFF)
 OPTION(RMALLOC "Enable memory debugging functions"       OFF)
 
-IF(RMALLOC)
-  SET(USE_RMALLOC 1)
-ENDIF(RMALLOC)
+if(RMALLOC)
+  set(USE_RMALLOC 1)
+endif(RMALLOC)
 
-IF(WIN32)
-  SET(LIBZEROXML ZeroXML)
-  SET(LIBZEROXML_DEBUG ZeroXML-rmalloc)
-  ADD_DEFINITIONS("-D_WIN32")
-  ADD_DEFINITIONS("-DXML_BUILD_LIBRARY=1")
-  SET(CMAKE_INSTALL_PREFIX "C:/Program\ Files/${PACKAGE_NAME}")
-ELSE()
-  SET(LIBZEROXML zeroxml)
-  SET(LIBZEROXML_DEBUG zeroxml-rmalloc)
-ENDIF()
+if(WIN32)
+  set(LIBZEROXML ZeroXML)
+  set(LIBZEROXML_DEBUG ZeroXML-rmalloc)
+  add_definitions("-D_WIN32")
+  add_definitions("-DXML_BUILD_LIBRARY=1")
+  set(cmake_install_PREFIX "C:/Program\ Files/${PACKAGE_NAME}")
+else()
+  set(LIBZEROXML zeroxml)
+  set(LIBZEROXML_DEBUG zeroxml-rmalloc)
+endif()
 
-SET(LIBTYPE STATIC)
+set(LIBTYPE STATIC)
 
 # detect system type
-IF(NOT DEFINED CPACK_SYSTEM_NAME)
-  SET(CPACK_SYSTEM_NAME ${CMAKE_SYSTEM_NAME})
-ENDIF(NOT DEFINED CPACK_SYSTEM_NAME)
-IF (UNIX AND NOT WIN32)
-  IF(CMAKE_SIZEOF_VOID_P EQUAL 8)
-    SET(CPACK_PACKAGE_ARCHITECTURE "x86_64")
-  ELSE(CMAKE_SIZEOF_VOID_P EQUAL 8)
-    SET(CPACK_PACKAGE_ARCHITECTURE "i386")
-  ENDIF(CMAKE_SIZEOF_VOID_P EQUAL 8)
-ENDIF(UNIX AND NOT WIN32)
+if(NOT DEFINED CPACK_SYSTEM_NAME)
+  set(CPACK_SYSTEM_NAME ${CMAKE_SYSTEM_NAME})
+endif(NOT DEFINED CPACK_SYSTEM_NAME)
+if(UNIX AND NOT WIN32)
+  if(cmake_SIZEOF_VOID_P EQUAL 8)
+    set(CPACK_PACKAGE_ARCHITECTURE "x86_64")
+  else(cmake_SIZEOF_VOID_P EQUAL 8)
+    set(CPACK_PACKAGE_ARCHITECTURE "i386")
+  endif(cmake_SIZEOF_VOID_P EQUAL 8)
+endif(UNIX AND NOT WIN32)
 
 # read 'version' file into a variable (stripping any newlines or spaces)
 file(READ version versionFile)
 string(STRIP ${versionFile} ZEROXML_VERSION)
-SET(VERSION ZEROXML_VERSION)
+set(VERSION ZEROXML_VERSION)
 
 #  read 'description` file into a variable
 file(STRINGS description descriptionFile)
-STRING(REGEX REPLACE ";" " " descriptionFile "${descriptionFile}")
+string(REGEX REPLACE ";" " " descriptionFile "${descriptionFile}")
 
-# split version string into components, note CMAKE_MATCH_0 is the entire regexp match
-STRING(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" CPACK_PACKAGE_VERSION ${ZEROXML_VERSION})
-SET(CPACK_PACKAGE_VERSION_MAJOR ${CMAKE_MATCH_1})
-SET(CPACK_PACKAGE_VERSION_MINOR ${CMAKE_MATCH_2})
-SET(CPACK_PACKAGE_VERSION_PATCH ${CMAKE_MATCH_3})
+# split version string into components, note cmake_MATCH_0 is the entire regexp match
+string(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" CPACK_PACKAGE_VERSION ${ZEROXML_VERSION})
+set(CPACK_PACKAGE_VERSION_MAJOR ${CMAKE_MATCH_1})
+set(CPACK_PACKAGE_VERSION_MINOR ${CMAKE_MATCH_2})
+set(CPACK_PACKAGE_VERSION_PATCH ${CMAKE_MATCH_3})
 
-SET(CPACK_PACKAGE_NAME "${PACKAGE}")
-SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}.el6.${CPACK_PACKAGE_ARCHITECTURE}")
-SET(CPACK_PACKAGE_VENDOR "Adalin B.V.")
-SET(CPACK_PACKAGE_CONTACT "tech@adalin.org")
-SET(CPACK_PACKAGE_DESCRIPTION "A lightweight, cross platform XML configuration file reading library")
-SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${descriptionFile})
-SET(CPACK_PACKAGE_DESCRIPTION_FILE "${PROJECT_SOURCE_DIR}/description")
-SET(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/COPYING")
-SET(CPACK_RESOURCE_FILE_README "${PROJECT_SOURCE_DIR}/README")
+set(CPACK_PACKAGE_NAME "${PACKAGE}")
+set(CPACK_PACKAGE_file_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}.el6.${CPACK_PACKAGE_ARCHITECTURE}")
+set(CPACK_PACKAGE_VENDOR "Adalin B.V.")
+set(CPACK_PACKAGE_CONTACT "tech@adalin.org")
+set(CPACK_PACKAGE_DESCRIPTION "A lightweight, cross platform XML configuration file reading library")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${descriptionFile})
+set(CPACK_PACKAGE_DESCRIPTION_file "${PROJECT_SOURCE_DIR}/description")
+set(CPACK_RESOURCE_file_LICENSE "${PROJECT_SOURCE_DIR}/COPYING")
+set(CPACK_RESOURCE_file_README "${PROJECT_SOURCE_DIR}/README")
 
-IF(WIN32)
+if(WIN32)
 
-ELSE(WIN32)
+else(WIN32)
   # DEBIAN
-  IF(CMAKE_SIZEOF_VOID_P EQUAL 8)
-    SET(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
-  ELSE(CMAKE_SIZEOF_VOID_P EQUAL 8)
-    SET(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "i386")
-  ENDIF(CMAKE_SIZEOF_VOID_P EQUAL 8)
-  SET(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${PACK_PACKAGE_ARCHITECTURE})
-  SET(CPACK_DEBIAN_PACKAGE_SECTION "devel")
-  SET(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.1)")
-ENDIF(WIN32)
+  if(cmake_SIZEOF_VOID_P EQUAL 8)
+    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
+  else(cmake_SIZEOF_VOID_P EQUAL 8)
+    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "i386")
+  endif(cmake_SIZEOF_VOID_P EQUAL 8)
+  set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${PACK_PACKAGE_ARCHITECTURE})
+  set(CPACK_DEBIAN_PACKAGE_SECTION "devel")
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.1)")
+endif(WIN32)
 
 # RPM
-SET(CPACK_RPM_PACKAGE_ARCHITECTURE ${PACK_PACKAGE_ARCHITECTURE})
-SET(CPACK_RPM_PACKAGE_GROUP "System/Libraries")
+set(CPACK_RPM_PACKAGE_ARCHITECTURE ${PACK_PACKAGE_ARCHITECTURE})
+set(CPACK_RPM_PACKAGE_GROUP "System/Libraries")
 
 
-SET(CPACK_SOURCE_GENERATOR ZIP)
-SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${ZEROXML_VERSION}" CACHE INTERNAL "tarball basename")
-SET(CPACK_SOURCE_IGNORE_FILES
-  "^${PROJECT_BINARY_DIR};${PROJECT_SOURCE_DIR}/.git;\\\\.gitignore;Makefile.am;~$;${CPACK_SOURCE_IGNORE_FILES}")
+set(CPACK_SOURCE_GENERATOR ZIP)
+set(CPACK_SOURCE_PACKAGE_file_NAME "${CMAKE_PROJECT_NAME}-${ZEROXML_VERSION}" CACHE INTERNAL "tarball basename")
+set(CPACK_SOURCE_IGNORE_fileS
+  "^${PROJECT_BINARY_DIR};${PROJECT_SOURCE_DIR}/.git;\\\\.gitignore;Makefile.am;~$;${CPACK_SOURCE_IGNORE_fileS}")
 
-SET(CPACK_GENERATOR "DEB;RPM")
-SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Adalin B.V.")
+set(CPACK_GENERATOR "DEB;RPM")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Adalin B.V.")
 
-INCLUDE (CPack)
+include(CPack)
 
 # We have some custom .cmake scripts not in the official distribution.
-SET(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
+set(cmake_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
 
 # Add definitions, compiler switches, etc.
-INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/src" src include "${CMAKE_BINARY_DIR}/include")
+include_directories("${CMAKE_SOURCE_DIR}/src"
+  "${CMAKE_BINARY_DIR}/include"
+  include
+  src 
+)
 
-IF(NOT CMAKE_BUILD_TYPE)
-  SET(CMAKE_BUILD_TYPE MinSizeRel CACHE STRING
+if(NOT cmake_BUILD_TYPE)
+  set(cmake_BUILD_TYPE MinSizeRel CACHE STRING
       "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
       FORCE)
-ENDIF(NOT CMAKE_BUILD_TYPE)
+endif(NOT cmake_BUILD_TYPE)
 
 
-ADD_DEFINITIONS(-DHAVE_CONFIG_H=1)
-IF(WERROR)
-  ADD_DEFINITIONS(-Werror)
-ENDIF()
+add_definitions(-DHAVE_CONFIG_H=1)
+if(WERROR)
+  add_definitions(-Werror)
+endif()
 
-IF(MSVC)
-    SET(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -D_DEBUG")
-    SET(CMAKE_C_FLAGS_MINSIZEREL "${CMAKE_C_FLAGS_MINSIZEREL} -DNDEBUG")
-    SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
-    SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -D_DEBUG")
-    ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
-    ADD_DEFINITIONS(-D_CRT_NONSTDC_NO_DEPRECATE)
-    ADD_DEFINITIONS(/NODEFAULTLIB:libcmt.lib)
-    ADD_DEFINITIONS(/NODEFAULTLIB:msvcrt.lib)
-    ADD_DEFINITIONS(/NODEFAULTLIB:libcd.lib)
-    ADD_DEFINITIONS(/NODEFAULTLIB:libcmtd.lib)
-    ADD_DEFINITIONS(/NODEFAULTLIB:msvcrtd.lib)
+if(MSVC)
+    set(cmake_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -D_DEBUG")
+    set(cmake_C_FLAGS_MINSIZEREL "${CMAKE_C_FLAGS_MINSIZEREL} -DNDEBUG")
+    set(cmake_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
+    set(cmake_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -D_DEBUG")
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE)
+    add_definitions(/NODEFAULTLIB:libcmt.lib)
+    add_definitions(/NODEFAULTLIB:msvcrt.lib)
+    add_definitions(/NODEFAULTLIB:libcd.lib)
+    add_definitions(/NODEFAULTLIB:libcmtd.lib)
+    add_definitions(/NODEFAULTLIB:msvcrtd.lib)
 
     OPTION(FORCE_STATIC_VCRT "Force /MT for static VC runtimes" OFF)
-    IF(FORCE_STATIC_VCRT)
-        FOREACH(flag_var
-                CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-                CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
-            IF(${flag_var} MATCHES "/MD")
-                STRING(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-            ENDIF()
-        ENDFOREACH(flag_var)
-    ENDIF()
-ELSE(MSVC)
-    ADD_DEFINITIONS(-Wall -s)
-    IF(NOT MINGW)
-       SET(C_FLAGS "${C_FLAGS} -fPIC")
-    ELSE(NOT MINGW)
-       SET(C_FLAGS "${C_FLAGS} -static-libgcc")
-       set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -Wl,--out-implib,${LIBZEROXML}.lib")
-       FOREACH(flag_var
-                CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-                CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO
-                CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
-                CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
-            IF(${flag_var} MATCHES "-mthreads")
-                STRING(REGEX REPLACE "-mthreads" "" ${flag_var} "${${flag_var}}")
-            ENDIF()
-        ENDFOREACH(flag_var)
-    ENDIF(NOT MINGW)
-    SET(C_FLAGS "${C_FLAGS} -Wall -Werror=format-security" CACHE STRING
+    if(FORCE_STATIC_VCRT)
+        foreach(flag_var
+                cmake_C_FLAGS cmake_C_FLAGS_DEBUG cmake_C_FLAGS_RELEASE
+                cmake_C_FLAGS_MINSIZEREL cmake_C_FLAGS_RELWITHDEBINFO)
+            if(${flag_var} MATCHES "/MD")
+                string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+            endif()
+        endforeach(flag_var)
+    endif()
+else(MSVC)
+    add_definitions(-Wall -s)
+    if(NOT MINGW)
+       set(C_FLAGS "${C_FLAGS} -fPIC")
+    else(NOT MINGW)
+       set(C_FLAGS "${C_FLAGS} -static-libgcc")
+       set(cmake_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -Wl,--out-implib,${LIBZEROXML}.lib")
+       foreach(flag_var
+                cmake_C_FLAGS cmake_C_FLAGS_DEBUG cmake_C_FLAGS_RELEASE
+                cmake_C_FLAGS_MINSIZEREL cmake_C_FLAGS_RELWITHDEBINFO
+                cmake_CXX_FLAGS cmake_CXX_FLAGS_DEBUG cmake_CXX_FLAGS_RELEASE
+                cmake_CXX_FLAGS_MINSIZEREL cmake_CXX_FLAGS_RELWITHDEBINFO)
+            if(${flag_var} MATCHES "-mthreads")
+                string(REGEX REPLACE "-mthreads" "" ${flag_var} "${${flag_var}}")
+            endif()
+        endforeach(flag_var)
+    endif(NOT MINGW)
+    set(C_FLAGS "${C_FLAGS} -Wall -Werror=format-security" CACHE STRING
         "Flags used by al build types."
         FORCE)
-    SET(CMAKE_C_FLAGS_RELWITHDEBINFO "${C_FLAGS} -g -O2 -D_DEBUG" CACHE STRING
+    set(cmake_C_FLAGS_RELWITHDEBINFO "${C_FLAGS} -g -O2 -D_DEBUG" CACHE STRING
         "Flags used by the compiler during Release with Debug Info builds."
         FORCE)
-    SET(CMAKE_C_FLAGS_MINSIZEREL "${C_FLAGS} -Os -DNDEBUG" CACHE STRING
+    set(cmake_C_FLAGS_MINSIZEREL "${C_FLAGS} -Os -DNDEBUG" CACHE STRING
         "Flags used by the compiler during release minsize builds."
         FORCE)
-    SET(CMAKE_C_FLAGS_RELEASE "${C_FLAGS} -Os -fomit-frame-pointer -DNDEBUG"
+    set(cmake_C_FLAGS_RELEASE "${C_FLAGS} -Os -fomit-frame-pointer -DNDEBUG"
         CACHE STRING "Flags used by the compiler during release builds"
         FORCE)
-    SET(CMAKE_C_FLAGS_DEBUG "${C_FLAGS} -g3 -D_DEBUG" CACHE STRING
+    set(cmake_C_FLAGS_DEBUG "${C_FLAGS} -g3 -D_DEBUG" CACHE STRING
         "Flags used by the compiler during debug builds."
         FORCE)
-ENDIF(MSVC)
+endif(MSVC)
 
-SET(XML_USE_NODECACHE ${NODECACHE})
-SET(XML_NONVALIDATING ${NONVALIDATING})
-SET(XML_NONEVALUE ${NONEVALUE})
+set(XML_USE_NODECACHE ${NODECACHE})
+set(XML_NONVALIDATING ${NONVALIDATING})
+set(XML_NONEVALUE ${NONEVALUE})
 
-CHECK_INCLUDE_FILE(strings.h HAVE_STRINGS_H)
-CHECK_INCLUDE_FILE(unistd.h HAVE_UNISTD_H)
-CHECK_INCLUDE_FILE(locale.h HAVE_LOCALE_H)
-CHECK_INCLUDE_FILE(langinfo.h HAVE_LANGINFO_H)
+check_include_file(strings.h HAVE_STRINGS_H)
+check_include_file(unistd.h HAVE_UNISTD_H)
+check_include_file(locale.h HAVE_LOCALE_H)
+check_include_file(langinfo.h HAVE_LANGINFO_H)
 
-CONFIGURE_FILE(
+configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in"
     "${CMAKE_CURRENT_BINARY_DIR}/include/config.h")
 
-SET(ZEROXML_OBJS
+set(ZEROXML_OBJS
     src/xml.c
     src/xml_cache.c
    )
 
 # Build a library
-IF(CMAKE_SIZEOF_VOID_P MATCHES "8")
-  SET(LIB_POSTFIX "64" CACHE STRING "suffix for 32/64 dir placement")
+if(cmake_SIZEOF_VOID_P MATCHES "8")
+  set(LIB_POSTFIX "64" CACHE STRING "suffix for 32/64 dir placement")
   MARK_AS_ADVANCED(LIB_POSTFIX)
-ENDIF(CMAKE_SIZEOF_VOID_P MATCHES "8")
-IF(NOT DEFINED LIB_POSTFIX)
-  SET(LIB_POSTFIX "")
-ENDIF(NOT DEFINED LIB_POSTFIX)
+endif(cmake_SIZEOF_VOID_P MATCHES "8")
+if(NOT DEFINED LIB_POSTFIX)
+  set(LIB_POSTFIX "")
+endif(NOT DEFINED LIB_POSTFIX)
 
-SET(LIB_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
-ADD_LIBRARY(${LIBZEROXML} ${LIBTYPE} ${ZEROXML_OBJS})
-SET_TARGET_PROPERTIES(${LIBZEROXML}
+set(LIB_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
+add_LIBRARY(${LIBZEROXML} ${LIBTYPE} ${ZEROXML_OBJS})
+set_target_PROPERTIES(${LIBZEROXML}
     PROPERTIES DEFINE_SYMBOL XML_BUILD_LIBRARY
     COMPILE_FLAGS "-D_PROTOTYPES -URMALLOC"
     VERSION ${LIB_VERSION}
     SOVERSION ${CPACK_PACKAGE_VERSION_MAJOR})
-IF(WIN32 AND NOT LIBTYPE STREQUAL "STATIC")
-    SET_TARGET_PROPERTIES(${LIBZEROXML} PROPERTIES PREFIX "")
-ENDIF()
+if(WIN32 AND NOT LIBTYPE STREQUAL "STATIC")
+    set_target_PROPERTIES(${LIBZEROXML} PROPERTIES PREFIX "")
+endif()
 
-TARGET_LINK_LIBRARIES(${LIBZEROXML} ${EXTRA_LIBS})
+target_LINK_LIBRARIES(${LIBZEROXML} ${EXTRA_LIBS})
 
 # Add an install target here
-INSTALL(TARGETS ${LIBZEROXML}
+install(TARGETS ${LIBZEROXML}
         RUNTIME DESTINATION bin
         ARCHIVE DESTINATION "lib${LIB_POSTFIX}"
        )
 
-IF(RMALLOC)
-  SET(ZEROXMLDEBUG_OBJS
+if(RMALLOC)
+  set(ZEROXMLDEBUG_OBJS
       src/xml.c
       src/xml_cache.c
       src/rmalloc.c
      )
 
-  ADD_LIBRARY(${LIBZEROXML_DEBUG} ${LIBTYPE} ${ZEROXMLDEBUG_OBJS})
-  SET_TARGET_PROPERTIES(${LIBZEROXML_DEBUG}
+  add_LIBRARY(${LIBZEROXML_DEBUG} ${LIBTYPE} ${ZEROXMLDEBUG_OBJS})
+  set_target_PROPERTIES(${LIBZEROXML_DEBUG}
                          PROPERTIES DEFINE_SYMBOL XML_BUILD_LIBRARY
                          COMPILE_FLAGS "-D_PROTOTYPES -DMALLOC_DEBUG=ON"
                          VERSION ${LIB_VERSION}
                          SOVERSION ${CPACK_PACKAGE_VERSION_MAJOR})
-  IF(WIN32 AND NOT LIBTYPE STREQUAL "STATIC")
-    SET_TARGET_PROPERTIES(${LIBZEROXML_DEBUG} PROPERTIES PREFIX "")
-  ENDIF()
+  if(WIN32 AND NOT LIBTYPE STREQUAL "STATIC")
+    set_target_PROPERTIES(${LIBZEROXML_DEBUG} PROPERTIES PREFIX "")
+  endif()
 
-  TARGET_LINK_LIBRARIES(${LIBZEROXML_DEBUG} ${EXTRA_LIBS})
+  target_LINK_LIBRARIES(${LIBZEROXML_DEBUG} ${EXTRA_LIBS})
 
   # Add an install target here
-  INSTALL(TARGETS ${LIBZEROXML_DEBUG}
+  install(targetS ${LIBZEROXML_DEBUG}
         RUNTIME DESTINATION bin
         ARCHIVE DESTINATION "lib${LIB_POSTFIX}"
        )
-ENDIF(RMALLOC)
+endif(RMALLOC)
 
-INSTALL(FILES
+install(FILES
         include/rmalloc.h
         include/xml_cache.h
         include/xml.h
         DESTINATION include
        )
 
-IF(UTILS)
-  ADD_SUBDIRECTORY(examples)
-ENDIF(UTILS)
+add_definitions(-DSOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+add_subdirectory(test)
+if(UTILS)
+  add_subdirectory(examples)
+endif(UTILS)
 
 #-----------------------------------------------------------------------------
 ### uninstall target
 #-----------------------------------------------------------------------------
-CONFIGURE_FILE(
+configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/cmake_uninstall.cmake.in"
   "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
   IMMEDIATE @ONLY)
-ADD_CUSTOM_TARGET(uninstall
+add_custom_target(uninstall
   "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
 
