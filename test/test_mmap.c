@@ -40,6 +40,7 @@ int main(int argc, char **argv)
    {
       xmlId *path_id, *node_id;
       char *s;
+      int i;
 
       printf("\nTesting xmlNodeGetString for /*/*/test:\t\t\t\t\t");
       s = xmlNodeGetString(root_id , "/*/*/test");
@@ -70,10 +71,50 @@ int main(int argc, char **argv)
       path_id = xmlNodeGet(root_id, PATH);
       node_id = xmlNodeGet(root_id, ROOTNODE);
 
+      printf("Testing xmlNodeGetBool for /Configuration/output/boolean:\t\t");
+      i = xmlNodeGetBool(root_id, "/Configuration/output/boolean");
+      if (i) {
+         printf("failed.\n\t'%i' should be false.\n", i);
+      } else {
+         printf("succes.\n");
+      }
+
+      printf("Testing xmlNodeGetBool for /Configuration/output/boolean[1]:\t\t");
+      i = xmlNodeGetBool(root_id, "/Configuration/output/boolean[1]");
+      if (i == 0) {
+         printf("failed.\n\t'%i' should be true\n", i);
+      } else {
+         printf("succes.\n");
+      }
+
+      printf("Testing xmlNodeGetBool for /Configuration/output/boolean[2]:\t\t");
+      i = xmlNodeGetBool(root_id, "/Configuration/output/boolean[2]");
+      if (i == 0) {
+         printf("failed.\n\t'%i' should be true\n", i);
+      } else {
+         printf("succes.\n");
+      }
+
+      printf("Testing xmlNodeGetBool for /Configuration/output/boolean[3]:\t\t");
+      i = xmlNodeGetBool(root_id, "/Configuration/output/boolean[3]");
+      if (i == 0) {
+         printf("failed.\n\t'%i' should be true\n", i);
+      } else {
+         printf("succes.\n");
+      }
+
+      printf("Testing xmlNodeGetBool for /Configuration/output/boolean[4]:\t\t");
+      i = xmlNodeGetBool(root_id, "/Configuration/output/boolean[4]");
+      if (i == 0) {
+         printf("failed.\n\t'%i' should be true\n", i);
+      } else {
+         printf("succes.\n");
+      }
+
       if (path_id && node_id)
       {
          char buf[BUFLEN];
-        
+
          xmlCopyString(path_id, buf, BUFLEN);
          printf("Testing xmlNodeCopyString against xmlGetString:\t\t\t\t");
          if ((s = xmlGetString(path_id)) != 0)
@@ -106,7 +147,7 @@ int main(int argc, char **argv)
             printf("succes.\n");
 
          if (s) free(s);
- 
+
          printf("Testing xmlCopyString against xmlNodeGetString:\t\t\t\t");
          if ((s = xmlNodeGetString(node_id, LEAFNODE)) != 0)
          {
@@ -173,7 +214,7 @@ int main(int argc, char **argv)
                if (strcmp(s, buf))      		/* mismatch */
                   printf("failed.\n\t'%s' differs from\n\t'%s'\n", s, buf);
                else
-                  printf("succes.\n"); 
+                  printf("succes.\n");
 
                free(s);
             }
