@@ -1,32 +1,59 @@
 /*
- * Copyright (C) 2008-2014 by Erik Hofman.
- * Copyright (C) 2009-2014 by Adalin B.V.
+ * This software is available under 2 licenses -- choose whichever you prefer.
+ *
+ * ALTERNATIVE A - Modified BSD license
+ *
+ * Copyright (C) 2008-2022 by Erik Hofman.
+ * Copyright (C) 2009-2022 by Adalin B.V.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
- *     1. Redistributions of source code must retain the above copyright notice,
- *         this list of conditions and the following disclaimer.
- * 
- *     2. Redistributions in binary form must reproduce the above copyright
- *         notice, this list of conditions and the following disclaimer in the
- *         documentation and/or other materials provided with the distribution.
- * 
+ *
+ *    1. Redistributions of source code must retain the above copyright notice,
+ *       this list of conditions and the following disclaimer.
+ *
+ *    2. Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *
  * THIS SOFTWARE IS PROVIDED BY ADALIN B.V. ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
  * NO EVENT SHALL ADALIN B.V. OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
  * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR 
- * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUTOF THE USE 
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+ * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUTOF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * The views and conclusions contained in the software and documentation are
  * those of the authors and should not be interpreted as representing official
  * policies, either expressed or implied, of Adalin B.V.
+ *
+ * -----------------------------------------------------------------------------
+ * ALTERNATIVE B - Public Domain (www.unlicense.org)
+ *
+ * This is free and unencumbered software released into the public domain.
+ *
+ * Anyone is free to copy, modify, publish, use, compile, sell, or distribute
+ * this software, either in source code form or as a compiled binary, for any
+ * purpose, commercial or non-commercial, and by any means.
+ *
+ * In jurisdictions that recognize copyright laws, the author or authors of
+ * this software dedicate any and all copyright interest in the software to
+ * the public domain. We make this dedication for the benefit of the public at
+ * large and to the detriment of our heirs and successors. We intend this
+ * dedication to be an overt act of relinquishment in perpetuity of all
+ * present and future rights to this software under copyright law.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #include <sys/types.h>
@@ -40,202 +67,194 @@
     size_t l1 = (b), l2 = (c); \
     char *s = (a); \
     if (s) { \
-        size_t q, len = l2; \
-        if (l1 < l2) len = l1; \
-        if (len < 50000) { \
-            printf("(%i) '", len); \
-            for (q=0; q<len; q++) printf("%c", s[q]); \
-            printf("'\n"); \
-        } else printf("Length (%u) seems too large at line %i\n",len, __LINE__); \
+       size_t q, len = l2; \
+       if (l1 < l2) len = l1; \
+       if (len < 50000) { \
+          printf("(%i) '", len); \
+          for (q=0; q<len; q++) printf("%c", s[q]); \
+          printf("'\n"); \
+       } else printf("Length (%u) seems too large at line %i\n",len, __LINE__); \
     } else printf("NULL pointer at line %i\n", __LINE__); \
 }
 #endif
 
-#if !defined(XML_USE_NODECACHE)
-void *
-cacheNodeGet(void *id)
-{
-     return 0;
-}
-
-#else
+#if defined(XML_USE_NODECACHE)
 
 /* number of pointers to allocate for every block increase */
-#define NODE_BLOCKSIZE             16
+#define NODE_BLOCKSIZE           16
 
 struct _xml_node
 {
-     void *parent;
-     char *name;
-     size_t name_len;
-     char *data;
-     size_t data_len;
-     void **node;
-     size_t no_nodes;
-     size_t first_free;
+    void *parent;
+    char *name;
+    size_t name_len;
+    char *data;
+    size_t data_len;
+    void **node;
+    size_t no_nodes;
+    size_t first_free;
 };
 
 char *
-__xmlNodeGetFromCache(void **nc, const char *start, size_t *len,
-                             char **element, size_t *elementlen , size_t *nodenum)
+__xmlNodeGetFromCache(xmlId **nc, const char *start, size_t *len,
+                        char **element, size_t *elementlen , size_t *nodenum)
 {
-     struct _xml_node *cache;
-     size_t num = *nodenum;
-     char *name = *element;
-     void *rv = 0;
+    struct _xml_node *cache;
+    size_t num = *nodenum;
+    char *name = *element;
+    void *rv = 0;
 
-     assert(nc != 0);
+    assert(nc != 0);
  
-     cache = (struct _xml_node *)*nc;
-     assert(cache != 0);
+    cache = (struct _xml_node *)*nc;
+    assert(cache != 0);
 
-     assert((cache->first_free > num) || (cache->first_free == 0));
+    assert((cache->first_free > num) || (cache->first_free == 0));
 
-     if (cache->first_free == 0) /* leaf node */
-     {
-          rv = cache->data;
-          *len = cache->data_len;
-          *element = cache->name;
-          *elementlen = cache->name_len;
-          *nodenum = 0;
-     }
-     else if (*name == '*')
-     {
-          struct _xml_node *node = cache->node[num];
-          *nc = node;
-          rv = node->data;
-          *len = node->data_len;
-          *element = node->name;
-          *elementlen = node->name_len;
-          *nodenum = cache->first_free;
-     }
-     else
-     {
-          size_t namelen = *elementlen;
-          size_t i, pos = 0;
+    if (cache->first_free == 0) /* leaf node */
+    {
+        rv = cache->data;
+        *len = cache->data_len;
+        *element = cache->name;
+        *elementlen = cache->name_len;
+        *nodenum = 0;
+    }
+    else if (*name == '*')
+    {
+        struct _xml_node *node = cache->node[num];
+        *nc = node;
+        rv = node->data;
+        *len = node->data_len;
+        *element = node->name;
+        *elementlen = node->name_len;
+        *nodenum = cache->first_free;
+    }
+    else
+    {
+        size_t namelen = *elementlen;
+        size_t i, pos = 0;
 
-          for (i=0; i<cache->first_free; i++)
-          {
-                struct _xml_node *node = cache->node[i];
+        for (i=0; i<cache->first_free; i++)
+        {
+             struct _xml_node *node = cache->node[i];
 
-                assert(node);
+             assert(node);
 
-                if ((node->name_len == namelen) &&
-                     (!strncasecmp(node->name, name, namelen)))
-                {
-                      if (pos == num)
-                      {
-                            *nc = node;
-                            rv = node->data;
-                            *element = node->name;
-                            *elementlen = node->name_len;
-                            *len = node->data_len;
-                            *nodenum = cache->first_free;
-                            break;
-                      }
-                      pos++;
-                }
-          }
-     }
+             if ((node->name_len == namelen) &&
+                 (!strncasecmp(node->name, name, namelen)))
+             {
+                  if (pos == num)
+                  {
+                       *nc = node;
+                       rv = node->data;
+                       *element = node->name;
+                       *elementlen = node->name_len;
+                       *len = node->data_len;
+                       *nodenum = cache->first_free;
+                       break;
+                  }
+                  pos++;
+             }
+        }
+    }
 
-     return rv;
+    return rv;
 }
 
 
-void *
+xmlId*
 cacheInit()
 {
     return calloc(1, sizeof(struct _xml_node));
 }
 
 void
-cacheInitLevel(void *nc)
+cacheInitLevel(xmlId *nc)
 {
-     struct _xml_node *cache = (struct _xml_node *)nc;
+    struct _xml_node *cache = (struct _xml_node *)nc;
 
-     assert(cache != 0);
+    assert(cache != 0);
 
-     cache->node = calloc(NODE_BLOCKSIZE, sizeof(struct _xml_node *));
-     cache->no_nodes = NODE_BLOCKSIZE;
+    cache->node = calloc(NODE_BLOCKSIZE, sizeof(struct _xml_node *));
+    cache->no_nodes = NODE_BLOCKSIZE;
 }
 
 void
-cacheFree(void *nc)
+cacheFree(xmlId *nc)
 {
-     struct _xml_node *cache = (struct _xml_node *)nc;
+    struct _xml_node *cache = (struct _xml_node *)nc;
 
-     assert(nc != 0);
+    assert(nc != 0);
 
-     if (cache->first_free)
-     {
-          struct _xml_node **node = (struct _xml_node **)cache->node;
-          size_t i = 0;
+    if (cache->first_free)
+    {
+        struct _xml_node **node = (struct _xml_node **)cache->node;
+        size_t i = 0;
 
-          while(i < cache->first_free)
-          {
-                cacheFree(node[i++]);
-          }
+        while(i < cache->first_free) {
+             cacheFree(node[i++]);
+        }
 
-          free(node);
-     }
-     free(cache);
+        free(node);
+    }
+    free(cache);
 }
 
-void *
-cacheNodeGet(void *id)
+xmlId*
+cacheNodeGet(const xmlId *id)
 {
-     struct _xml_id *xid = (struct _xml_id *)id;
-     struct _xml_node *cache = 0;
+    const struct _xml_id *xid = (const struct _xml_id *)id;
+    struct _xml_node *cache = 0;
 
-     assert(xid != 0);
+    assert(xid != 0);
 
-     if (xid->name)
-     {
-          cache = xid->node;
-     }
-     else
-     {
-          struct _root_id *rid = (struct _root_id *)xid;
-          cache = rid->node;
-     }
+    if (xid->name)
+    {
+        cache = xid->node;
+    }
+    else
+    {
+        struct _root_id *rid = (struct _root_id *)xid;
+        cache = rid->node;
+    }
 
-     return cache;
+    return cache;
 }
 
-void *
-cacheNodeNew(void *nc)
+xmlId*
+cacheNodeNew(xmlId *nc)
 {
-     struct _xml_node *cache = (struct _xml_node *)nc;
-     struct _xml_node *rv = 0;
-     size_t i = 0;
+    struct _xml_node *cache = (struct _xml_node *)nc;
+    struct _xml_node *rv = 0;
+    size_t i = 0;
 
-     assert(nc != 0);
+    assert(nc != 0);
 
-     i = cache->first_free;
-     if (i == cache->no_nodes)
-     {
-          size_t size, no_nodes;
-          void *p;
+    i = cache->first_free;
+    if (i == cache->no_nodes)
+    {
+        size_t size, no_nodes;
+        void *p;
 
-          no_nodes = cache->no_nodes + NODE_BLOCKSIZE;
-          size = no_nodes * sizeof(struct _xml_node *);
-          p = realloc(cache->node, size);
-          if (!p) return 0;
+        no_nodes = cache->no_nodes + NODE_BLOCKSIZE;
+        size = no_nodes * sizeof(struct _xml_node *);
+        p = realloc(cache->node, size);
+        if (!p) return 0;
 
-          cache->node = p;
-          cache->no_nodes = no_nodes;
-     }
+        cache->node = p;
+        cache->no_nodes = no_nodes;
+    }
 
-     rv = calloc(1, sizeof(struct _xml_node));
-     if (rv) rv->parent = cache;
-     cache->node[i] = rv;
-     cache->first_free++;
+    rv = calloc(1, sizeof(struct _xml_node));
+    if (rv) rv->parent = cache;
+    cache->node[i] = rv;
+    cache->first_free++;
 
-     return rv;
+    return rv;
 }
 
 void
-cacheDataSet(void *n, char *name, size_t namelen, char *data, size_t datalen)
+cacheDataSet(xmlId *n, char *name, size_t namelen, char *data, size_t datalen)
 {
     struct _xml_node *node = (struct _xml_node *)n;
 
@@ -248,6 +267,14 @@ cacheDataSet(void *n, char *name, size_t namelen, char *data, size_t datalen)
     node->name_len = namelen;
     node->data = data;
     node->data_len = datalen;
+}
+
+#else
+
+xmlId*
+cacheNodeGet(const xmlId *id)
+{
+    return 0;
 }
 
 #endif

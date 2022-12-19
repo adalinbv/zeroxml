@@ -66,12 +66,7 @@
 # define __XML_NONE		0
 #endif
 
-#ifdef XML_USE_NODECACHE
 #include <xml_cache.h>
-#else
-void *cacheGet(void *);
-void *cacheNodeGet(void *);
-#endif
 
 #ifdef WIN32
 # define WIN32_LEAN_AND_MEAN
