@@ -101,7 +101,6 @@
 static char __zeroxml_strerror[BUF_LEN+1];
 static const char *__zeroxml_error_str[XML_MAX_ERROR];
 static void __xmlErrorSet(const struct _xml_id*, const char *, size_t);
-# define xmlErrorSet(a, b, c)	__xmlErrorSet(a, b, c)
 
 # ifndef NDEBUG
 static char _xml_filename[FILENAME_LEN+1];
@@ -114,7 +113,12 @@ static char _xml_filename[FILENAME_LEN+1];
         fprintf(stderr, "%s: in %s at line %i: Unknown error number!\n", \
                         _xml_filename, __func__, __LINE__); \
     }
+
+# define xmlErrorSet(a, b, c) do { \
+  __xmlErrorSet(a, b, c); PRINT_INFO((a)->root->start, (char*)b, c); \
+} while(0)
 # else
+# define xmlErrorSet(a, b, c) __xmlErrorSet(a, b, c);
 #  define PRINT_INFO(a, b, c)
 # endif
 #else /* !XML_NONVALIDATING */
@@ -361,10 +365,8 @@ xmlNodeGet(const xmlId *id, const char *path)
             xmlErrorSet(xid, 0, XML_OUT_OF_MEMORY);
         }
     }
-    else if (slen == 0)
-    {
+    else if (slen == 0) {
         xmlErrorSet(xid, node, len);
-        PRINT_INFO(xid->root->start, node, len);
     }
 
     return (void *)xsid;
@@ -439,10 +441,8 @@ xmlNodeCopy(const xmlId *id, const char *path)
             xmlErrorSet(xid, 0, XML_OUT_OF_MEMORY);
         }
     }
-    else if (slen == 0)
-    {
+    else if (slen == 0) {
         xmlErrorSet(xid, node, len);
-        PRINT_INFO(xid->root->start, node, len);
     }
 
     return ret;
@@ -594,10 +594,8 @@ __xmlNodeGetNum(const xmlId *id, const char *path, char raw)
             slen -= pathname-nodename;
             node = pathname;
             p = __xmlNodeGetPath(&nc, xid->start, &len, &node, &slen);
-            if (p == NULL && slen == 0)
-            {
+            if (p == NULL && slen == 0) {
                 xmlErrorSet(xid, node, len);
-                PRINT_INFO(xid->root->start, node, len);
             }
         }
         else
@@ -614,10 +612,9 @@ __xmlNodeGetNum(const xmlId *id, const char *path, char raw)
 #else
             ret = __xmlNodeGetFromCache(&nc, p, &len, &node, &slen, &num);
 #endif
-            if (ret == 0 && slen == 0)
+            if (ret == NULL && len != 0)
             {
                 xmlErrorSet(xid, node, len);
-//              PRINT_INFO(xid->root->start, node, len);
                 num = 0;
             }
         }
@@ -700,10 +697,8 @@ __xmlNodeGetPos(const xmlId *pid, xmlId *id, const char *element, size_t num, ch
 #endif
         ret = xid;
     }
-    else if (slen == 0)
-    {
+    else if (slen == 0) {
         xmlErrorSet(xpid, node, len);
-        PRINT_INFO(xid->root->start, node, len);
     }
 
     return ret;
@@ -802,10 +797,8 @@ xmlNodeCopyPos(const xmlId *pid, xmlId *id, const char *element, size_t num)
             ret = nid;
         }
     }
-    else if (slen == 0)
-    {
+    else if (slen == 0) {
         xmlErrorSet(xpid, node, len);
-        PRINT_INFO(xpid->root->start, node, len);
     }
 
     return ret;
@@ -826,7 +819,7 @@ __xmlGetString(const xmlId *id, char raw)
 
         ps = xid->start;
         len = xid->len;
-        __xmlPrepareData(&ps, &len, raw);
+        if (!raw) __xmlPrepareData(&ps, &len, raw);
         if (len)
         {
             str = malloc(len+1);
@@ -945,10 +938,8 @@ xmlNodeGetString(const xmlId *id, const char *path)
                 xmlErrorSet(xid, 0, XML_OUT_OF_MEMORY);
             }
         }
-        else
-        {
+        else if (slen == 0) {
             xmlErrorSet(xid, node, len);
-            PRINT_INFO(xid->root->start, node, len);
         }
     }
 
@@ -992,10 +983,8 @@ xmlNodeCopyString(const xmlId *id, const char *path, char *buffer, size_t buflen
             }
             ret = len;
         }
-        else if (slen == 0)
-        {
+        else if (slen == 0) {
             xmlErrorSet(xid, node, len);
-            PRINT_INFO(xid->root->start, node, len);
         }
     }
 
@@ -1029,10 +1018,8 @@ xmlNodeCompareString(const xmlId *id, const char *path, const char *s)
             __xmlPrepareData(&ps, &len, 0);
             ret = strncasecmp(ps, s, len);
         }
-        else if (slen == 0)
-        {
+        else if (slen == 0) {
             xmlErrorSet(xid, node, len);
-            PRINT_INFO(xid->root->start, node, len);
         }
     }
 
@@ -1081,10 +1068,8 @@ xmlNodeGetBool(const xmlId *id, const char *path)
             const char *end = str+len;
             li = __xmlDecodeBoolean(str, end);
         }
-        else if (slen == 0)
-        {
+        else if (slen == 0) {
             xmlErrorSet(xid, node, len);
-            PRINT_INFO(xid->root->start, node, len);
         }
     }
 
@@ -1133,10 +1118,8 @@ xmlNodeGetInt(const xmlId *id, const char *path)
             char *end = (char*)str+len;
             li = __xml_strtol(str, &end, 10);
         }
-        else if (slen == 0)
-        {
+        else if (slen == 0) {
             xmlErrorSet(xid, node, len);
-            PRINT_INFO(xid->root->start, node, len);
         }
     }
 
@@ -1185,10 +1168,8 @@ xmlNodeGetDouble(const xmlId *id, const char *path)
             char *end = (char*)str+len;
             d = strtod(str, &end);
         }
-        else if (slen == 0)
-        {
+        else if (slen == 0) {
             xmlErrorSet(xid, node, len);
-            PRINT_INFO(xid->root->start, node, len);
         }
     }
 
@@ -1219,8 +1200,7 @@ xmlMarkId(const xmlId *id)
             xmid->root = xrid;
 #endif
         }
-        else
-        {
+        else {
             memcpy(xmid, id, sizeof(struct _xml_id));
         }
     }
@@ -1979,7 +1959,7 @@ __xmlNodeGet(void *nc, const char *start, size_t *len, const char **name, size_t
                     /*
                      * Recursively walk the XML tree from here
                      */
-                    new = __xmlNodeGet(nnc, cur-1, &slen, &node, &nlen, &pos, 0);
+                    new =__xmlNodeGet(nnc, cur-1, &slen, &node, &nlen, &pos, 0);
                     if (!new)
                     {
                         if (nlen == 0) /* error upstream */
@@ -2294,6 +2274,7 @@ __xmlErrorSet(const struct _xml_id *id, const char *pos, size_t err_no)
     assert(xid != 0);
 
     rid = xid->root;
+
     if (rid->info == 0) {
         rid->info = malloc(sizeof(struct _zeroxml_error));
     }
