@@ -314,10 +314,10 @@ XML_API xmlId* XML_APIENTRY xmlNodeCopyPos(const xmlId *pid, xmlId *xid, const c
  * The returned string has to be freed by the calling process.
  *
  * xmlGetStringRaw returns the unformatted string including leading and trailing
- * spaces and includes the ![CDATA[]] sequence in the result.
+ * spaces and includes comments and the ![CDATA[]] sequence in the result.
  *
- * xmlGetString does not include the ![CDATA[]] sequence in the result and
- * removes leading and trailing spaces.
+ * xmlGetString does not include comments and the ![CDATA[]] sequence in the
+ * result and omits leading and trailing spaces.
  *
  * @param xid XML-id
  * @return a newly alocated string containing the contents of the node
