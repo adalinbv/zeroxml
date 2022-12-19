@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.0)
-set(cmake_verbose_makefile TRUE)
+set(CMAKE_VERBOSE_MAKEFILE TRUE)
 
 include(CheckIncludeFile)
 include(CheckIncludeFiles)
@@ -25,7 +25,7 @@ if(WIN32)
   set(LIBZEROXML_DEBUG ZeroXML-rmalloc)
   add_definitions("-D_WIN32")
   add_definitions("-DXML_BUILD_LIBRARY=1")
-  set(cmake_install_PREFIX "C:/Program\ Files/${PACKAGE_NAME}")
+  set(CMAKE_INSTALL_PREFIX "C:/Program\ Files/${PACKAGE_NAME}")
 else()
   set(LIBZEROXML zeroxml)
   set(LIBZEROXML_DEBUG zeroxml-rmalloc)
@@ -38,11 +38,11 @@ if(NOT DEFINED CPACK_SYSTEM_NAME)
   set(CPACK_SYSTEM_NAME ${CMAKE_SYSTEM_NAME})
 endif(NOT DEFINED CPACK_SYSTEM_NAME)
 if(UNIX AND NOT WIN32)
-  if(cmake_SIZEOF_VOID_P EQUAL 8)
+  if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(CPACK_PACKAGE_ARCHITECTURE "x86_64")
-  else(cmake_SIZEOF_VOID_P EQUAL 8)
+  else(CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(CPACK_PACKAGE_ARCHITECTURE "i386")
-  endif(cmake_SIZEOF_VOID_P EQUAL 8)
+  endif(CMAKE_SIZEOF_VOID_P EQUAL 8)
 endif(UNIX AND NOT WIN32)
 
 # read 'version' file into a variable (stripping any newlines or spaces)
@@ -74,11 +74,11 @@ if(WIN32)
 
 else(WIN32)
   # DEBIAN
-  if(cmake_SIZEOF_VOID_P EQUAL 8)
+  if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
-  else(cmake_SIZEOF_VOID_P EQUAL 8)
+  else(CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "i386")
-  endif(cmake_SIZEOF_VOID_P EQUAL 8)
+  endif(CMAKE_SIZEOF_VOID_P EQUAL 8)
   set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${PACK_PACKAGE_ARCHITECTURE})
   set(CPACK_DEBIAN_PACKAGE_SECTION "devel")
   set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.1)")
@@ -100,7 +100,7 @@ set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Adalin B.V.")
 include(CPack)
 
 # We have some custom .cmake scripts not in the official distribution.
-set(cmake_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
 
 # Add definitions, compiler switches, etc.
 include_directories("${CMAKE_SOURCE_DIR}/src"
@@ -110,7 +110,7 @@ include_directories("${CMAKE_SOURCE_DIR}/src"
 )
 
 if(NOT cmake_BUILD_TYPE)
-  set(cmake_BUILD_TYPE MinSizeRel CACHE STRING
+  set(CMAKE_BUILD_TYPE MinSizeRel CACHE STRING
       "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
       FORCE)
 endif(NOT cmake_BUILD_TYPE)
@@ -122,10 +122,10 @@ if(WERROR)
 endif()
 
 if(MSVC)
-    set(cmake_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -D_DEBUG")
-    set(cmake_C_FLAGS_MINSIZEREL "${CMAKE_C_FLAGS_MINSIZEREL} -DNDEBUG")
-    set(cmake_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
-    set(cmake_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -D_DEBUG")
+    set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -D_DEBUG")
+    set(CMAKE_C_FLAGS_MINSIZEREL "${CMAKE_C_FLAGS_MINSIZEREL} -DNDEBUG")
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -D_DEBUG")
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
     add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE)
     add_definitions(/NODEFAULTLIB:libcmt.lib)
@@ -150,7 +150,7 @@ else(MSVC)
        set(C_FLAGS "${C_FLAGS} -fPIC")
     else(NOT MINGW)
        set(C_FLAGS "${C_FLAGS} -static-libgcc")
-       set(cmake_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -Wl,--out-implib,${LIBZEROXML}.lib")
+       set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -Wl,--out-implib,${LIBZEROXML}.lib")
        foreach(flag_var
                 cmake_C_FLAGS cmake_C_FLAGS_DEBUG cmake_C_FLAGS_RELEASE
                 cmake_C_FLAGS_MINSIZEREL cmake_C_FLAGS_RELWITHDEBINFO
@@ -164,16 +164,16 @@ else(MSVC)
     set(C_FLAGS "${C_FLAGS} -Wall -Werror=format-security" CACHE STRING
         "Flags used by al build types."
         FORCE)
-    set(cmake_C_FLAGS_RELWITHDEBINFO "${C_FLAGS} -g -O2 -D_DEBUG" CACHE STRING
+    set(CMAKE_C_FLAGS_RELWITHDEBINFO "${C_FLAGS} -g -O2 -D_DEBUG" CACHE STRING
         "Flags used by the compiler during Release with Debug Info builds."
         FORCE)
-    set(cmake_C_FLAGS_MINSIZEREL "${C_FLAGS} -Os -DNDEBUG" CACHE STRING
+    set(CMAKE_C_FLAGS_MINSIZEREL "${C_FLAGS} -Os -DNDEBUG" CACHE STRING
         "Flags used by the compiler during release minsize builds."
         FORCE)
-    set(cmake_C_FLAGS_RELEASE "${C_FLAGS} -Os -fomit-frame-pointer -DNDEBUG"
+    set(CMAKE_C_FLAGS_RELEASE "${C_FLAGS} -Os -fomit-frame-pointer -DNDEBUG"
         CACHE STRING "Flags used by the compiler during release builds"
         FORCE)
-    set(cmake_C_FLAGS_DEBUG "${C_FLAGS} -g3 -D_DEBUG" CACHE STRING
+    set(CMAKE_C_FLAGS_DEBUG "${C_FLAGS} -g3 -D_DEBUG" CACHE STRING
         "Flags used by the compiler during debug builds."
         FORCE)
 endif(MSVC)
@@ -197,10 +197,10 @@ set(ZEROXML_OBJS
    )
 
 # Build a library
-if(cmake_SIZEOF_VOID_P MATCHES "8")
+if(CMAKE_SIZEOF_VOID_P MATCHES "8")
   set(LIB_POSTFIX "64" CACHE STRING "suffix for 32/64 dir placement")
   MARK_AS_ADVANCED(LIB_POSTFIX)
-endif(cmake_SIZEOF_VOID_P MATCHES "8")
+endif(CMAKE_SIZEOF_VOID_P MATCHES "8")
 if(NOT DEFINED LIB_POSTFIX)
   set(LIB_POSTFIX "")
 endif(NOT DEFINED LIB_POSTFIX)
