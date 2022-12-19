@@ -42,7 +42,49 @@ int main(int argc, char **argv)
       char *s;
       int i;
 
-      printf("\nTesting xmlNodeGetString for /*/*/test:\t\t\t\t\t");
+      printf("\n");
+
+      printf("Testing xmlNodeGetBool for /Configuration/output/boolean: (0)\t\t");
+      i = xmlNodeGetBool(root_id, "/Configuration/output/boolean");
+      if (i) {
+         printf("failed.\n\t'%i' should be false.\n", i);
+      } else {
+         printf("succes.\n");
+      }
+
+      printf("Testing xmlNodeGetBool for /Configuration/output/boolean[1]: (-1)\t");
+      i = xmlNodeGetBool(root_id, "/Configuration/output/boolean[1]");
+      if (i == 0) {
+         printf("failed.\n\t'%i' should be true\n", i);
+      } else {
+         printf("succes.\n");
+      }
+
+      printf("Testing xmlNodeGetBool for /Configuration/output/boolean[2]: (on)\t");
+      i = xmlNodeGetBool(root_id, "/Configuration/output/boolean[2]");
+      if (i == 0) {
+         printf("failed.\n\t'%i' should be true\n", i);
+      } else {
+         printf("succes.\n");
+      }
+
+      printf("Testing xmlNodeGetBool for /Configuration/output/boolean[3]: (true)\t");
+      i = xmlNodeGetBool(root_id, "/Configuration/output/boolean[3]");
+      if (i == 0) {
+         printf("failed.\n\t'%i' should be true\n", i);
+      } else {
+         printf("succes.\n");
+      }
+
+      printf("Testing xmlNodeGetBool for /Configuration/output/boolean[4]: (yes)\t");
+      i = xmlNodeGetBool(root_id, "/Configuration/output/boolean[4]");
+      if (i == 0) {
+         printf("failed.\n\t'%i' should be true\n", i);
+      } else {
+         printf("succes.\n");
+      }
+
+      printf("Testing xmlNodeGetString for /*/*/test:\t\t\t\t\t");
       s = xmlNodeGetString(root_id , "/*/*/test");
       if (s)
       {
@@ -70,46 +112,6 @@ int main(int argc, char **argv)
 
       path_id = xmlNodeGet(root_id, PATH);
       node_id = xmlNodeGet(root_id, ROOTNODE);
-
-      printf("Testing xmlNodeGetBool for /Configuration/output/boolean:\t\t");
-      i = xmlNodeGetBool(root_id, "/Configuration/output/boolean");
-      if (i) {
-         printf("failed.\n\t'%i' should be false.\n", i);
-      } else {
-         printf("succes.\n");
-      }
-
-      printf("Testing xmlNodeGetBool for /Configuration/output/boolean[1]:\t\t");
-      i = xmlNodeGetBool(root_id, "/Configuration/output/boolean[1]");
-      if (i == 0) {
-         printf("failed.\n\t'%i' should be true\n", i);
-      } else {
-         printf("succes.\n");
-      }
-
-      printf("Testing xmlNodeGetBool for /Configuration/output/boolean[2]:\t\t");
-      i = xmlNodeGetBool(root_id, "/Configuration/output/boolean[2]");
-      if (i == 0) {
-         printf("failed.\n\t'%i' should be true\n", i);
-      } else {
-         printf("succes.\n");
-      }
-
-      printf("Testing xmlNodeGetBool for /Configuration/output/boolean[3]:\t\t");
-      i = xmlNodeGetBool(root_id, "/Configuration/output/boolean[3]");
-      if (i == 0) {
-         printf("failed.\n\t'%i' should be true\n", i);
-      } else {
-         printf("succes.\n");
-      }
-
-      printf("Testing xmlNodeGetBool for /Configuration/output/boolean[4]:\t\t");
-      i = xmlNodeGetBool(root_id, "/Configuration/output/boolean[4]");
-      if (i == 0) {
-         printf("failed.\n\t'%i' should be true\n", i);
-      } else {
-         printf("succes.\n");
-      }
 
       if (path_id && node_id)
       {
