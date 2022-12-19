@@ -101,7 +101,7 @@ struct _root_id
     char *start;
     off_t len;
 #ifdef XML_USE_NODECACHE
-    void *node;
+    const xmlCacheId *node;
 #endif
 
     int fd;
@@ -125,7 +125,7 @@ struct _xml_id
     char *start;
     off_t len;
 #ifdef XML_USE_NODECACHE
-    void *node;
+    const xmlCacheId *node;
 #endif
 
     off_t name_len;

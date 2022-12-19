@@ -65,16 +65,17 @@ extern "C" {
 
 #include <xml.h> 
 
+typedef struct _xml_node xmlCacheId;
 
-xmlId *cacheInit();
-void cacheInitLevel(xmlId*);
-void cacheFree(xmlId*);
-xmlId *cacheNodeNew(xmlId*);
+const xmlCacheId *cacheInit();
+void cacheInitLevel(const xmlCacheId*);
+void cacheFree(const xmlCacheId*);
+const xmlCacheId *cacheNodeNew(const xmlCacheId*);
 
-xmlId *cacheNodeGet(const xmlId*);
-void cacheDataSet(xmlId*, char *, size_t, char *, size_t);
+const xmlCacheId *cacheNodeGet(const xmlId*);
+void cacheDataSet(const xmlCacheId*, const char*, size_t, const char*, size_t);
 
-char *__xmlNodeGetFromCache(void **, const char *, size_t *, char **, size_t *, size_t *);
+const char*__xmlNodeGetFromCache(const xmlCacheId**, const char*, size_t*, const char**, size_t*, size_t*);
 
 #ifdef __cplusplus
 }

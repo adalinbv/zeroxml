@@ -85,24 +85,24 @@
 
 struct _xml_node
 {
-    void *parent;
-    char *name;
+    const struct _xml_node *parent;
+    const char *name;
     size_t name_len;
-    char *data;
+    const char *data;
     size_t data_len;
-    void **node;
+    const xmlCacheId **node;
     size_t no_nodes;
     size_t first_free;
 };
 
-char *
-__xmlNodeGetFromCache(xmlId **nc, const char *start, size_t *len,
-                        char **element, size_t *elementlen , size_t *nodenum)
+const char*
+__xmlNodeGetFromCache(const xmlCacheId **nc, const char *start, size_t *len,
+                     const char **element, size_t *elementlen , size_t *nodenum)
 {
     struct _xml_node *cache;
     size_t num = *nodenum;
-    char *name = *element;
-    void *rv = 0;
+    const char *name = *element;
+    const char *rv = 0;
 
     assert(nc != 0);
  
@@ -121,8 +121,8 @@ __xmlNodeGetFromCache(xmlId **nc, const char *start, size_t *len,
     }
     else if (*name == '*')
     {
-        struct _xml_node *node = cache->node[num];
-        *nc = node;
+        const struct _xml_node *node = cache->node[num];
+        *nc = (xmlCacheId*)node;
         rv = node->data;
         *len = node->data_len;
         *element = node->name;
@@ -136,7 +136,7 @@ __xmlNodeGetFromCache(xmlId **nc, const char *start, size_t *len,
 
         for (i=0; i<cache->first_free; i++)
         {
-             struct _xml_node *node = cache->node[i];
+             const struct _xml_node *node = cache->node[i];
 
              assert(node);
 
@@ -145,7 +145,7 @@ __xmlNodeGetFromCache(xmlId **nc, const char *start, size_t *len,
              {
                   if (pos == num)
                   {
-                       *nc = node;
+                       *nc = (xmlCacheId*)node;
                        rv = node->data;
                        *element = node->name;
                        *elementlen = node->name_len;
@@ -162,14 +162,14 @@ __xmlNodeGetFromCache(xmlId **nc, const char *start, size_t *len,
 }
 
 
-xmlId*
+const xmlCacheId*
 cacheInit()
 {
     return calloc(1, sizeof(struct _xml_node));
 }
 
 void
-cacheInitLevel(xmlId *nc)
+cacheInitLevel(const xmlCacheId *nc)
 {
     struct _xml_node *cache = (struct _xml_node *)nc;
 
@@ -180,7 +180,7 @@ cacheInitLevel(xmlId *nc)
 }
 
 void
-cacheFree(xmlId *nc)
+cacheFree(const xmlCacheId *nc)
 {
     struct _xml_node *cache = (struct _xml_node *)nc;
 
@@ -188,11 +188,11 @@ cacheFree(xmlId *nc)
 
     if (cache->first_free)
     {
-        struct _xml_node **node = (struct _xml_node **)cache->node;
+        const struct _xml_node **node = cache->node;
         size_t i = 0;
 
         while(i < cache->first_free) {
-             cacheFree(node[i++]);
+             cacheFree((xmlCacheId*)node[i++]);
         }
 
         free(node);
@@ -200,16 +200,15 @@ cacheFree(xmlId *nc)
     free(cache);
 }
 
-xmlId*
+const xmlCacheId*
 cacheNodeGet(const xmlId *id)
 {
     const struct _xml_id *xid = (const struct _xml_id *)id;
-    struct _xml_node *cache = 0;
+    const xmlCacheId *cache = 0;
 
     assert(xid != 0);
 
-    if (xid->name)
-    {
+    if (xid->name) {
         cache = xid->node;
     }
     else
@@ -221,8 +220,8 @@ cacheNodeGet(const xmlId *id)
     return cache;
 }
 
-xmlId*
-cacheNodeNew(xmlId *nc)
+const xmlCacheId*
+cacheNodeNew(const xmlCacheId *nc)
 {
     struct _xml_node *cache = (struct _xml_node *)nc;
     struct _xml_node *rv = 0;
@@ -254,7 +253,7 @@ cacheNodeNew(xmlId *nc)
 }
 
 void
-cacheDataSet(xmlId *n, char *name, size_t namelen, char *data, size_t datalen)
+cacheDataSet(const xmlCacheId *n, const char *name, size_t namelen, const char *data, size_t datalen)
 {
     struct _xml_node *node = (struct _xml_node *)n;
 
@@ -271,7 +270,7 @@ cacheDataSet(xmlId *n, char *name, size_t namelen, char *data, size_t datalen)
 
 #else
 
-xmlId*
+xmlCacheId*
 cacheNodeGet(const xmlId *id)
 {
     return 0;
