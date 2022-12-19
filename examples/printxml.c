@@ -52,7 +52,7 @@ int print_xml(xmlId *id)
     if (num == 0)
     {
         char *s;
-        s = xmlGetString(xid);
+        s = xmlGetStringRaw(xid);
         if (!s) {
             rv = 0;
         }
