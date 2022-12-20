@@ -12,7 +12,7 @@ set(PACKAGE "zeroxml")
 OPTION(UTILS  "Build and install utility programs"       ON)
 OPTION(WERROR "Treat compile warnings as errors"         OFF)
 OPTION(NODECACHE "Use XML Node cache"                    OFF)
-OPTION(NONVALIDATING "Trun off XML validation"           OFF)
+OPTION(NONVALIDATING "Trun off XML validation"           ON)
 OPTION(NONEVALUE "Allow NONE as a return value"          OFF)
 OPTION(RMALLOC "Enable memory debugging functions"       OFF)
 

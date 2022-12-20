@@ -1691,7 +1691,7 @@ __xmlNodeGetPath(const xmlCacheId **nc, const char *start, size_t *len, const ch
         }
 
 #ifndef XML_USE_NODECACHE
-        rv = __xmlNodeGet(nc, start, &blocklen, &node, &nodelen, &num, 0);
+        rv = __xmlNodeGet(*nc, start, &blocklen, &node, &nodelen, &num, 0);
 #else
         rv = __xmlNodeGetFromCache(nc, start, &blocklen, &node, &nodelen, &num);
 #endif
@@ -1794,7 +1794,7 @@ __xmlNodeGet(const xmlCacheId *nc, const char *start, size_t *len, const char **
 
         switch(*cur)
         {
-        case '!': /* comment: "<!--" or CDATA "<![CDATA[" */
+        case '!': /* comment: "<!-- -->" or CDATA: "<![CDATA[ ]]>" */
         {
             const char *start = cur;
             size_t blocklen = restlen;
@@ -1807,7 +1807,7 @@ __xmlNodeGet(const xmlCacheId *nc, const char *start, size_t *len, const char **
             cur = new;
             break;
         }
-        case '?': /* info block: "<?" */
+        case '?': /* info block: "<? ?>" */
         {
             new = __xmlDeclarationProcess(cur, restlen);
             if (!new) {
@@ -1840,7 +1840,7 @@ __xmlNodeGet(const xmlCacheId *nc, const char *start, size_t *len, const char **
             else /* a different element name was foud */
             {
                 new = cur + (len_remaining - restlen);
-                if (new >= ne)
+                if ((ne-new) < elementlen)
                 {
                     *name = element;
                     *rlen = elementlen;
@@ -2414,8 +2414,8 @@ __xml_memncasestr(const char *haystack, size_t haystacklen, const char *needle)
  */
 #define CASECMP(a,b)	(tolower(a)==tolower(b))
 #define VALIDNAME(a)	(!strchr(" :~/\\;$&%@^=*+()|\"{}[]<>", (a)))
-#define ISSEPARATOR(a)	(strchr(" />", (a)))
-#define ISNUM(a)	(strchr("0123456789", (a)))
+#define ISSEPARATOR(a) (strchr(">/ ", (a)))
+#define ISNUM(a)       (isdigit(a))
 static const char*
 __xml_memncasecmp(const char *haystack, size_t *haystacklen,
                   const char **needle, size_t *needlelen)
