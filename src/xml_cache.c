@@ -270,7 +270,7 @@ cacheDataSet(const xmlCacheId *n, const char *name, size_t namelen, const char *
 
 #else
 
-xmlCacheId*
+const xmlCacheId*
 cacheNodeGet(const xmlId *id)
 {
     return 0;
