@@ -106,7 +106,7 @@ static char __zeroxml_strerror[BUF_LEN+1];
 static char _xml_filename[FILENAME_LEN+1];
 #  define PRINT_INFO(a, b, c) \
     if (0 < (c) && (c) < XML_MAX_ERROR) { \
-        int i, nl = 1; for (i=0; i<(b)-(a); ++i) if (a[i] == '\n') nl++; \
+        int i, nl = 1; for (i=0; i<(b)-(a)->root->start; ++i) if (a[i] == '\n') nl++; \
         snprintf(__zeroxml_strerror, BUF_LEN, "%s:\n\t%s at line %i\n", _xml_filename, __zeroxml_error_str[(c)], nl); \
         fprintf(stderr, "%s\tdetected in %s at line %i\n", __zeroxml_strerror, __func__, __LINE__); \
     } else { \
@@ -115,13 +115,14 @@ static char _xml_filename[FILENAME_LEN+1];
     }
 
 # define xmlErrorSet(a, b, c) do { \
-  __xmlErrorSet(a, b, c); PRINT_INFO((a)->root->start, (char*)b, c); \
+  __xmlErrorSet(a, b, c); PRINT_INFO(a, (char*)b, c); \
 } while(0)
 # else
 # define xmlErrorSet(a, b, c) __xmlErrorSet(a, b, c);
 #  define PRINT_INFO(a, b, c)
 # endif
 #else /* !XML_NONVALIDATING */
+# define PRINT_INFO(a, b, c)
 # define xmlErrorSet(a, b, c)
 #endif
 
@@ -204,7 +205,7 @@ xmlOpen(const char *filename)
                     rv = __xmlNodeGet(rid->node, mm, &blen, &n, &nlen, &num, 0);
                     if (!rv)
                     {
-                        PRINT_INFO(rid->start, n, blen);
+                        PRINT_INFO(rid, n, blen);
                         simple_unmmap(rid->start, blen, &rid->un);
                         close(fd);
 
@@ -216,7 +217,9 @@ xmlOpen(const char *filename)
                     rid->fd = fd;
                     rid->start = mm;
                     rid->len = blen;
+#ifndef XML_NONVALIDATING
                     rid->root = rid;
+#endif
                 }
             }
         }
@@ -248,7 +251,7 @@ xmlInitBuffer(const char *buffer, size_t size)
             rv = __xmlNodeGet(rid->node, buffer, &blen, &n, &nlen, &num, 0);
             if (!rv)
             {
-                PRINT_INFO(rid>start, n, blen);
+                PRINT_INFO(rid, n, blen);
                 cacheFree(rid->node);
                 free(rid);
                 rid = 0;
@@ -257,7 +260,9 @@ xmlInitBuffer(const char *buffer, size_t size)
             rid->fd = -1;
             rid->start = (char*)buffer;
             rid->len = size;
+#ifndef XML_NONVALIDATING
             rid->root = rid;
+#endif
 
 #ifdef HAVE_LOCALE_H
 //          rid->locale = setlocale(LC_CTYPE, "");
@@ -273,7 +278,12 @@ xmlClose(xmlId *id)
 {
     struct _root_id *rid = (struct _root_id *)id;
 
-    if (rid && rid->root == rid)
+
+    if (rid
+#ifndef XML_NONVALIDATING
+         && rid->root == rid
+#endif
+       )
     {
         if (rid->fd != -1)
         {
@@ -318,7 +328,7 @@ xmlNodeTest(const xmlId *id, const char *path)
     rv = __xmlNodeGetPath(&nnc, xid->start, &len, &node, &slen) ? 1 : 0;
 
     if (!rv) {
-        PRINT_INFO(xid->root->start, node, len);
+        PRINT_INFO(xid, node, len);
     }
 
     return rv;
@@ -1187,7 +1197,11 @@ xmlMarkId(const xmlId *id)
     if (xmid)
     {
         struct _root_id *xrid = (struct _root_id *)id;
+#ifndef XML_NONVALIDATING
         if (xrid->root == xrid)
+#else
+        if (xrid->name == NULL)
+#endif
         {
             xmid->name = "";
             xmid->name_len = 0;
@@ -1485,7 +1499,7 @@ xmlErrorGetString(const xmlId *id, int clear)
 
 #else
 
-XML_API int XML_APIENTRY
+XML_API size_t XML_APIENTRY
 xmlErrorGetNo(const xmlId *id, int clear)
 {
     return XML_NO_ERROR;
