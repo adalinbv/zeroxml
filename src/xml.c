@@ -106,7 +106,7 @@ static char __zeroxml_strerror[BUF_LEN+1];
 static char _xml_filename[FILENAME_LEN+1];
 #  define PRINT_INFO(a, b, c) \
     if (0 < (c) && (c) < XML_MAX_ERROR) { \
-        int i, nl = 1; for (i=0; i<(b)-(a)->root->start; ++i) if (a[i] == '\n') nl++; \
+        int i, nl = 1; for (i=0; i<(b)-(a)->root->start; ++i) if ((a)->root->start[i] == '\n') nl++; \
         snprintf(__zeroxml_strerror, BUF_LEN, "%s:\n\t%s at line %i\n", _xml_filename, __zeroxml_error_str[(c)], nl); \
         fprintf(stderr, "%s\tdetected in %s at line %i\n", __zeroxml_strerror, __func__, __LINE__); \
     } else { \
