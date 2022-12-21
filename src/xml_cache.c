@@ -56,14 +56,27 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 #include <sys/types.h>
 #include <assert.h>
 
 #include "xml.h"
 #include "api.h"
 
-#ifndef NDEBUG
-# define PRINT(a, b, c) { \
+#ifndef XML_USE_NODECACHE
+
+const xmlCacheId*
+cacheNodeGet(const xmlId *id) {
+    return 0;
+}
+
+#else
+
+# ifndef NDEBUG
+#  define PRINT(a, b, c) { \
     size_t l1 = (b), l2 = (c); \
     char *s = (a); \
     if (s) { \
@@ -76,12 +89,10 @@
        } else printf("Length (%u) seems too large at line %i\n",len, __LINE__); \
     } else printf("NULL pointer at line %i\n", __LINE__); \
 }
-#endif
-
-#if defined(XML_USE_NODECACHE)
+# endif
 
 /* number of pointers to allocate for every block increase */
-#define NODE_BLOCKSIZE           16
+# define NODE_BLOCKSIZE		16
 
 struct _xml_node
 {
@@ -268,13 +279,4 @@ cacheDataSet(const xmlCacheId *n, const char *name, size_t namelen, const char *
     node->data_len = datalen;
 }
 
-#else
-
-const xmlCacheId*
-cacheNodeGet(const xmlId *id)
-{
-    return 0;
-}
-
 #endif
-
