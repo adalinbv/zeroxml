@@ -203,7 +203,7 @@ cacheFree(const xmlCacheId *nc)
         size_t i = 0;
 
         while(i < cache->first_free) {
-             cacheFree((xmlCacheId*)node[i++]);
+            xmlFree((xmlCacheId*)node[i++]);
         }
 
         free(node);
