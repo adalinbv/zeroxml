@@ -1,4 +1,7 @@
-2022-12-06 Erik Hofman <tech@adalin.org>
+2022-12-22Erik Hofman <tech@adalin.org>
+ * Fix a serious mistake: use xmlFree instead of recursively calling cacheFree
+
+2022-12-21 Erik Hofman <tech@adalin.org>
  * Introduce xmlId as a replacement for void* when dealing with XML-ids.
  * Use the XMLNodeCache by default. Run cmake -DNODECACHE=OFF to switch it off.
  * Many code inprovements, cleanups, style changes and added comments.
