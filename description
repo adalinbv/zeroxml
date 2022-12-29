@@ -4,4 +4,4 @@ To achieve zero memory allocation operation the library maps the file to a memor
 
 Memory will only be allocated to handle client application requests. In all cases a preallocated buffer can be provided by the client application to store XML data for further processing.
 
-A separate caching option is available that will create a node tree when a XML file gets opened. As a result node searches will be much faster at the cost of a small amount of memory (less than 16 bytes for every XML node in the file). 
+A separate caching option is available that will create a node tree when a XML file gets opened. As a result node searches will be much faster at the cost of a small amount of memory (48 bytes on a 64-bit machine for every XML node in the file). 

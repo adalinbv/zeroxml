@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2008-2016 by Erik Hofman.
- * Copyright (C) 2009-2016 by Adalin B.V.
+ * Copyright (C) 2008-2022 by Erik Hofman.
+ * Copyright (C) 2009-2022 by Adalin B.V.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -101,18 +101,19 @@ struct _root_id
     char *start;
     off_t len;
 #ifdef XML_USE_NODECACHE
-    const xmlCacheId *node;
+    const cacheId *node;
 #endif
 
+    /* _root_id specifics */
     int fd;
+#ifdef HAVE_LOCALE_H
     const char *locale;
+#endif
 #ifndef XML_NONVALIDATING
     struct _zeroxml_error *info;
 #endif
 #ifdef WIN32
     SIMPLE_UNMMAP un;
-#else
-    int un;				/* referenced but not used */
 #endif
 };
 
@@ -125,9 +126,10 @@ struct _xml_id
     char *start;
     off_t len;
 #ifdef XML_USE_NODECACHE
-    const xmlCacheId *node;
+    const cacheId *node;
 #endif
 
+    /* _xml_id specifics */
     off_t name_len;
 };
 

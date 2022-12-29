@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2008-2011 by Erik Hofman.
- * Copyright (C) 2009-2011 by Adalin B.V.
+ * Copyright (C) 2008-2022 by Erik Hofman.
+ * Copyright (C) 2009-2022 by Adalin B.V.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -230,7 +230,7 @@ parse_option(char **args, int n, int max)
     return 1;
 }
 
-void walk_the_tree(size_t num, xmlId *xid, char *tree)
+void walk_the_tree(int num, xmlId *xid, char *tree)
 {
     unsigned int i, no_elements;
 
@@ -374,10 +374,10 @@ void grep_file(unsigned num)
        r = xmlErrorGetNo(xrid, 0);
        if (r)
        {
-            size_t n = xmlErrorGetLineNo(xrid, 0);
-            size_t c = xmlErrorGetColumnNo(xrid, 0);
+            int n = xmlErrorGetLineNo(xrid, 0);
+            int c = xmlErrorGetColumnNo(xrid, 0);
             const char *s = xmlErrorGetString(xrid, 1); /* clear the error */
-            printf("%s: at line %zu, column %zu: '%s'\n",_filenames[num], n,c, s);
+            printf("%s: at line %i, column %i: '%s'\n",_filenames[num], n,c, s);
        }
 
        free(xrid);
@@ -432,10 +432,10 @@ void grep_file_buffer(unsigned num)
        r = xmlErrorGetNo(xrid, 0);
        if (r)
        {
-            size_t n = xmlErrorGetLineNo(xrid, 0);
-            size_t c = xmlErrorGetColumnNo(xrid, 0);
+            int n = xmlErrorGetLineNo(xrid, 0);
+            int c = xmlErrorGetColumnNo(xrid, 0);
             const char *s = xmlErrorGetString(xrid, 1); /* clear the error */
-            printf("%s: at line %zu, column %zu: '%s'\n",_filenames[num], n,c, s);
+            printf("%s: at line %i, column %i: '%s'\n",_filenames[num], n,c, s);
        }
 
        free(xrid);

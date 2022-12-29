@@ -54,7 +54,7 @@ set(VERSION ZEROXML_VERSION)
 file(STRINGS description descriptionFile)
 string(REGEX REPLACE ";" " " descriptionFile "${descriptionFile}")
 
-# split version string into components, note cmake_MATCH_0 is the entire regexp match
+# split version string into components, note CMAKE_MATCH_0 is the entire regexp match
 string(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" CPACK_PACKAGE_VERSION ${ZEROXML_VERSION})
 set(CPACK_PACKAGE_VERSION_MAJOR ${CMAKE_MATCH_1})
 set(CPACK_PACKAGE_VERSION_MINOR ${CMAKE_MATCH_2})
@@ -109,17 +109,22 @@ include_directories("${CMAKE_SOURCE_DIR}/src"
   src 
 )
 
-if(NOT cmake_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE MinSizeRel CACHE STRING
-      "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
-      FORCE)
-endif(NOT cmake_BUILD_TYPE)
-
+check_include_file(strings.h HAVE_STRINGS_H)
+check_include_file(unistd.h HAVE_UNISTD_H)
+check_include_file(locale.h HAVE_LOCALE_H)
+check_include_file(langinfo.h HAVE_LANGINFO_H)
 
 add_definitions(-DHAVE_CONFIG_H=1)
 if(WERROR)
   add_definitions(-Werror)
 endif()
+
+if (NOT CMAKE_BUILD_TYPE)
+    message(STATUS "No build type selected, default to Release")
+    set(CMAKE_BUILD_TYPE "Release")
+endif()
+
+set(C_FLAGS "${CMAKE_C_FLAGS}")
 
 if(MSVC)
     set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -D_DEBUG")
@@ -137,8 +142,8 @@ if(MSVC)
     OPTION(FORCE_STATIC_VCRT "Force /MT for static VC runtimes" OFF)
     if(FORCE_STATIC_VCRT)
         foreach(flag_var
-                cmake_C_FLAGS cmake_C_FLAGS_DEBUG cmake_C_FLAGS_RELEASE
-                cmake_C_FLAGS_MINSIZEREL cmake_C_FLAGS_RELWITHDEBINFO)
+                CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
+                CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
             if(${flag_var} MATCHES "/MD")
                 string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
             endif()
@@ -147,45 +152,63 @@ if(MSVC)
 else(MSVC)
     add_definitions(-Wall -s)
     if(NOT MINGW)
-       set(C_FLAGS "${C_FLAGS} -fPIC")
+      if (GCC)
+        set(C_FLAGS "${C_FLAGS} -Wl,--hash-style=both")
+      endif(GCC)
+      if (GCC OR CLANG)
+        set(C_FLAGS "${C_FLAGS} -fPIC -Wpointer-arith -Wparentheses")
+      endif(GCC OR CLANG)
     else(NOT MINGW)
        set(C_FLAGS "${C_FLAGS} -static-libgcc")
        set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -Wl,--out-implib,${LIBZEROXML}.lib")
        foreach(flag_var
-                cmake_C_FLAGS cmake_C_FLAGS_DEBUG cmake_C_FLAGS_RELEASE
-                cmake_C_FLAGS_MINSIZEREL cmake_C_FLAGS_RELWITHDEBINFO
-                cmake_CXX_FLAGS cmake_CXX_FLAGS_DEBUG cmake_CXX_FLAGS_RELEASE
-                cmake_CXX_FLAGS_MINSIZEREL cmake_CXX_FLAGS_RELWITHDEBINFO)
+                CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
+                CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO
+                CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+                CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
             if(${flag_var} MATCHES "-mthreads")
                 string(REGEX REPLACE "-mthreads" "" ${flag_var} "${${flag_var}}")
             endif()
         endforeach(flag_var)
     endif(NOT MINGW)
-    set(C_FLAGS "${C_FLAGS} -Wall -Werror=format-security" CACHE STRING
-        "Flags used by al build types."
-        FORCE)
-    set(CMAKE_C_FLAGS_RELWITHDEBINFO "${C_FLAGS} -g -O2 -D_DEBUG" CACHE STRING
-        "Flags used by the compiler during Release with Debug Info builds."
-        FORCE)
-    set(CMAKE_C_FLAGS_MINSIZEREL "${C_FLAGS} -Os -DNDEBUG" CACHE STRING
-        "Flags used by the compiler during release minsize builds."
-        FORCE)
-    set(CMAKE_C_FLAGS_RELEASE "${C_FLAGS} -Os -fomit-frame-pointer -DNDEBUG"
-        CACHE STRING "Flags used by the compiler during release builds"
-        FORCE)
-    set(CMAKE_C_FLAGS_DEBUG "${C_FLAGS} -g3 -D_DEBUG" CACHE STRING
-        "Flags used by the compiler during debug builds."
-        FORCE)
+
+    set(RELEASE_FLAGS "-O3 -DRELEASE=1")
+
+    # Note: CMAKE_C_FLAGS_RELWITHDEBINFO adds profiler flags
+     set(CMAKE_C_FLAGS_RELWITHDEBINFO "${C_FLAGS} -g ${RELEASE_FLAGS} -DNDEBUG" CACHE STRING
+         "Flags used by the compiler during Release with Debug Info builds."
+         FORCE)
+     set(CMAKE_C_FLAGS_MINSIZEREL "${C_FLAGS} -O2 -s -fomit-frame-pointer -DNDEBUG -DRELEASE=1" CACHE STRING
+         "Flags used by the compiler during release minsize builds."
+         FORCE)
+     set(CMAKE_C_FLAGS_RELEASE "${C_FLAGS} ${RELEASE_FLAGS} -fomit-frame-pointer -DNDEBUG"
+             CACHE STRING "Flags used by the compiler during release builds"
+            FORCE)
+     set(CMAKE_C_FLAGS_DEBUG "${C_FLAGS} -g3 -D_DEBUG" CACHE STRING
+         "Flags used by the compiler during debug builds."
+         FORCE)
+
+     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${C_FLAGS} -g ${RELEASE_FLAGS} -DNDEBUG" CACHE STRING
+         "Flags used by the compiler during Release with Debug Info builds."
+         FORCE)
+     set(CMAKE_CXX_FLAGS_MINSIZEREL "${C_FLAGS} -O2 -s -fomit-frame-pointer -DNDEBUG" CACHE STRING
+         "Flags used by the compiler during release minsize builds."
+         FORCE)
+     set(CMAKE_CXX_FLAGS_RELEASE "${C_FLAGS} ${RELEASE_FLAGS}"
+             CACHE STRING "Flags used by the compiler during release builds"
+            FORCE)
+     set(CMAKE_CXX_FLAGS_DEBUG "${C_FLAGS} -g3 -D_DEBUG" CACHE STRING
+         "Flags used by the compiler during debug builds."
+         FORCE)
+
 endif(MSVC)
+
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "C flags: ${CMAKE_C_FLAGS}")
 
 set(XML_USE_NODECACHE ${NODECACHE})
 set(XML_NONVALIDATING ${NONVALIDATING})
 set(XML_NONEVALUE ${NONEVALUE})
-
-check_include_file(strings.h HAVE_STRINGS_H)
-check_include_file(unistd.h HAVE_UNISTD_H)
-check_include_file(locale.h HAVE_LOCALE_H)
-check_include_file(langinfo.h HAVE_LANGINFO_H)
 
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in"

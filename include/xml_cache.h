@@ -65,17 +65,78 @@ extern "C" {
 
 #include <xml.h> 
 
-typedef struct _xml_node xmlCacheId;
+typedef struct _xml_node cacheId;
 
-const xmlCacheId *cacheInit();
-void cacheInitLevel(const xmlCacheId*);
-void cacheFree(const xmlCacheId*);
-const xmlCacheId *cacheNodeNew(const xmlCacheId*);
+/**
+ * Initialize a new cacheId structure.
+ *
+ * @return cacheId which is used for further processing
+ */
+const cacheId *cacheInit();
 
-const xmlCacheId *cacheNodeGet(const xmlId*);
-void cacheDataSet(const xmlCacheId*, const char*, size_t, const char*, size_t);
+/**
+ * Initialize a new level in the XML-tree.
+ *
+ * This is required to be able to assign new XML sub-nodes.
+ *
+ * @param cid Cache-id
+ */
+void cacheInitLevel(const cacheId *cid);
 
-const char*__xmlNodeGetFromCache(const xmlCacheId**, const char*, size_t*, const char**, size_t*, size_t*);
+/**
+ * Free a Cache-id.
+ *
+ * All allocations of the XML-tree will be freed.
+ *
+ * @param xid Cache-id to be freed.
+ */
+void cacheFree(const cacheId *cid);
+
+/**
+ * Allocate a new XML-node in the XML-tree.
+ *
+ * @param cid Cache-id
+ * @return a pointer to the the newly created Cache-id
+ */
+const cacheId *cacheNodeNew(const cacheId *cid);
+
+/**
+ * Return the Cache-id which is associated with the XML-id.
+ *
+ * @param xid XML-id
+ * @return a pointer to the the Cache-id
+ */
+const cacheId *cacheNodeGet(const xmlId *xid);
+
+/**
+ * Set all data for the Cache-id.
+ *
+ * @param cid Cache-id
+ * @param name a pointer to the name-string
+ * @param namelen the length of the name-string
+ * @param data a pointer to the node data section
+ * @param datalen the length of the node data section
+ */
+void cacheDataSet(const cacheId *cid, const char *name, int namelen, const char *data, int datalen);
+
+/**
+ * Get the data from a cached node.
+ *
+ * When finished *cid will return a pointer to the request node XML-id,
+ * *len will be set to the length of the requested section,
+ * *name will point to the actual name of the node (useful in case the name was
+ * a wildcard character), *nlen will return the length of the actual name and
+ * *nodenum will return the current occurence number of the requested section.
+ *
+ * @param cid Cache-id
+ * @param start starting pointer for this section
+ * @param len length to the end of the buffer
+ * @param *name name of the node to look for
+ * @param rlen length of the name of the node to look for
+ * @param nodenum which occurence of the node name to look for
+ * @return a pointer to the start of the node data section
+ */
+const char* __xmlNodeGetFromCache(const cacheId **cid, const char *start, int *len, const char **name, int *rlen , int *nodenum);
 
 #ifdef __cplusplus
 }

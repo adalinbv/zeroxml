@@ -135,7 +135,7 @@ XML_API xmlId* XML_APIENTRY xmlOpen(const char *fname);
  * @param size size of the buffer
  * @return XML-id which is used for further processing
  */
-XML_API xmlId* XML_APIENTRY xmlInitBuffer(const char *buffer, size_t size);
+XML_API xmlId* XML_APIENTRY xmlInitBuffer(const char *buffer, int size);
 
 /**
  * Close the XML file after which no further processing is possible.
@@ -167,8 +167,8 @@ XML_API int XML_APIENTRY xmlNodeTest(const xmlId *xid, const char *node);
  * slash character '/' (in which case the code walks the XML tree) or an
  * asterisk character '*' to indicate that any name is acceptable.
  *
- * The memory allocated for the XML-subsection-id has to be freed by the
- * calling process.
+ * The memory allocated for the XML-subsection-id has to be free'd by the
+ * calling process using xmlFree.
  *
  * @param xid XML-id
  * @param node path to the node containing the subsection
@@ -186,8 +186,8 @@ XML_API xmlId* XML_APIENTRY xmlNodeGet(const xmlId *xid, const char *node);
  * slash character '/' (in which case the code walks the XML tree) or an
  * asterisk character '*' to indicate that any name is acceptable.
  *
- * The memory allocated for the XML-subsection-id has to be freed by the
- * calling process.
+ * The memory allocated for the XML-subsection-id has to be free'd by the
+ * calling process using xmlFree.
  *
  * @param xid XML-id
  * @param node path to the node containing the subsection
@@ -198,7 +198,7 @@ XML_API xmlId* XML_APIENTRY xmlNodeCopy(const xmlId *xid, const char *node);
 
 /**
  * Return the name of this node.
- * The returned string has to be freed by the calling process.
+ * The returned string has to be free'd by the calling process using xmlFree.
  *
  * @param xid XML-id
  * @return a newly alocated string containing the node name
@@ -213,7 +213,20 @@ XML_API char* XML_APIENTRY xmlNodeGetName(const xmlId *xid);
  * @param buflen length of the destination buffer
  * @return the length of the node name
  */
-XML_API size_t XML_APIENTRY xmlNodeCopyName(const xmlId *xid, char *buffer, size_t buflen);
+XML_API int XML_APIENTRY xmlNodeCopyName(const xmlId *xid, char *buffer, int buflen);
+
+/**
+ * Compare the name of a node to a string.
+ * Comparing is done in a case insensitive way.
+ *
+ * @param xid XML-id
+ * @param str the string to compare to
+ * @return an integer less than, equal to, or greater than zero if the value
+ * of the node is found, respectively, to be less than, to match, or be greater
+ * than str
+ */
+XML_API int XML_APIENTRY xmlNodeCompareName(const xmlId *xid, const char *str);
+
 
 /**
  * Return the name of the nth attribute.
@@ -223,7 +236,7 @@ XML_API size_t XML_APIENTRY xmlNodeCopyName(const xmlId *xid, char *buffer, size
  * @return a newly alocated string containing the name of the attribute.
  */
 
-XML_API char* XML_APIENTRY xmlAttributeGetName(const xmlId *xid, size_t n);
+XML_API char* XML_APIENTRY xmlAttributeGetName(const xmlId *xid, int n);
 
 /**
  * Copy the name of the nth attribute in a pre-allocated buffer.
@@ -235,7 +248,7 @@ XML_API char* XML_APIENTRY xmlAttributeGetName(const xmlId *xid, size_t n);
  * @return the length of the attribute name
  */
 
-XML_API size_t XML_APIENTRY xmlAttributeCopyName(const xmlId *xid, char *buffer, size_t buflen, size_t n);
+XML_API int XML_APIENTRY xmlAttributeCopyName(const xmlId *xid, char *buffer, int buflen, int n);
 
 
 /**
@@ -246,7 +259,7 @@ XML_API size_t XML_APIENTRY xmlAttributeCopyName(const xmlId *xid, char *buffer,
  * to walk a number of nodes. The xmlNodeGetPos function adjusts the contents
  * of the provided XML-id to keep track of it's position within the xml section.
  * The returned XML-id is limited to the boundaries of the requested XML tag
- * and has to be freed by the calling process.
+ * and has to be free'd by the calling process using xmlFree.
  *
  * @param xid reference XML-id
  * @return a copy of the reference XML-id
@@ -257,9 +270,9 @@ XML_API xmlId* XML_APIENTRY xmlMarkId(const xmlId *xid);
 /**
  * Free an XML-id.
  *
- * @param xid XML-id to be freed.
+ * @param p a pointer to the memory location to be free'd.
  */
-XML_API void XML_APIENTRY xmlFree(void *xid);
+XML_API void XML_APIENTRY xmlFree(void *p);
 
 /**
  * Get the number of nodes with the same name from a specified XML path.
@@ -271,8 +284,8 @@ XML_API void XML_APIENTRY xmlFree(void *xid);
  * @param path path to the xml node
  * @return the number count of the nodename
  */
-XML_API size_t XML_APIENTRY xmlNodeGetNum(const xmlId *xid, const char *path);
-XML_API size_t XML_APIENTRY xmlNodeGetNumRaw(const xmlId *xid, const char *path);
+XML_API int XML_APIENTRY xmlNodeGetNum(const xmlId *xid, const char *path);
+XML_API int XML_APIENTRY xmlNodeGetNumRaw(const xmlId *xid, const char *path);
 
 /**
  * Get the number of attributes for this node.
@@ -280,11 +293,11 @@ XML_API size_t XML_APIENTRY xmlNodeGetNumRaw(const xmlId *xid, const char *path)
  * @param xid XML-id
  * @return the number count of the node
  */
-XML_API size_t XML_APIENTRY xmlAttributeGetNum(const xmlId *xid);
+XML_API int XML_APIENTRY xmlAttributeGetNum(const xmlId *xid);
 
 /**
  * Get the nth occurrence of node in the parent node.
- * The return value should never be altered or freed by the caller.
+ * The return value should never be altered or free'd by the caller.
  *
  * @param pid XML-id of the parent node of this node
  * @param xid XML-id
@@ -292,12 +305,12 @@ XML_API size_t XML_APIENTRY xmlAttributeGetNum(const xmlId *xid);
  * @param num specify which occurence to return
  * @return XML-subsection-id for further processing or NULL if unsuccessful
  */
-XML_API xmlId* XML_APIENTRY xmlNodeGetPos(const xmlId *pid, xmlId *xid, const char *node, size_t num);
-XML_API xmlId* XML_APIENTRY xmlNodeGetPosRaw(const xmlId *pid, xmlId *xid, const char *node, size_t num);
+XML_API xmlId* XML_APIENTRY xmlNodeGetPos(const xmlId *pid, xmlId *xid, const char *node, int num);
+XML_API xmlId* XML_APIENTRY xmlNodeGetPosRaw(const xmlId *pid, xmlId *xid, const char *node, int num);
 
 /**
  * Copy the nth occurrence of node in the parent node.
- * The return value should be free'd by the caller.
+ * The return value should be free'd by the caller using xmlFree.
  *
  * @param pid XML-id of the parent node of this node
  * @param xid XML-id which will get unusbale after the call, use the returned
@@ -306,12 +319,11 @@ XML_API xmlId* XML_APIENTRY xmlNodeGetPosRaw(const xmlId *pid, xmlId *xid, const
  * @param num specify which occurence to return
  * @return XML-subsection-id for further processing or NULL if unsuccessful
  */
-XML_API xmlId* XML_APIENTRY xmlNodeCopyPos(const xmlId *pid, xmlId *xid, const char *node, size_t num);
-
+// XML_API xmlId* XML_APIENTRY xmlNodeCopyPos(const xmlId *pid, xmlId *xid, const char *node, int num);
 
 /**
  * Get a string of characters from the current node.
- * The returned string has to be freed by the calling process.
+ * The returned string has to be free'd by the calling process using xmlFree.
  *
  * xmlGetStringRaw returns the unformatted string including leading and trailing
  * spaces and includes comments and the ![CDATA[]] sequence in the result.
@@ -336,7 +348,7 @@ XML_API char* XML_APIENTRY xmlGetStringRaw(const xmlId *xid);
  * @param buflen length of the destination buffer
  * @return the length of the string
  */
-XML_API size_t XML_APIENTRY xmlCopyString(const xmlId *xid, char *buffer, size_t buflen);
+XML_API int XML_APIENTRY xmlCopyString(const xmlId *xid, char *buffer, int buflen);
 
 /**
  * Compare the value of this node to a reference string.
@@ -356,7 +368,7 @@ XML_API int XML_APIENTRY xmlCompareString(const xmlId *xid, const char *str);
  * An XML path may be a solitary node name or a node path separated by the
  * slash character '/' in which case the code walks the XML tree.
  *
- * The returned string has to be freed by the calling process.
+ * The returned string has to be free'd by the calling process using xmlFree.
  *
  * @param xid XML-id
  * @param path path to the xml node
@@ -380,7 +392,7 @@ XML_API char* XML_APIENTRY xmlNodeGetString(const xmlId *xid, const char *path);
  * @param buflen length of the destination buffer
  * @return the length of the string
  */
-XML_API size_t XML_APIENTRY xmlNodeCopyString(const xmlId *xid, const char *path, char *buffer, size_t buflen);
+XML_API int XML_APIENTRY xmlNodeCopyString(const xmlId *xid, const char *path, char *buffer, int buflen);
 
 /**
  * Compare the value of a node to the value of a node at a specified XML path.
@@ -400,7 +412,7 @@ XML_API int XML_APIENTRY xmlNodeCompareString(const xmlId *xid, const char *path
 
 /**
  * Get a string of characters from a named attribute.
- * The returned string has to be freed by the calling process.
+ * The returned string has to be free'd by the calling process using xmlFree.
  *
  * @param xid XML-id
  * @param name name of the attribute to acquire
@@ -420,7 +432,7 @@ XML_API char* XML_APIENTRY xmlAttributeGetString(const xmlId *xid, const char *n
  * @param buflen length of the destination buffer
  * @return the length of the string
  */
-XML_API size_t XML_APIENTRY xmlAttributeCopyString(const xmlId *xid, const char *name, char *buffer, size_t buflen);
+XML_API int XML_APIENTRY xmlAttributeCopyString(const xmlId *xid, const char *name, char *buffer, int buflen);
 
 /**
  * Compare the value of an attribute to a reference string.
@@ -547,7 +559,7 @@ XML_API int XML_APIENTRY xmlAttributeExists(const xmlId *xid, const char *name);
  * @param clear clear the error state if non zero
  * @return the numer of the last error, 0 means no error detected.
  */
-XML_API size_t XML_APIENTRY xmlErrorGetNo(const xmlId *xid, int clear);
+XML_API int XML_APIENTRY xmlErrorGetNo(const xmlId *xid, int clear);
 
 /**
  * Get the line number of the last detected syntax error in the xml file.
@@ -556,7 +568,7 @@ XML_API size_t XML_APIENTRY xmlErrorGetNo(const xmlId *xid, int clear);
  * @param clear clear the error state if non zero
  * @return the line number of the detected syntax error.
  */
-XML_API size_t XML_APIENTRY xmlErrorGetLineNo(const xmlId *xid, int clear);
+XML_API int XML_APIENTRY xmlErrorGetLineNo(const xmlId *xid, int clear);
 
 /**
  * Get the column number of the last detected syntax error in the xml file.
@@ -565,7 +577,7 @@ XML_API size_t XML_APIENTRY xmlErrorGetLineNo(const xmlId *xid, int clear);
  * @param clear clear the error state if non zero
  * @return the line number of the detected syntax error.
  */
-XML_API size_t XML_APIENTRY xmlErrorGetColumnNo(const xmlId *xid, int clear);
+XML_API int XML_APIENTRY xmlErrorGetColumnNo(const xmlId *xid, int clear);
 
 /**
  * Get a string that explains the last error.

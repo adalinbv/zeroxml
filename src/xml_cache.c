@@ -68,7 +68,7 @@
 
 #ifndef XML_USE_NODECACHE
 
-const xmlCacheId*
+const cacheId*
 cacheNodeGet(const xmlId *id) {
     return 0;
 }
@@ -77,16 +77,16 @@ cacheNodeGet(const xmlId *id) {
 
 # ifndef NDEBUG
 #  define PRINT(a, b, c) { \
-    size_t l1 = (b), l2 = (c); \
-    char *s = (a); \
+    int l1 = (b), l2 = (c); \
+    const char *s = (a); \
     if (s) { \
-       size_t q, len = l2; \
-       if (l1 < l2) len = l1; \
-       if (len < 50000) { \
-          printf("(%i) '", len); \
-          for (q=0; q<len; q++) printf("%c", s[q]); \
-          printf("'\n"); \
-       } else printf("Length (%u) seems too large at line %i\n",len, __LINE__); \
+    int q, len = l2; \
+    if (l1 < l2) len = l1; \
+    if (len < 50000) { \
+        printf("(%i) '", len); \
+        for (q=0; q<len; q++) printf("%c", s[q]); \
+        printf("'\n"); \
+    } else printf("Length (%i) seems too large at line %i\n",len, __LINE__); \
     } else printf("NULL pointer at line %i\n", __LINE__); \
 }
 # endif
@@ -96,114 +96,50 @@ cacheNodeGet(const xmlId *id) {
 
 struct _xml_node
 {
-    const struct _xml_node *parent;
-    const char *name;
-    size_t name_len;
-    const char *data;
-    size_t data_len;
-    const xmlCacheId **node;
-    size_t no_nodes;
-    size_t first_free;
+    /* Cache node information */
+    const struct _xml_node *parent; /* parent node */
+    const cacheId **node; /* list of child nodes */
+    short int max_nodes; /* maximum number of child nodes */
+    short int no_nodes; /* available number of nodes */
+
+    /* XML node information */
+    short int name_len;	/* lenght of the name of the XML node */
+    const char *name;	/* name of the XML node */
+    int data_len;	/* lenght of the  data section of the XML node */
+    const char *data;	/* data section of the XML node */
 };
 
-const char*
-__xmlNodeGetFromCache(const xmlCacheId **nc, const char *start, size_t *len,
-                     const char **element, size_t *elementlen , size_t *nodenum)
-{
-    struct _xml_node *cache;
-    size_t num = *nodenum;
-    const char *name = *element;
-    const char *rv = 0;
-
-    assert(nc != 0);
- 
-    cache = (struct _xml_node *)*nc;
-    assert(cache != 0);
-
-    assert((cache->first_free > num) || (cache->first_free == 0));
-
-    if (cache->first_free == 0) /* leaf node */
-    {
-        rv = cache->data;
-        *len = cache->data_len;
-        *element = cache->name;
-        *elementlen = cache->name_len;
-        *nodenum = 0;
-    }
-    else if (*name == '*')
-    {
-        const struct _xml_node *node = cache->node[num];
-        *nc = (xmlCacheId*)node;
-        rv = node->data;
-        *len = node->data_len;
-        *element = node->name;
-        *elementlen = node->name_len;
-        *nodenum = cache->first_free;
-    }
-    else
-    {
-        size_t namelen = *elementlen;
-        size_t i, pos = 0;
-
-        for (i=0; i<cache->first_free; i++)
-        {
-             const struct _xml_node *node = cache->node[i];
-
-             assert(node);
-
-             if ((node->name_len == namelen) &&
-                 (!strncasecmp(node->name, name, namelen)))
-             {
-                  if (pos == num)
-                  {
-                       *nc = (xmlCacheId*)node;
-                       rv = node->data;
-                       *element = node->name;
-                       *elementlen = node->name_len;
-                       *len = node->data_len;
-                       *nodenum = cache->first_free;
-                       break;
-                  }
-                  pos++;
-             }
-        }
-    }
-
-    return rv;
-}
-
-
-const xmlCacheId*
-cacheInit()
-{
+const cacheId*
+cacheInit() {
     return calloc(1, sizeof(struct _xml_node));
 }
 
 void
-cacheInitLevel(const xmlCacheId *nc)
+cacheInitLevel(const cacheId *nc)
 {
     struct _xml_node *cache = (struct _xml_node *)nc;
 
     assert(cache != 0);
+    assert(cache->node == 0);
 
     cache->node = calloc(NODE_BLOCKSIZE, sizeof(struct _xml_node *));
-    cache->no_nodes = NODE_BLOCKSIZE;
+    cache->max_nodes = NODE_BLOCKSIZE;
 }
 
 void
-cacheFree(const xmlCacheId *nc)
+cacheFree(const cacheId *nc)
 {
     struct _xml_node *cache = (struct _xml_node *)nc;
 
     assert(nc != 0);
 
-    if (cache->first_free)
+    if (cache->no_nodes)
     {
         const struct _xml_node **node = cache->node;
-        size_t i = 0;
+        int i = 0;
 
-        while(i < cache->first_free) {
-            xmlFree((xmlCacheId*)node[i++]);
+        while(i < cache->no_nodes) {
+            cacheFree((cacheId*)node[i++]);
         }
 
         free(node);
@@ -211,19 +147,17 @@ cacheFree(const xmlCacheId *nc)
     free(cache);
 }
 
-const xmlCacheId*
+const cacheId*
 cacheNodeGet(const xmlId *id)
 {
     const struct _xml_id *xid = (const struct _xml_id *)id;
-    const xmlCacheId *cache = 0;
+    const cacheId *cache = NULL;
 
     assert(xid != 0);
 
-    if (xid->name) {
+    if (xid->name) { // not a root node?
         cache = xid->node;
-    }
-    else
-    {
+    } else {
         struct _root_id *rid = (struct _root_id *)xid;
         cache = rid->node;
     }
@@ -231,40 +165,43 @@ cacheNodeGet(const xmlId *id)
     return cache;
 }
 
-const xmlCacheId*
-cacheNodeNew(const xmlCacheId *nc)
+const cacheId*
+cacheNodeNew(const cacheId *nc)
 {
     struct _xml_node *cache = (struct _xml_node *)nc;
-    struct _xml_node *rv = 0;
-    size_t i = 0;
+    struct _xml_node *rv = NULL;
+    int i = 0;
 
     assert(nc != 0);
 
-    i = cache->first_free;
-    if (i == cache->no_nodes)
+    i = cache->no_nodes;
+    if (i == cache->max_nodes)
     {
-        size_t size, no_nodes;
+        int size, max_nodes;
         void *p;
 
-        no_nodes = cache->no_nodes + NODE_BLOCKSIZE;
-        size = no_nodes * sizeof(struct _xml_node *);
-        p = realloc(cache->node, size);
-        if (!p) return 0;
+        max_nodes = cache->max_nodes + NODE_BLOCKSIZE;
+        size = max_nodes * sizeof(struct _xml_node*);
+        if ((p = realloc(cache->node, size)) == NULL) {
+            return rv;
+        }
 
         cache->node = p;
-        cache->no_nodes = no_nodes;
+        cache->max_nodes = max_nodes;
     }
 
-    rv = calloc(1, sizeof(struct _xml_node));
-    if (rv) rv->parent = cache;
+    if ((rv = calloc(1, sizeof(struct _xml_node))) != NULL)
+    {
+        rv->parent = cache;
+        cache->no_nodes++;
+    }
     cache->node[i] = rv;
-    cache->first_free++;
 
     return rv;
 }
 
 void
-cacheDataSet(const xmlCacheId *n, const char *name, size_t namelen, const char *data, size_t datalen)
+cacheDataSet(const cacheId *n, const char *name, int namelen, const char *data, int datalen)
 {
     struct _xml_node *node = (struct _xml_node *)n;
 
@@ -277,6 +214,80 @@ cacheDataSet(const xmlCacheId *n, const char *name, size_t namelen, const char *
     node->name_len = namelen;
     node->data = data;
     node->data_len = datalen;
+}
+
+const char*
+__xmlNodeGetFromCache(const cacheId **nc, const char *start, int *len,
+                      const char **element, int *elementlen, int *nodenum)
+{
+    struct _xml_node *cache;
+    const char *name = *element;
+    const char *rv = NULL;
+    int found;
+    int num;
+
+    assert(nc != 0);
+
+    cache = (struct _xml_node*)*nc;
+    assert(cache != 0);
+
+    num = *nodenum;
+    if (cache->no_nodes == 0) /* leaf node */
+    {
+        rv = cache->data;
+        *len = cache->data_len;
+        *element = cache->name;
+        *elementlen = cache->name_len;
+        found = 0;
+    }
+    else if (num >= cache->no_nodes) /* not found */
+    {
+        rv = NULL;
+        *len = XML_NO_ERROR;
+        *element = NULL;
+        *elementlen = 0;
+        found = cache->no_nodes;
+    }
+    else if (*name == '*') /* everything goes */
+    {
+        const struct _xml_node *node = cache->node[num];
+        *nc = (cacheId*)node;
+        rv = node->data;
+        *len = node->data_len;
+        *element = node->name;
+        *elementlen = node->name_len;
+        found = cache->no_nodes;
+    }
+    else
+    {
+        int namelen = *elementlen;
+        int i;
+
+        found = 0;
+        for (i=0; i<cache->no_nodes; i++)
+        {
+             const struct _xml_node *node = cache->node[i];
+
+             assert(node);
+
+             if ((node->name_len == namelen) &&
+                 (!strncasecmp(node->name, name, namelen)))
+             {
+                  if (found == num)
+                  {
+                       *nc = (cacheId*)node;
+                       rv = node->data;
+                       *len = node->data_len;
+                       *element = node->name;
+                       *elementlen = node->name_len;
+                  }
+                  found++;
+             }
+        }
+    }
+    *nodenum = found;
+
+    return rv;
 }
 
 #endif
