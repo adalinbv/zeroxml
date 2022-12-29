@@ -285,7 +285,9 @@ xmlClose(xmlId *id)
 #endif
        )
     {
-        if (rid->fd != -1)
+        if (rid->fd == -2) {
+           free(rid->start);
+        } else if (rid->fd != -1)
         {
             simple_unmmap(rid->start, (int)rid->len, &rid->un);
             close(rid->fd);
@@ -385,77 +387,19 @@ xmlNodeGet(const xmlId *id, const char *path)
 XML_API xmlId* XML_APIENTRY
 xmlNodeCopy(const xmlId *id, const char *path)
 {
-    struct _xml_id *xid = (struct _xml_id *)id;
-    const char *ptr, *node;
-    const cacheId *nc, *nnc;
-    int slen, len;
-    xmlId *ret = 0;
+    struct _root_id *rv = NULL;
+    xmlId *xid;
+    char *ptr;
 
-
-    node = (const char*)path;
-    len = xid->len;
-    slen = strlen(path);
-
-    nnc = nc = cacheNodeGet(id);
-    ptr = __xmlNodeGetPath(&nnc, xid->start, &len, &node, &slen);
-    if (ptr)
+    if (((xid = xmlNodeGet(id, path)) != NULL) &&
+        ((ptr = xmlGetString(xid)) != NULL))
     {
-        const int rsize = sizeof(struct _root_id);
-        const int nsize = sizeof(struct _xml_id);
-#ifndef XML_NONVALIDATING
-        const int esize = sizeof(struct _zeroxml_error);
-#else
-        const int esize = 0;
-#endif
-        struct _xml_id *nid;
-        int new_len;
-
-        new_len = STRUCT_ALIGN(slen + len);
-        nid = malloc(nsize + new_len + rsize + esize);
-        if (nid)
-        {
-            struct _root_id *rid;
-            char *nptr = (char *)nid;
-
-            memcpy(nptr, xid, nsize);
-            nptr += nsize;
-            nid->name = nptr;
-            nid->name_len = slen;
-            memcpy(nptr, node, slen);
-
-            nid->start = nptr + slen;
-            nid->len = len;
-            memcpy(nptr+slen, ptr, len);
-            nptr += new_len;
-
-            rid = (struct _root_id *)nptr;
-#ifndef XML_NONVALIDATING
-            nid->root = rid;
-            memcpy(nptr, xid->root, rsize);
-            nptr += rsize;
-#endif
-
-            rid->start = nid->start;
-            rid->len = nid->len;
-            rid->fd = 0;
-#ifndef XML_NONVALIDATING
-            rid->info = (struct _zeroxml_error *)nptr;
-            memset(nptr, 0, esize);
-#endif
-#ifdef XML_USE_NODECACHE
-            nid->node = nc;
-#endif
-            ret = (xmlId*)nid;
-        }
-        else {
-            xmlErrorSet(xid, 0, XML_OUT_OF_MEMORY);
-        }
-    }
-    else if (slen == 0) {
-        xmlErrorSet(xid, node, len);
+        rv = xmlInitBuffer(ptr, strlen(ptr));
+        rv->fd = -2; /* let xmlClose free ptr */
+        xmlFree(xid);
     }
 
-    return ret;
+    return (xmlId*)rv;
 }
 
 XML_API char* XML_APIENTRY
@@ -742,88 +686,20 @@ xmlNodeGetPosRaw(const xmlId *pid, xmlId *id, const char *element, int num)
 XML_API xmlId* XML_APIENTRY
 xmlNodeCopyPos(const xmlId *pid, xmlId *id, const char *element, int num)
 {
-    struct _xml_id *xpid = (struct _xml_id *)pid;
-    struct _xml_id *xid = (struct _xml_id *)id;
-    const cacheId *nc;
-    const char *ptr, *node;
-    int len, slen;
-    xmlId *ret = 0;
+    struct _root_id *rv = NULL;
+    xmlId *xid;
+    char *ptr;
 
-    assert(xpid != 0);
-    assert(xid != 0);
-    assert(element != 0);
-
-    len = xpid->len;
-    slen = strlen(element);
-    node = (const char *)element;
-    nc = cacheNodeGet(pid);
-#ifndef XML_USE_NODECACHE
-    ptr = __xmlNodeGet(nc, xpid->start, &len, &node, &slen, &num, 0);
-#else
-    ptr = __xmlNodeGetFromCache(&nc, xpid->start, &len, &node, &slen, &num);
-#endif
-    if (ptr)
+    xid = xmlMarkId(id);
+    xmlNodeGetPos(id, xid, element, num);
+    if ((ptr = xmlGetString(xid)) != NULL)
     {
-        const int rsize = sizeof(struct _root_id);
-        const int nsize = sizeof(struct _xml_id);
-#ifndef XML_NONVALIDATING
-        const int esize = sizeof(struct _zeroxml_error);
-#else
-        const int esize = 0;
-#endif
-        struct _xml_id *nid;
-        int new_len;
-
-        new_len = STRUCT_ALIGN(slen + len);
-        nid = malloc(nsize + new_len + rsize + esize);
-        if (nid)
-        {
-            struct _root_id *rid;
-            char *nptr = (char *)nid;
-
-            /* node name and attributes */
-            memcpy(nptr, xid, nsize);
-            nptr += nsize;
-
-            nid->name = nptr;
-            nid->name_len = slen;
-
-            memcpy(nptr, node, slen);
-            nid->start = nptr+slen;	/* contents of this node */
-            nid->len = len;
-
-            memcpy(nptr+slen, ptr, len);
-            nptr += new_len;		/* 4 bytes aligned */
-
-            /* set up a new root node */
-            rid = (struct _root_id *)nptr;
-#ifndef XML_NONVALIDATING
-            nid->root = rid;
-            memcpy(nptr, xid->root, rsize);
-            nptr += rsize;
-#endif
-
-            rid->start = nid->start;
-            rid->len = nid->len;
-            rid->fd = 0;
-
-#ifndef XML_NONVALIDATING
-            rid->info = (struct _zeroxml_error *)nptr;
-            memset(nptr, 0, esize);
-#endif
-#ifdef XML_USE_NODECACHE
-            /* unused for the cache but tested at the start of this function */
-            if (len == 0) nid->len = 1;
-            nid->node = nc;
-#endif
-            ret = (xmlId*)nid;
-        }
+        rv = xmlInitBuffer(ptr, strlen(ptr));
+        rv->fd = -2; /* let xmlClose free ptr */
     }
-    else if (slen == 0) {
-        xmlErrorSet(xpid, node, len);
-    }
+    xmlFree(xid);
 
-    return ret;
+    return (xmlId*)rv;
 }
 
 static char*

@@ -319,7 +319,7 @@ XML_API xmlId* XML_APIENTRY xmlNodeGetPosRaw(const xmlId *pid, xmlId *xid, const
  * @param num specify which occurence to return
  * @return XML-subsection-id for further processing or NULL if unsuccessful
  */
-// XML_API xmlId* XML_APIENTRY xmlNodeCopyPos(const xmlId *pid, xmlId *xid, const char *node, int num);
+XML_API xmlId* XML_APIENTRY xmlNodeCopyPos(const xmlId *pid, xmlId *xid, const char *node, int num);
 
 /**
  * Get a string of characters from the current node.
