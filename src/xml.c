@@ -151,7 +151,7 @@ static void simple_unmmap(void*, int, SIMPLE_UNMMAP *);
 
 #define STRUCT_ALIGN(a) 	((a) & 0xF) ? (((a) | 0xF)+1) : (a)
 
-#ifndef NDEBUG
+#ifdef NDEBUG
 # define PRINT(a, b, c) { \
     int l1 = (b), l2 = (c); \
     const char *s = (a); \
@@ -521,7 +521,7 @@ xmlAttributeGetName(const xmlId *id, int pos)
     ret = malloc(len+1);
     if (ret)
     {
-        memcpy(ret, xid->name, len);
+        memcpy(ret, buf, len);
         *(ret + len) = 0;
     }
     else {
@@ -1551,6 +1551,9 @@ __xmlDecodeBoolean(const char *start, const char *end)
  *
  * It the node-cache is enabled *nc will return the requested cashed node.
  *
+ * In case of an error *node will point to the location of the error within the
+ * buffer and *len will contain the error code.
+ *
  * @param nc node from the node cache
  * @param start starting point of the current section
  * @param len length of the current section
@@ -1601,7 +1604,9 @@ __xmlNodeGetPath(const cacheId **nc, const char *start, int *len, const char **n
             nodelen = p++ - node;
             e = (char*)p + nodelen;
             num = __xml_strtol(p, &e, 10);
-            if (*e++ != ']') return rv;
+            if (*e++ != ']') {
+                return rv;
+            }
 
             path = e;
             if (path == end) path = NULL;
@@ -1611,7 +1616,7 @@ __xmlNodeGetPath(const cacheId **nc, const char *start, int *len, const char **n
 #ifndef XML_USE_NODECACHE
         rv = __xmlNodeGet(*nc, start, &blocklen, &node, &nodelen, &num, 0);
 #else
-        rv = __xmlNodeGetFromCache(nc, start, &blocklen, &node, &nodelen,&num);
+        rv = __xmlNodeGetFromCache(nc, start, &blocklen, &node, &nodelen, &num);
 #endif
         if (rv)
         {
@@ -1630,10 +1635,11 @@ __xmlNodeGetPath(const cacheId **nc, const char *start, int *len, const char **n
                 *len = blocklen;
             }
         }
-        else /* error in the XML file */
+        else if (nodelen == 0) /* error upstream */
         {
             *name = node;
-            *len = blocklen;
+            *nlen = blocklen;
+            *nlen = 0;
         }
     }
 

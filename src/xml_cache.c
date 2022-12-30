@@ -216,6 +216,27 @@ cacheDataSet(const cacheId *n, const char *name, int namelen, const char *data, 
     node->data_len = datalen;
 }
 
+/*
+ * Recursively walk the node tree to get te section with the '*element' name.
+ *
+ * When finished *len will be set to the length of the requested section,
+ * *element will point to the actual name of the node (useful in case the name
+ * was a wildcard character), *nlen will return the length of the actual name
+ * and *nodenum will return the current occurence number of the requested
+ * section.
+ *
+ * In case of an error *element will point to the location of the error within
+ * the buffer and *len will contain the error code.
+ *
+ * @param nc node from the node-cache
+ * @param start starting pointer for this section
+ * @param len length to the end of the buffer
+ * @param *element name of the node to look for
+ * @param elementlen length of the name of the node to look for
+ * @param nodenum which occurence of the node name to look for
+ * @return a pointer to the section with the requested name
+           or NULL in case of an error
+ */
 const char*
 __xmlNodeGetFromCache(const cacheId **nc, const char *start, int *len,
                       const char **element, int *elementlen, int *nodenum)
@@ -240,50 +261,53 @@ __xmlNodeGetFromCache(const cacheId **nc, const char *start, int *len,
         *elementlen = cache->name_len;
         found = 0;
     }
-    else if (num >= cache->no_nodes) /* not found */
+    else if (num < cache->no_nodes)
     {
-        rv = NULL;
-        *len = XML_NO_ERROR;
-        *element = NULL;
-        *elementlen = 0;
-        found = cache->no_nodes;
-    }
-    else if (*name == '*') /* everything goes */
-    {
-        const struct _xml_node *node = cache->node[num];
-        *nc = (cacheId*)node;
-        rv = node->data;
-        *len = node->data_len;
-        *element = node->name;
-        *elementlen = node->name_len;
-        found = cache->no_nodes;
-    }
-    else
-    {
-        int namelen = *elementlen;
-        int i;
-
-        found = 0;
-        for (i=0; i<cache->no_nodes; i++)
+        if (*name == '*') /* everything goes */
         {
-             const struct _xml_node *node = cache->node[i];
-
-             assert(node);
-
-             if ((node->name_len == namelen) &&
-                 (!strncasecmp(node->name, name, namelen)))
-             {
-                  if (found == num)
-                  {
-                       *nc = (cacheId*)node;
-                       rv = node->data;
-                       *len = node->data_len;
-                       *element = node->name;
-                       *elementlen = node->name_len;
-                  }
-                  found++;
-             }
+            const struct _xml_node *node = cache->node[num];
+            *nc = (cacheId*)node;
+            rv = node->data;
+            *len = node->data_len;
+            *element = node->name;
+            *elementlen = node->name_len;
+            found = cache->no_nodes;
         }
+        else
+        {
+            int namelen = *elementlen;
+            int i;
+
+            found = 0;
+            for (i=0; i<cache->no_nodes; i++)
+            {
+                 const struct _xml_node *node = cache->node[i];
+
+                 assert(node);
+
+                 if ((node->name_len == namelen) &&
+                     (!strncasecmp(node->name, name, namelen)))
+                 {
+                      if (found == num)
+                      {
+                           *nc = (cacheId*)node;
+                           rv = node->data;
+                           *len = node->data_len;
+                           *element = node->name;
+                           *elementlen = node->name_len;
+                      }
+                      found++;
+                 }
+            }
+        }
+    }
+
+    if (!rv)
+    {
+       *element = NULL;
+       *elementlen = 0;
+       *len = XML_INVALID_NODE_NAME;
+       found = 0;
     }
     *nodenum = found;
 
