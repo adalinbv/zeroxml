@@ -12,8 +12,12 @@
 #define ROOTNODE	"/Configuration"
 #define OUTPUTNODE	ROOTNODE"/output"
 #define MENUNODE	OUTPUTNODE"/menu"
-#define	LEAFNODE	"name"
-#define PATH		MENUNODE"/"LEAFNODE
+#define TESTNODE	"test"
+#define TESTPATH	OUTPUTNODE"/"TESTNODE
+#define NAMENODE	"name"
+#define MENUPATH	MENUNODE"/"NAMENODE
+#define BACKENDPATH	ROOTNODE"/backend/"NAMENODE
+#define NONVALIDNODE	MENUNODE"/"TESTNODE
 #define BUFLEN		4096
 
 #define PRINT_ERROR_AND_EXIT(id) \
@@ -33,13 +37,28 @@
   if (!fn(a, b)) printf("Testing %-63s: succes\n", p); \
   else printf("Testing %-63s: failed.\n\t'%s' differs from '%s'\n",p,a,b);
 
-#define TESTPATH(p, fn, a, b, c) \
+#define TESTMENUPATH(p, fn, a, b, c) \
   if (!fn(a, b, c)) printf("Testing %-63s: succes\n", p); \
   else printf("Testing %-63s: failed.\n\t'%s' differs from '%s'\n",p,a,c);
 
+/* TODO:
+ *
+ * xmlMarkId
+ * xmlNodeGetPos
+ * xmlNodeCopyPos
+ * xmlGetStringRaw
+ * xmlGetBool
+ * xmlGetInt
+ * xmlNodeGetInt
+ * xmlAttributeGetInt
+ * xmlGetDouble
+ * xmlNodeGetDouble
+ * xmlAttributeGetDouble
+ * xmlAttributeExists
+ */
 int test(xmlId *root_id)
 {
-    char buf[BUFLEN];
+    char buf[BUFLEN+1];
     xmlId *pid, *nid;
     char *p, *s;
     int i;
@@ -50,6 +69,10 @@ int test(xmlId *root_id)
         printf("Invalid XML-id\n");
         return -1;
     }
+
+    p = "xmlNodeTest for "ROOTNODE"/nasal/YF23";
+    i = xmlNodeTest(root_id, ROOTNODE"/nasal/YF23");
+    TESTINT(p, i, 1, "should be true");
 
     nid = xmlNodeGet(root_id, OUTPUTNODE);
     p = "xmlNodeGetNum for "OUTPUTNODE"/boolean";
@@ -78,21 +101,43 @@ int test(xmlId *root_id)
 
     p = "xmlNodeGetString for /*/*/test";
     s = xmlNodeGetString(root_id , "/*/*/test");
+    if (!s) PRINT_ERROR_AND_EXIT(pid);
     TESTINT(p, s, NULL, "should be empty");
     xmlFree(s);
 
-    p = "xmlGetString for /Configuration/output/test";
-    pid = xmlNodeGet(root_id, "/Configuration/output/test");
+    p = "xmlGetString for "TESTPATH;
+    pid = xmlNodeGet(root_id, TESTPATH);
     if (!pid) PRINT_ERROR_AND_EXIT(root_id);
     s = xmlGetString(pid);
+    if (!s) PRINT_ERROR_AND_EXIT(pid);
     TESTINT(p, s, NULL, "should be empty");
+    xmlFree(pid);
     xmlFree(s);
 
-    pid = xmlNodeGet(root_id, PATH);
+    p = "xmlNodeGet for non-valid node "NONVALIDNODE;
+    pid = xmlNodeGet(root_id, NONVALIDNODE);
+    TESTINT(p, pid, NULL, "should be NULL");
+    xmlErrorGetNo(root_id, 1); /* clear the error */
+    xmlFree(pid);
+
+    pid = xmlNodeGet(root_id, MENUPATH);
     if (!pid) PRINT_ERROR_AND_EXIT(root_id);
 
     nid = xmlNodeGet(root_id, MENUNODE);
     if (!nid) PRINT_ERROR_AND_EXIT(root_id);
+
+    p = "xmlNodeGetName for "MENUPATH;
+    s = xmlNodeGetName(pid);
+    if (!s) PRINT_ERROR_AND_EXIT(pid);
+    TESTSTR(p, strcmp, s, NAMENODE);
+
+    p = "xmlNodeCopyName for "MENUPATH;
+    i = xmlNodeCopyName(pid, buf, BUFLEN);
+    if (!i) PRINT_ERROR_AND_EXIT(pid);
+    TESTSTR(p, strcmp, buf, s);
+
+    p = "xmlNodeCompareName for "MENUPATH;
+    TESTSTR(p, xmlNodeCompareName, pid, buf);
 
     xmlCopyString(pid, buf, BUFLEN);
     p = "xmlNodeCopyString against xmlGetString";
@@ -109,21 +154,36 @@ int test(xmlId *root_id)
     TESTSTR(p, xmlCompareString, pid, buf);
 
     p = "xmlCopyString against xmlNodeCompareString";
-    TESTPATH(p, xmlNodeCompareString, nid, LEAFNODE, buf);
+    TESTMENUPATH(p, xmlNodeCompareString, nid, NAMENODE, buf);
 
     p = "xmlCopyString against xmlNodeGetString";
-    s = xmlNodeGetString(nid, LEAFNODE);
-    if (!s) printf("failed.\n\t'%s' not found.\n", LEAFNODE);
+    s = xmlNodeGetString(nid, NAMENODE);
+    if (!s) printf("failed.\n\t'%s' not found.\n", NAMENODE);
     TESTSTR(p, strcmp, s, buf);
     xmlFree(s);
     xmlFree(pid);
 
-    pid = xmlNodeGet(root_id, "/Configuration/backend/name");
+    pid = xmlNodeGet(root_id, BACKENDPATH);
     if (!pid) PRINT_ERROR_AND_EXIT(root_id);
+
+    p = "xmlAttributeGetNum for "BACKENDPATH;
+    i = xmlAttributeGetNum(pid);
+    TESTINT(p, i, 1, "should be 1");
 
     p = "xmlAttributeCopyString against xmlAttributeCompareString";
     xmlAttributeCopyString(pid, "type", buf, BUFLEN);
-    TESTPATH(p, xmlAttributeCompareString, pid, "type", buf);
+    TESTMENUPATH(p, xmlAttributeCompareString, pid, "type", buf);
+
+    xmlFree(nid);
+
+    p = "xmlNodeCopy against the original";
+    nid = xmlNodeCopy(root_id, MENUNODE);
+    if (!nid) PRINT_ERROR_AND_EXIT(pid);
+    s = xmlAttributeGetString(pid, "type");
+    if (!s) PRINT_ERROR_AND_EXIT(pid);
+    TESTSTR(p, strcmp, s, buf);
+    xmlFree(s);
+    xmlFree(nid);
 
     p = "xmlAttributeCopyString against xmlAttributeGetString";
     s = xmlAttributeGetString(pid, "type");
@@ -131,7 +191,16 @@ int test(xmlId *root_id)
     TESTSTR(p, strcmp, s, buf);
     xmlFree(s);
 
-    xmlFree(nid);
+    p = "xmlAttributeGetName for attribute 0";
+    s = xmlAttributeGetName(pid, 0);
+    TESTSTR(p, strcmp, s, "type");
+
+    p = "xmlAttributeCopyName against xmlAttributeGetName";
+    i = xmlAttributeCopyName(pid, buf, BUFLEN, 0);
+    if (!i) PRINT_ERROR_AND_EXIT(pid);
+    TESTSTR(p, strcmp, s, buf);
+    xmlFree(s);
+
     xmlFree(pid);
 
     pid = xmlNodeGet(root_id, "Configuration/output/sample/test");
@@ -149,7 +218,6 @@ int test(xmlId *root_id)
     xmlCopyString(pid, buf, BUFLEN);
     TESTSTR(p, strcmp, s, buf);
     xmlFree(s);
-
     xmlFree(pid);
 
     if (xmlErrorGetNo(root_id, 0) != XML_NO_ERROR)
