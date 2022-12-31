@@ -232,7 +232,7 @@ XML_API int XML_APIENTRY xmlNodeCompareName(const xmlId *xid, const char *str);
  * Return the name of the nth attribute.
  *
  * @param xid XML-id
- * @param n position of the attribute in the attribute list.
+ * @param n position of the attribute in the attribute list. starts at 0.
  * @return a newly alocated string containing the name of the attribute.
  */
 
@@ -244,7 +244,7 @@ XML_API char* XML_APIENTRY xmlAttributeGetName(const xmlId *xid, int n);
  * @param xid XML-id
  * @param buffer the buffer to copy the string to
  * @param buflen length of the destination buffer
- * @param n position of the attribute in the attribute list.
+ * @param n position of the attribute in the attribute list. starts at 0.
  * @return the length of the attribute name
  */
 
@@ -302,7 +302,7 @@ XML_API int XML_APIENTRY xmlAttributeGetNum(const xmlId *xid);
  * @param pid XML-id of the parent node of this node
  * @param xid XML-id
  * @param node name of the node to search for
- * @param num specify which occurence to return
+ * @param num specify which occurence to return. starts at 0.
  * @return XML-subsection-id for further processing or NULL if unsuccessful
  */
 XML_API xmlId* XML_APIENTRY xmlNodeGetPos(const xmlId *pid, xmlId *xid, const char *node, int num);
@@ -316,7 +316,7 @@ XML_API xmlId* XML_APIENTRY xmlNodeGetPosRaw(const xmlId *pid, xmlId *xid, const
  * @param xid XML-id which will get unusbale after the call, use the returned
  *            id as the new XML-id
  * @param node name of the node to search for
- * @param num specify which occurence to return
+ * @param num specify which occurence to return. starts at 0.
  * @return XML-subsection-id for further processing or NULL if unsuccessful
  */
 XML_API xmlId* XML_APIENTRY xmlNodeCopyPos(const xmlId *pid, xmlId *xid, const char *node, int num);
