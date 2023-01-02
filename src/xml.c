@@ -3,8 +3,8 @@
  *
  * ALTERNATIVE A - Modified BSD license
  *
- * Copyright (C) 2008-2022 by Erik Hofman.
- * Copyright (C) 2009-2022 by Adalin B.V.
+ * Copyright (C) 2008-2023 by Erik Hofman.
+ * Copyright (C) 2009-2023 by Adalin B.V.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

@@ -1,5 +1,6 @@
-2022-12-29
+2023-01-02
  * Add xmlNodeCompareName
+ * Fix numerous problems in the noce-cache.
 
 2022-12-22 Erik Hofman <tech@adalin.org>
  * Fix a serious mistake, use xmlFree instead of recursively calling cacheFree
@@ -174,8 +175,8 @@
 2008-06-23  Erik Hofman <erik@ehofman.com>
   * Initial release
 
-Copyright 2008-2011 Erik Hofman
-Copyright 2011 Adalin B.V.
+Copyright 2008-2023 Erik Hofman
+Copyright 2011-2023 Adalin B.V.
      Copying and distribution of this file, with or without modification, are
      permitted provided the copyright notice and this notice are preserved.
 
