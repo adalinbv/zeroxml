@@ -108,6 +108,7 @@ int test(xmlId *rid)
     p = "xmlNodeGetDouble for "OUTPUTNODE"/interval-hz (20.0)";
     f = xmlNodeGetDouble(nid, "interval-hz");
     TESTFLOAT(p, f, 20.0, "should be 20.0");
+    xmlFree(nid);
 
     pid = xmlNodeGet(rid, TESTPATH);
     p = "xmlNodeGetString for /*/*/test";
@@ -115,6 +116,7 @@ int test(xmlId *rid)
     if (!s) PRINT_ERROR_AND_EXIT(pid);
     TESTPTR(p, s, NULL, "should be empty");
     xmlFree(s);
+    xmlFree(pid);
 
     p = "xmlGetString for "TESTPATH;
     pid = xmlNodeGet(rid, TESTPATH);
@@ -138,6 +140,7 @@ int test(xmlId *rid)
     s = xmlNodeGetName(pid);
     if (!s) PRINT_ERROR_AND_EXIT(pid);
     TESTSTR(p, strcmp, s, TESTNODE);
+    xmlFree(s);
 
     p = "xmlNodeCopyName for "SAMPLEPATH;
     i = xmlNodeCopyName(pid, buf, BUFLEN);
@@ -152,6 +155,7 @@ int test(xmlId *rid)
     s = xmlGetString(pid);
     if (!s) PRINT_ERROR_AND_EXIT(pid);
     TESTSTR(p, strcmp, s, buf);
+    xmlFree(s);
 
     p = "xmlGetStringRaw against xmlNodeCopyString";
     nid = xmlNodeGet(rid, MENUPATH);
@@ -240,7 +244,7 @@ int test(xmlId *rid)
     if (!s) PRINT_ERROR_AND_EXIT(pid);
     TESTSTR(p, strcmp, s, buf);
     xmlFree(s);
-    xmlFree(nid);
+    xmlClose(nid);
 
     p = "xmlAttributeCopyString against xmlAttributeGetString";
     s = xmlAttributeGetString(pid, "type");
@@ -314,11 +318,15 @@ int test(xmlId *rid)
         xmlId *cid = xmlNodeCopyPos(pid, nid, SPEAKERNODE, 1);
         if (!cid) PRINT_ERROR_AND_EXIT(pid);
 
+        char *cs = xmlGetString(cid);
+        if (!cs) PRINT_ERROR_AND_EXIT(pid);
+
         p = "xmlNodeCopyPos for "OUTPUTNODE"/"SPEAKERNODE"[1]";
-        TESTSTR(p, strcmp, s, xmlGetString(cid));
+        TESTSTR(p, strcmp, s, cs);
+        xmlFree(cs);
         xmlFree(s);
 
-        xmlFree(cid);
+        xmlClose(cid);
     } while(0);
     xmlFree(nid);
     xmlFree(pid);

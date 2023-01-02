@@ -187,7 +187,7 @@ XML_API xmlId* XML_APIENTRY xmlNodeGet(const xmlId *xid, const char *node);
  * asterisk character '*' to indicate that any name is acceptable.
  *
  * The memory allocated for the XML-subsection-id has to be free'd by the
- * calling process using xmlFree.
+ * calling process using xmlClose.
  *
  * @param xid XML-id
  * @param node path to the node containing the subsection
@@ -310,7 +310,7 @@ XML_API xmlId* XML_APIENTRY xmlNodeGetPosRaw(const xmlId *pid, xmlId *xid, const
 
 /**
  * Copy the nth occurrence of node in the parent node.
- * The return value should be free'd by the caller using xmlFree.
+ * The return value should be free'd by the caller using xmlClose.
  *
  * @param pid XML-id of the parent node of this node
  * @param xid XML-id which will get unusbale after the call, use the returned
