@@ -214,12 +214,15 @@ xmlOpen(const char *filename)
                         rid = 0;
                     }
 #endif
-                    rid->fd = fd;
-                    rid->start = mm;
-                    rid->len = blen;
+                    if (rid)
+                    {
+                        rid->fd = fd;
+                        rid->start = mm;
+                        rid->len = blen;
 #ifndef XML_NONVALIDATING
-                    rid->root = rid;
+                        rid->root = rid;
 #endif
+                    }
                 }
             }
         }
