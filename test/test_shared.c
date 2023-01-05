@@ -140,7 +140,6 @@ int test(xmlId *rid)
     s = xmlNodeGetName(pid);
     if (!s) PRINT_ERROR_AND_EXIT(pid);
     TESTSTR(p, strcmp, s, TESTNODE);
-    xmlFree(s);
 
     p = "xmlNodeCopyName for "SAMPLEPATH;
     i = xmlNodeCopyName(pid, buf, BUFLEN);
@@ -149,6 +148,7 @@ int test(xmlId *rid)
 
     p = "xmlNodeCompareName for "SAMPLEPATH;
     TESTSTRCMP(p, xmlNodeCompareName, pid, s, buf);
+    xmlFree(s);
 
     xmlCopyString(pid, buf, BUFLEN);
     p = "xmlNodeCopyString against xmlGetString";
