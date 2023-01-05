@@ -257,16 +257,19 @@ xmlInitBuffer(const char *buffer, int size)
                 rid = 0;
             }
 #endif
-            rid->fd = -1;
-            rid->start = (char*)buffer;
-            rid->len = size;
+            if (rid)
+            {
+                rid->fd = -1;
+                rid->start = (char*)buffer;
+                rid->len = size;
 #ifndef XML_NONVALIDATING
-            rid->root = rid;
+                rid->root = rid;
 #endif
 
 #ifdef HAVE_LOCALE_H
-//          rid->locale = setlocale(LC_CTYPE, "");
+//              rid->locale = setlocale(LC_CTYPE, "");
 #endif
+            }
         }
     }
 
