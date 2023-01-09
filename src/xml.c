@@ -98,16 +98,22 @@
 # define FILENAME_LEN		1024
 # define BUF_LEN		2048
 
+#ifndef XML_NONVALIDATING
+struct _zeroxml_error __zeroxml_info = { NULL, 0 };
 static const char *__zeroxml_error_str[XML_MAX_ERROR];
 static void __xmlErrorSet(const struct _xml_id*, const char *, int);
+#endif
 
 # ifndef NDEBUG
 static char __zeroxml_strerror[BUF_LEN+1];
 static char _xml_filename[FILENAME_LEN+1];
 #  define PRINT_INFO(a, b, c) \
-    if (0 < (c) && (c) < XML_MAX_ERROR) { \
-        int i, nl = 1; for (i=0; i<(b)-(a)->root->start; ++i) if ((a)->root->start[i] == '\n') nl++; \
-        snprintf(__zeroxml_strerror, BUF_LEN, "%s:\n\t%s at line %i\n", _xml_filename, __zeroxml_error_str[(c)], nl); \
+    if (0 <= (c) && (c) < XML_MAX_ERROR) { \
+        int i, last = 0, nl = 1; \
+        for (i=0; i<(b)-(a)->root->start; ++i) { \
+            if ((a)->root->start[i] == '\n') { last = i+1; nl++; } \
+        } \
+        snprintf(__zeroxml_strerror, BUF_LEN, "%s:\n\t%s at line %i offset %i\n", _xml_filename, __zeroxml_error_str[(c)], nl, i-last); \
         fprintf(stderr, "%s\tdetected in %s at line %i\n", __zeroxml_strerror, __func__, __LINE__); \
     } else { \
         fprintf(stderr, "%s: in %s at line %i: Unknown error number!\n", \
@@ -126,8 +132,10 @@ static char _xml_filename[FILENAME_LEN+1];
 # define xmlErrorSet(a, b, c)
 #endif
 
-#define SET_ERROR_AND_RETURN(a, b) \
-	{ *name = (a); *len = (b); return NULL; }
+#define SET_ERROR_AND_RETURN(a, b) { \
+        printf("# line: %i\n", __LINE__); \
+       *name = (a); *len = (b); *rlen = 0; return NULL; \
+ }
 
 static  const char *__xmlNodeGetPath(const cacheId**, const char*, int*,  const char**, int*);
 static  const char *__xmlNodeGet(const cacheId*, const char*, int*,  const char**, int*, int*, char);
@@ -151,7 +159,7 @@ static void simple_unmmap(void*, int, SIMPLE_UNMMAP *);
 
 #define STRUCT_ALIGN(a) 	((a) & 0xF) ? (((a) | 0xF)+1) : (a)
 
-#ifdef NDEBUG
+#ifndef NDEBUG
 # define PRINT(a, b, c) { \
     int l1 = (b), l2 = (c); \
     const char *s = (a); \
@@ -1275,9 +1283,14 @@ xmlErrorGetNo(const xmlId *id, int clear)
         {
             struct _zeroxml_error *err = rid->info;
 
-            ret = err->err_no;
-            if (clear) err->err_no = 0;
+            ret = __zeroxml_info.err_no = err->err_no;
+            if (clear) {
+                err->err_no = __zeroxml_info.err_no = 0;
+            }
         }
+    }
+    else {
+        ret = __zeroxml_info.err_no;
     }
 
     return ret;
@@ -1314,7 +1327,9 @@ xmlErrorGetLineNo(const xmlId *id, int clear)
                 ps = new+1;
             }
 
-            if (clear) err->err_no = 0;
+            if (clear) {
+                err->err_no = __zeroxml_info.err_no = 0;
+            }
         }
     }
 
@@ -1353,7 +1368,9 @@ xmlErrorGetColumnNo(const xmlId *id, int clear)
             }
             ret = pe-ps;
 
-            if (clear) err->err_no = 0;
+            if (clear) {
+                err->err_no = __zeroxml_info.err_no = 0;
+            }
         }
     }
 
@@ -1387,8 +1404,13 @@ xmlErrorGetString(const xmlId *id, int clear)
                 ret = "incorrect error number.";
             }
 
-            if (clear) err->err_no = 0;
+            if (clear) {
+                err->err_no = __zeroxml_info.err_no = 0;
+            }
         }
+    }
+    else {
+       ret = (char*)__zeroxml_error_str[__zeroxml_info.err_no];
     }
 
     return ret;
@@ -2213,8 +2235,13 @@ __xmlErrorSet(const struct _xml_id *id, const char *pos, int err_no)
     if (rid->info)
     {
         struct _zeroxml_error *err = rid->info;
-        err->pos = (const char *)pos;
-        err->err_no = err_no;
+        err->pos = __zeroxml_info.pos = (const char *)pos;
+        err->err_no = __zeroxml_info.err_no = err_no;
+    }
+    else
+    {
+        __zeroxml_info.pos = (const char *)pos;
+        __zeroxml_info.err_no = err_no;
     }
 }
 #endif
