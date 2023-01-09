@@ -7,3 +7,4 @@ endfunction()
 
 CREATE_TEST(test_mmap)
 CREATE_TEST(test_buffer)
+CREATE_TEST(test_errors)
