@@ -137,6 +137,7 @@ static char _xml_filename[FILENAME_LEN+1];
        *name = (a); *len = (b); *rlen = 0; return NULL; \
  }
 
+static const char *__xmlDeclarationProcess(const char*, int);
 static  const char *__xmlNodeGetPath(const cacheId**, const char*, int*,  const char**, int*);
 static  const char *__xmlNodeGet(const cacheId*, const char*, int*,  const char**, int*, int*, char);
 static  const char *__xmlAttributeGetDataPtr(const struct _xml_id*, const char *, int*);
@@ -193,7 +194,7 @@ xmlOpen(const char *filename)
             if (rid)
             {
                 struct stat statbuf;
-                void *mm;
+                char *mm;
 
                 /* UTF-8 unicode support */
 #ifdef HAVE_LOCALE_H
@@ -205,27 +206,36 @@ xmlOpen(const char *filename)
                 if (mm != (void *)-1)
                 {
                     int blen = statbuf.st_size;
+                    const char *new;
+
+                    new = __xmlDeclarationProcess(mm, blen);
+                    blen -= new-mm;
+
 #ifdef XML_USE_NODECACHE
-                    int num = 0, nlen = 1;
-                     const char *rv, *n = "*";
-
-                    rid->node = cacheInit();
-                    rv = __xmlNodeGet(rid->node, mm, &blen, &n, &nlen, &num, 0);
-                    if (!rv)
+                    do
                     {
-                        PRINT_INFO(rid, n, blen);
-                        simple_unmmap(rid->start, blen, &rid->un);
-                        close(fd);
+                        const char *rv, *n = "*";
+                        int num = 0, nlen = 1;
 
-                        cacheFree(rid->node);
-                        free(rid);
-                        rid = 0;
-                    }
+                        rid->node = cacheInit();
+                        rv=__xmlNodeGet(rid->node, new, &blen, &n,&nlen,&num,0);
+                        if (!rv)
+                        {
+                            PRINT_INFO(rid, n, blen);
+                            simple_unmmap(rid->mmap, blen, &rid->un);
+                            close(fd);
+
+                            cacheFree(rid->node);
+                            free(rid);
+                            rid = 0;
+                        }
+                    } while(0);
 #endif
                     if (rid)
                     {
                         rid->fd = fd;
-                        rid->start = mm;
+                        rid->mmap = mm;
+                        rid->start = new;
                         rid->len = blen;
 #ifndef XML_NONVALIDATING
                         rid->root = rid;
@@ -253,25 +263,33 @@ xmlInitBuffer(const char *buffer, int size)
         rid = calloc(1, sizeof(struct _root_id));
         if (rid)
         {
-#ifdef XML_USE_NODECACHE
-            int num = 0, nlen = 1;
-            int blen = size;
-             const char *rv, *n = "*";
+            const char *new;
 
-            rid->node = cacheInit();
-            rv = __xmlNodeGet(rid->node, buffer, &blen, &n, &nlen, &num, 0);
-            if (!rv)
+            new = __xmlDeclarationProcess(buffer, size);
+            size -= new-buffer;
+
+#ifdef XML_USE_NODECACHE
+            do
             {
-                PRINT_INFO(rid, n, blen);
-                cacheFree(rid->node);
-                free(rid);
-                rid = 0;
-            }
+                const char *rv, *n = "*";
+                int num = 0, nlen = 1;
+                int blen = size;
+
+                rid->node = cacheInit();
+                rv = __xmlNodeGet(rid->node, new, &blen, &n, &nlen, &num, 0);
+                if (!rv)
+                {
+                    PRINT_INFO(rid, n, blen);
+                    cacheFree(rid->node);
+                    free(rid);
+                    rid = 0;
+                }
+            } while(0);
 #endif
             if (rid)
             {
                 rid->fd = -1;
-                rid->start = (char*)buffer;
+                rid->mmap = (char*)buffer;
                 rid->len = size;
 #ifndef XML_NONVALIDATING
                 rid->root = rid;
@@ -300,10 +318,10 @@ xmlClose(xmlId *id)
        )
     {
         if (rid->fd == -2) {
-           free(rid->start);
+           free(rid->mmap);
         } else if (rid->fd != -1)
         {
-            simple_unmmap(rid->start, (int)rid->len, &rid->un);
+            simple_unmmap(rid->mmap, (int)rid->len, &rid->un);
             close(rid->fd);
         }
 
@@ -1001,7 +1019,7 @@ xmlGetInt(const xmlId *id)
 
     if (xid->len)
     {
-        char *end = xid->start + xid->len;
+        char *end = (char*)xid->start + xid->len;
         li = __xml_strtol(xid->start, &end, 10);
     }
 
@@ -1051,7 +1069,7 @@ xmlGetDouble(const xmlId *id)
 
     if (xid->len)
     {
-        char *end = xid->start + xid->len;
+        char *end = (char*)xid->start + xid->len;
         d = strtod(xid->start, &end);
     }
 
@@ -1447,7 +1465,6 @@ xmlErrorGetString(const xmlId *id, int clear)
 
 static const char *__xmlProcessCDATA(const char**, int*, char);
 static const char *__xmlCommentSkip(const char*, int);
-static const char *__xmlDeclarationProcess(const char*, int);
 
 static const char *__xml_memmem(const char*, int, const char*, int);
 static const char *__xml_memncasestr(const char*, int, const char*);
@@ -1754,17 +1771,6 @@ __xmlNodeGet(const cacheId *nc, const char *start, int *len, const char **name, 
             new = __xmlProcessCDATA(&start, &blocklen, raw);
             if (!new && start && open_len) { /* CDATA */
                 SET_ERROR_AND_RETURN(start, XML_INVALID_COMMENT);
-            }
-
-            restlen -= new-cur;
-            cur = new;
-            break;
-        }
-        case '?': /* info block: "<? ?>" */
-        {
-            new = __xmlDeclarationProcess(cur, restlen);
-            if (!new) {
-                SET_ERROR_AND_RETURN(cur, XML_INVALID_INFO_BLOCK);
             }
 
             restlen -= new-cur;
@@ -2113,25 +2119,25 @@ __xmlCommentSkip(const char *start, int len)
 const char*
 __xmlDeclarationProcess(const char *start, int len)
 {
-    const char *cur, *new, *ret = 0;
+    const char *cur, *new;
+    const char *rv = start;
 
+    if (len < 8 || *start++ != '<') { /*"<?xml ?>" */
+        return start;
+    }
     cur = start;
     new = 0;
 
     // Note: http://www.w3.org/TR/REC-xml/#sec-guessing
     if (*cur++ == '?')
     {
-        const char *element;
-
-        if (len-- < 3) return NULL; /* Declaration: "<? ?>" */
-
-        element = "?>";
+        const char *element = "?>";
         new = __xml_memncasestr(cur, len, element);
         if (new)
         {
             len = new - cur;
             new += strlen("?>");
-            ret = new;
+            rv = new;
 
             element = "encoding=\"";
             if ((new = __xml_memncasestr(cur, len, element)) != NULL)
@@ -2160,7 +2166,7 @@ __xmlDeclarationProcess(const char *start, int len)
         }
     }
 
-    return ret;
+    return rv;
 }
 
 /*

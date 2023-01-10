@@ -125,7 +125,7 @@ struct _root_id
     struct _root_id *root;
 #endif
     const char *name;
-    char *start;
+    const char *start;
     off_t len;
 #ifdef XML_USE_NODECACHE
     const cacheId *node;
@@ -133,6 +133,7 @@ struct _root_id
 
     /* _root_id specifics */
     int fd;
+    char *mmap;
 #ifdef HAVE_LOCALE_H
     const char *locale;
 #endif
@@ -150,7 +151,7 @@ struct _xml_id
     struct _root_id *root;
 #endif
     const char *name;
-    char *start;
+    const char *start;
     off_t len;
 #ifdef XML_USE_NODECACHE
     const cacheId *node;
