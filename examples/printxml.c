@@ -62,11 +62,29 @@
 
 #include <stdio.h>
 #include <malloc.h>
+#include <string.h>
 #ifdef HAVE_LOCALE_H
 # include <locale.h>
 #endif
 
 #include "xml.h"
+
+int print_comment(xmlId *xid)
+{
+    int rv = 1;
+    char *s;
+
+    s = xmlGetStringRaw(xid);
+    if (!s) {
+        rv = 0;
+    }
+    else
+    {
+        printf("<!-- %s --", s);
+        free(s);
+    }
+    return rv;
+}
 
 int print_xml(xmlId *id)
 {
@@ -103,6 +121,12 @@ int print_xml(xmlId *id)
 
                 printf(">\n");
                 for(q=0; q<level; q++) printf(" ");
+
+                if (!strcmp(name, XML_COMMENT_NAME))
+                {
+                   print_comment(xid);
+                   continue;
+                }
 
                 printf("<%s", name);
 
@@ -161,6 +185,8 @@ int main(int argc, char **argv)
             unsigned int i, num;
             xmlId *xid;
 
+            printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\n");
+
             xid = xmlMarkId(rid);
             num = xmlNodeGetNum(xid, "*");
             for (i=0; i<num; i++)
@@ -169,6 +195,14 @@ int main(int argc, char **argv)
                 {
                     char name[256];
                     xmlNodeCopyName(xid, (char *)&name, 256);
+
+                if (!strcmp(name, XML_COMMENT_NAME))
+                {
+                   print_comment(xid);
+                   printf(">\n");
+                   continue;
+                }
+
                     printf("<%s", name);
                     print_xml(xid);
                     printf("</%s>\n", name);

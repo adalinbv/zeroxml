@@ -96,6 +96,7 @@ extern "C" {
 # define XML_FPINFINITE         (1.0/0.0)
 #endif
 #define XML_NONE		(long int)0x80000000
+#define XML_COMMENT_NAME	"!--"
 
 enum
 {
