@@ -290,6 +290,7 @@ xmlInitBuffer(const char *buffer, int size)
             {
                 rid->fd = -1;
                 rid->mmap = (char*)buffer;
+                rid->start = new;
                 rid->len = size;
 #ifndef XML_NONVALIDATING
                 rid->root = rid;
@@ -319,7 +320,8 @@ xmlClose(xmlId *id)
     {
         if (rid->fd == -2) {
            free(rid->mmap);
-        } else if (rid->fd != -1)
+        }
+        else if (rid->fd != -1)
         {
             simple_unmmap(rid->mmap, (int)rid->len, &rid->un);
             close(rid->fd);
