@@ -68,6 +68,23 @@
 
 #include "xml.h"
 
+int print_comment(xmlId *xid)
+{
+    int rv = 1;
+    char *s;
+
+    s = xmlGetStringRaw(xid);
+    if (!s) {
+        rv = 0;
+    }
+    else
+    {
+        printf("<!-- %s --", s);
+        free(s);
+    }
+    return rv;
+}
+
 void print_xml(xmlId *id)
 {
   static int level = 1;
@@ -95,10 +112,17 @@ void print_xml(xmlId *id)
         char name[256];
         unsigned int anum, a;
 
-        xmlNodeCopyName(xid, (char *)&name, 256);
-
         printf("\n");
         for(q=0; q<level; q++) printf(" ");
+
+        if (xmlNodeTest(xid, XML_COMMENT_NAME))
+        {
+          print_comment(xid);
+          printf(">");
+          continue;
+        }
+
+        xmlNodeCopyName(xid, (char *)&name, 256);
         printf("<%s", name);
 
         anum = xmlAttributeGetNum(xid);
@@ -148,6 +172,8 @@ int main(int argc, char **argv)
     {
       unsigned int i, num;
       xmlId *xid;
+
+      printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\n");
  
       xid = xmlMarkId(rid);
       num = xmlNodeGetNum(xid, "*");
@@ -158,10 +184,16 @@ int main(int argc, char **argv)
           unsigned int anum, a;
           char name[256];
 
-          xmlNodeCopyName(xid, (char *)&name, 256);
-          printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\n");
+          if (xmlNodeTest(xid, XML_COMMENT_NAME))
+          {
+            print_comment(xid);
+            printf(">\n");
+            continue;
+          }
 
+          xmlNodeCopyName(xid, (char *)&name, 256);
           printf("<%s", name);
+
           anum = xmlAttributeGetNum(xid);
           for (a=0; a<anum; a++)
           {

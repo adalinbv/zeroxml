@@ -62,7 +62,6 @@
 
 #include <stdio.h>
 #include <malloc.h>
-#include <string.h>
 #ifdef HAVE_LOCALE_H
 # include <locale.h>
 #endif
@@ -117,17 +116,16 @@ int print_xml(xmlId *id)
             {
                 char name[256];
 
-                xmlNodeCopyName(xid, (char *)&name, 256);
-
                 printf(">\n");
                 for(q=0; q<level; q++) printf(" ");
 
-                if (!strcmp(name, XML_COMMENT_NAME))
+                if (xmlNodeTest(xid, XML_COMMENT_NAME))
                 {
-                   print_comment(xid);
-                   continue;
+                    print_comment(xid);
+                    continue;
                 }
 
+                xmlNodeCopyName(xid, (char *)&name, 256);
                 printf("<%s", name);
 
                 /* print the nodes attributes */
@@ -194,15 +192,15 @@ int main(int argc, char **argv)
                 if (xmlNodeGetPos(rid, xid, "*", i) != 0)
                 {
                     char name[256];
+
+                    if (xmlNodeTest(xid, XML_COMMENT_NAME))
+                    {
+                        print_comment(xid);
+                        printf(">\n");
+                        continue;
+                    }
+
                     xmlNodeCopyName(xid, (char *)&name, 256);
-
-                if (!strcmp(name, XML_COMMENT_NAME))
-                {
-                   print_comment(xid);
-                   printf(">\n");
-                   continue;
-                }
-
                     printf("<%s", name);
                     print_xml(xid);
                     printf("</%s>\n", name);

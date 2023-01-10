@@ -89,6 +89,8 @@ int main(int argc, char **argv)
       {
         if (xmlNodeGetPos(rid, xid, "*", i) != 0)
         {
+          if (xmlNodeTest(xid, XML_COMMENT_NAME)) continue;
+
           char name[4096] = "";
           print_xml(xid, (char *)&name, 0);
         }
@@ -132,6 +134,8 @@ void print_xml(xmlId *id, char *name, unsigned int len)
     {
       if (xmlNodeGetPos(id, xid, "*", i) != 0)
       {
+        if (xmlNodeTest(xid, XML_COMMENT_NAME)) continue;
+
         unsigned int res, i = 4096 - len;
         res = xmlNodeCopyName(xid, (char *)&name[len], i);
         if (res)
