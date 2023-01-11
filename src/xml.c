@@ -157,7 +157,7 @@ static void simple_unmmap(void*, int, SIMPLE_UNMMAP *);
 # define simple_unmmap(a, b, c)	munmap((a), (b))
 
 #endif
-static const char *comment = XML_COMMENT_NAME;
+static const char *comment = XML_COMMENT;
 
 #define STRUCT_ALIGN(a) 	((a) & 0xF) ? (((a) | 0xF)+1) : (a)
 
@@ -363,8 +363,9 @@ xmlNodeTest(const xmlId *id, const char *path)
 
     nnc = nc = cacheNodeGet(id);
 
-    if (!strcmp(path, XML_COMMENT_NAME)) {
-        rv = strcmp(xid->name, XML_COMMENT_NAME) ? 0 : 1;
+    if (!strcmp(path, XML_COMMENT)) {
+//      rv = strcmp(xid->name, XML_COMMENT) ? 0 : 1;
+        rv = (xid->name == comment) ? 1 : 0;
     } else {
         rv = __xmlNodeGetPath(&nnc, xid->start, &len, &node, &slen) ? 1 : 0;
     }

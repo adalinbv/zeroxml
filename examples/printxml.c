@@ -119,7 +119,7 @@ int print_xml(xmlId *id)
                 printf(">\n");
                 for(q=0; q<level; q++) printf(" ");
 
-                if (xmlNodeTest(xid, XML_COMMENT_NAME))
+                if (xmlNodeTest(xid, XML_COMMENT))
                 {
                     print_comment(xid);
                     continue;
@@ -193,7 +193,7 @@ int main(int argc, char **argv)
                 {
                     char name[256];
 
-                    if (xmlNodeTest(xid, XML_COMMENT_NAME))
+                    if (xmlNodeTest(xid, XML_COMMENT))
                     {
                         print_comment(xid);
                         printf(">\n");

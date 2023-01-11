@@ -96,7 +96,7 @@ extern "C" {
 # define XML_FPINFINITE         (1.0/0.0)
 #endif
 #define XML_NONE		(long int)0x80000000
-#define XML_COMMENT_NAME	"!--"
+#define XML_COMMENT		"!--"
 
 enum
 {
@@ -153,8 +153,8 @@ XML_API void XML_APIENTRY xmlClose(xmlId *xid);
  * slash character '/' (in which case the code walks the XML tree) or an
  * asterisk character '*' to indicate that any name is acceptable.
  *
- * if node points to XML_COMMENT_NAME then the function will test wether
- * the current node is a comment node.
+ * If node points to XML_COMMENT then the function will test wether the
+ * current node is a comment node.
  *
  * @param xid XML-id
  * @param node path to the node containing the subsection
