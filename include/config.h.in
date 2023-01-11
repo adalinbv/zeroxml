@@ -31,6 +31,10 @@
 #undef USE_RMALLOC
 #cmakedefine USE_RMALLOC @USE_RMALLOC@
 
+/* Define this to treat comments as nodes */
+#undef XML_COMMENTNODE
+#cmakedefine XML_COMMENTNODE @XML_COMMENTNODE@
+
 /* Define this to disable validating code. */
 #undef XML_NONVALIDATING
 #cmakedefine XML_NONVALIDATING @XML_NONVALIDATING@

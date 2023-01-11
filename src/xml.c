@@ -1810,7 +1810,7 @@ __xmlNodeGet(const cacheId *nc, const char *start, int *len, const char **name, 
                 SET_ERROR_AND_RETURN(start, XML_INVALID_COMMENT);
             }
 
-#ifdef XML_USE_NODECACHE
+#if defined XML_COMMENTNODE && defined XML_USE_NODECACHE
             /* Create a new sub-branch or leaf-node for the current branch */
             nnc = cacheNodeNew(nc);
             cacheDataSet(nnc, comment, strlen(comment), cur+3, new-cur-6);
