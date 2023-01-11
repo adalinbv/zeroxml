@@ -110,13 +110,10 @@ int test(xmlId *rid)
     TESTFLOAT(p, f, 20.0, "should be 20.0");
     xmlFree(nid);
 
-    pid = xmlNodeGet(rid, TESTPATH);
     p = "xmlNodeGetString for /*/*/test";
     s = xmlNodeGetString(rid , "/*/*/test");
-    if (!s) PRINT_ERROR_AND_EXIT(pid);
     TESTPTR(p, s, NULL, "should be empty");
     xmlFree(s);
-    xmlFree(pid);
 
     p = "xmlGetString for "TESTPATH;
     pid = xmlNodeGet(rid, TESTPATH);
