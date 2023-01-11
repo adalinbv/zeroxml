@@ -1,6 +1,8 @@
-2023-01-02
+2023-01-11
  * Add xmlNodeCompareName
- * Fix numerous problems in the noce-cache.
+ * Add the compile time option to treat comments as nodes (defaults to on)
+   This makes it possible to walk the node tree and also print comment sections.
+ * Fix numerous problems in the node-cache.
 
 2022-12-22 Erik Hofman <tech@adalin.org>
  * Fix a serious mistake, use xmlFree instead of recursively calling cacheFree
@@ -8,25 +10,25 @@
 2022-12-21 Erik Hofman <tech@adalin.org>
  * Introduce xmlId as a replacement for void* when dealing with XML-ids.
  * Use the XMLNodeCache by default. Run cmake -DNODECACHE=OFF to switch it off.
- * Many code inprovements, cleanups, style changes and added comments.
+ * Many code improvements, cleanups, style changes and added comments.
 
 2017-08-25 Erik Hofman <tech@adalin.org>
  * Add the public domain unlicense as an option.
  * Add the xmlAttributeExists function to test the presence of an attribute.
 
 2017-03-30 Erik Hofman <tech@adalin.org>
- * Fix a segmentation fault when searching for a non-exsistent path.
- * Change a few situations where a non exsisting path was reported as an
+ * Fix a segmentation fault when searching for a non-existent path.
+ * Change a few situations where a non existing path was reported as an
    invalid XML syntax.
 
 2015-02-20 Erik Hofman <tech@adalin.org>
  * Make sure the attribute quote end character matches the attribute
    quote start character
  * Bump from rmalloc v1.17 to rmalloc v1.21
- * Add the xmlNodeTest function which returns true if a node name exsists.
+ * Add the xmlNodeTest function which returns true if a node name exists.
  * If a floating point number contains the wrong decimal mark, copy the
    whole section, fix the decimal mark character and try again.
- * Start working with C.UTF-8 unicode (which includes ANSI)
+ * Start working with C.UTF-8 Unicode (which includes ANSI)
 
 2013-07-08  Erik Hofman <tech@adalin.org>
  * Introduce XML_NONE as a possible return value for the GetInt functions
@@ -37,7 +39,7 @@
    This requires XML_NONEVALUE to be set at compile time.
 
 2012-05-21  Erik Hofman <tech@adalin.org>
- * Reroganzie the mmap code (simplify it)
+ * Reorganize the mmap code (simplify it)
  * fix a lingering segmentation fault for windows
 
 2011-11-11  Erik Hofman <tech@adalin.org>
@@ -48,27 +50,27 @@
   * Moved to CMake build system
 
 2011-07-21  Erik Hofman <tech@adalin.org>
-  * Add support for retreiving boolean values which will return true for any
-  *   of the functions return false otherwise.
+  * Add support for retrieving boolean values which will return true for any
+    of the functions return false otherwise.
 
 2011-03-16  Erik Hofman <tech@adalin.org>
   * Release of ZeroXML version 1.0
   * Moved installable header files to $(topdir)/include
   * Split up header files into conditional includes (src/api.h) and globally
-  *   installable header files.
-  * Fixed structure alignement for sytems that require non-byte aligned 
-  *   structure pointers.
+    installable header files.
+  * Fixed structure alignment for systems that require non-byte aligned 
+    structure pointers.
 
 2011-02-22  Erik Hofman <tech@adalin.org>
-  * Changed the licens the the "Simplified BSD License" or "FreeBSD License"
+  * Changed the license the the "Simplified BSD License" or "FreeBSD License"
 
 2009-05-24  Erik Hofman <erik@ehofman.com>
   * Add a node cache that can be enabled at compile time.
-  *   the node cache prevents recursively walking the xml tree over and over
-  *   again to find the specified nodes.
+    the node cache prevents recursively walking the XML tree over and over
+    again to find the specified nodes.
 
 2009-05-05  Erik Hofman <erik@ehofman.com>
-  * Various bugfixes, required to get fgrun working
+  * Various bug-fixes, required to get fgrun working
   * Add testxml as sort of a stress test application
 
 2009-04-30  Erik Hofman <erik@ehofman.com>
@@ -76,9 +78,9 @@
   * Fix an off by one problem.
 
 2009-04-28  Erik Hofman <erik@ehofman.com>
-  * Changes to the code to allow walking the xml-tree using "*" as a node name
-  * Add printxml, an example utility that walks an xml-tree and prints it
-  *   content
+  * Changes to the code to allow walking the XML-tree using "*" as a node name
+  * Add printxml, an example utility that walks an XML-tree and prints it
+    content
 
 2009-04-27  Erik Hofman <erik@ehofman.com>
   * Add xmlInitBuffer() for processing of a preallocated buffer
@@ -87,7 +89,7 @@
   * Detect an extended number of syntax errors
 
 2009-04-26  Erik Hofman <erik@ehofman.com>
-  * Add support for comments inside xml-tags, e.g.: <test><!-- --></test>
+  * Add support for comments inside XML-tags, e.g.: <test><!-- --></test>
 
 2009-04-25  Erik Hofman <erik@ehofman.com>
   * Add support for self-contained tags like <test/>
@@ -97,25 +99,25 @@
 
 2009-04-20  Erik Hofman <erik@ehofman.com>
   * Fix a case where a single-element root path (e.g. "/printer") would not
-  *   pass xmlNodeGetPath
+    pass xmlNodeGetPath
   * Fix a problem where attributes or elements starting with the same letter
-  *   sequence could give a false negative result
+    sequence could give a false negative result
   * Add a 'clear' attribute to the xmlErrorGet functions that indicates whether
-  *   the error should be cleared or not
-  * Detect more xml syntax errors
+    the error should be cleared or not
+  * Detect more XML syntax errors
 
 2009-04-18  Erik Hofman <erik@ehofman.com>
   * Make the code compiler correctly under windows
   * Introduce a root-node that can hold extra information which is necessary
-  *   for thread safety under windows
-  * Add xmlErrorGetString, xmlErrorGetLineNo for syntax error detetction
+    for thread safety under windows
+  * Add xmlErrorGetString, xmlErrorGetLineNo for syntax error detection
   * Add xmlErrGetNo for detection of, and clearing the last error
 
 2009-04-16  Erik Hofman <erik@ehofman.com>
-  * Rename xmlGetNode functions to xmlNodeGet for better consistancy
-  * Likewise for xmlCopyNode en xmlCompareNode
+  * Rename xmlGetNode functions to xmlNodeGet for better consistency
+  * Likewise for xmlCopyNode and xmlCompareNode
   * Add xmlAttributeGetDouble, xmlAttributeGetInt, xmlAttributeGetString
-  *   xmlAttributeCopyString and xmlAttributeCompareString functions
+    xmlAttributeCopyString and xmlAttributeCompareString functions
   * Fix some small bugs and problems along the way
   * Add support for filtering on attribute value in xmlgrep
 
@@ -124,7 +126,7 @@
   * Fix a problem where the wrong node-name length was returned
   * xmlgrep now also works when only the -e options is specified
   * Fix xmlgrep to show the correct node-name (it reported the parent
-  *   node-name in the previous version)
+    node-name in the previous version)
 
 2008-07-20  Erik Hofman <erik@ehofman.com>
   * Fix __xmlSkipComment to properly find the end of comment tag.
@@ -134,12 +136,12 @@
 
 2008-07-19  Erik Hofman <erik@ehofman.com>
   * Rewrite the code to always recursively walk the node tree when searching
-  *   for a particular node. this is required for cases where a node with a
-  *   particular name is located deeper in a node with the same name;
-  *   for example -r /configuration/device/reference/device would fail in the 
-  *   previous verion
+    for a particular node. this is required for cases where a node with a
+    particular name is located deeper in a node with the same name;
+    for example -r /configuration/device/reference/device would fail in the 
+    previous version
   * Rename xmlGetElement to xmlGetNodeNum and add the possibility to request
-  *   the nth node with this name
+    the nth node with this name
   * Rename xmlGetNumElements to xmlGetNumNodes
 
 2008-07-06  Erik Hofman <erik@ehofman.com>
@@ -167,8 +169,8 @@
 
 2008-06-27  Erik Hofman <erik@ehofman.com>
   * Removed some memory allocation in xmlGetNode and XMLGetNextElement
-  * Use the file-size for mmap and remove the root node from the xml-id
-  * Rearrange xmlGetNode to work with complicated xml files
+   Use the file-size for mmap and remove the root node from the XML-id
+  * Rearrange xmlGetNode to work with complicated XML files
   * Add the xmlMarkId function to save the id before using xmlGetNextElement
   * Speed up xmlGetNextId
 
