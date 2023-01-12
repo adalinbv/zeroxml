@@ -1,7 +1,9 @@
-2023-01-11
+2023-01-12
+ * Introduce XML_TRUE and XML_FALSE as boolean results.
  * Add xmlNodeCompareName and xmlNodeAttributeCompareName
  * Add the compile time option to treat comments as nodes (defaults to on)
    This makes it possible to walk the node tree and also print comment sections.
+   Comment nodes can be detetcted with xmlNodeTest(id, XML_COMMENT)
  * Fix numerous problems in the node-cache.
 
 2022-12-22 Erik Hofman <tech@adalin.org>
