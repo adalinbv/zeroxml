@@ -576,7 +576,7 @@ xmlAttributeGetName(const xmlId *id, int pos)
 }
 
 XML_API int XML_APIENTRY
-xmlNodeAttributeCompareName(const xmlId *id, int pos, const char *str)
+xmlAttributeCompareName(const xmlId *id, int pos, const char *str)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     int rv = XML_TRUE;

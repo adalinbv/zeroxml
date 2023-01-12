@@ -267,7 +267,7 @@ XML_API int XML_APIENTRY xmlAttributeCopyName(const xmlId *xid, char *buffer, in
  * of the node is found, respectively, to be less than, to match, or be greater
  * than str
  */
-XML_API int XML_APIENTRY xmlNodeAttributeCompareName(const xmlId *xid, int n, const char *str);
+XML_API int XML_APIENTRY xmlAttributeCompareName(const xmlId *xid, int n, const char *str);
 
 
 /**

@@ -57,6 +57,10 @@
   if (a == b) printf("Testing %-63s: succes\n", p); \
   else printf("Testing %-63s: failed\n\t'%p' %s.\n", p, b, c);
 
+#define TESTATTR(p, fn, a, b, c) \
+  if (!fn(a, b, c)) printf("Testing %-63s: succes\n", p); \
+  else printf("Testing %-63s: failed.\n\tattribute '%i' differs from '%s'\n",p,b,c);
+
 int test(xmlId *rid)
 {
     char buf[BUFLEN+1];
@@ -222,6 +226,9 @@ int test(xmlId *rid)
     p = "xmlAttributeExists on "AUDIOFRAMEPATH" for 'pan'";
     i = xmlAttributeExists(nid, "pan");
     TESTINT(p, i, XML_TRUE, "should be true");
+
+    p = "xmlAttributeCompareName for "AUDIOFRAMEPATH" for 'pan'";
+    TESTATTR(p, xmlAttributeCompareName, nid, 1, "emitters");
 
     p = "xmlAttributeGetInt on "AUDIOFRAMEPATH" for 'emitters'";
     i = xmlAttributeGetInt(nid, "emitters");
