@@ -228,7 +228,7 @@ int test(xmlId *rid)
     TESTINT(p, i, XML_TRUE, "should be true");
 
     p = "xmlAttributeCompareName for "AUDIOFRAMEPATH" for 'pan'";
-    TESTATTR(p, xmlAttributeCompareName, nid, 1, "emitters");
+    TESTATTR(p, xmlAttributeCompareName, nid, 0, "pan");
 
     p = "xmlAttributeGetInt on "AUDIOFRAMEPATH" for 'emitters'";
     i = xmlAttributeGetInt(nid, "emitters");
