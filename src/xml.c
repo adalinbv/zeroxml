@@ -99,7 +99,7 @@
 # define BUF_LEN		2048
 
 #ifndef XML_NONVALIDATING
-struct _zeroxml_error __zeroxml_info = { NULL, 0 };
+static struct _zeroxml_error __zeroxml_info = { NULL, 0 };
 static const char *__zeroxml_error_str[XML_MAX_ERROR];
 static void __xmlErrorSet(const struct _xml_id*, const char *, int);
 #endif
