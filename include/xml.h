@@ -96,6 +96,8 @@ extern "C" {
 # define XML_FPINFINITE         (1.0/0.0)
 #endif
 #define XML_NONE		(long int)0x80000000
+#define XML_FALSE		0
+#define XML_TRUE		(!XML_FALSE)
 #define XML_COMMENT		"!--"
 
 enum
@@ -253,6 +255,19 @@ XML_API char* XML_APIENTRY xmlAttributeGetName(const xmlId *xid, int n);
  */
 
 XML_API int XML_APIENTRY xmlAttributeCopyName(const xmlId *xid, char *buffer, int buflen, int n);
+
+/**
+ * Compare the name of the nth attribute to a string.
+ * Comparing is done in a case insensitive way.
+ *
+ * @param xid XML-id
+ * @param n position of the attribute in the attribute list. starts at 0.
+ * @param str the string to compare to
+ * @return an integer less than, equal to, or greater than zero if the value
+ * of the node is found, respectively, to be less than, to match, or be greater
+ * than str
+ */
+XML_API int XML_APIENTRY xmlNodeAttributeCompareName(const xmlId *xid, int n, const char *str);
 
 
 /**

@@ -137,14 +137,13 @@ static char _xml_filename[FILENAME_LEN+1];
        *name = (a); *len = (b); *rlen = 0; return NULL; \
  }
 
+static long __xml_strtol(const char*, char**, int);
+static int __xml_strtob(const char*, const char*);
+static void __xmlPrepareData( const char**, int*, char);
 static const char *__xmlDeclarationProcess(const char*, int);
 static  const char *__xmlNodeGetPath(const cacheId**, const char*, int*,  const char**, int*);
 static  const char *__xmlNodeGet(const cacheId*, const char*, int*,  const char**, int*, int*, char);
 static  const char *__xmlAttributeGetDataPtr(const struct _xml_id*, const char *, int*);
-static int __xmlDecodeBoolean(const char*, const char*);
-static void __xmlPrepareData( const char**, int*, char);
-
-static long __xml_strtol(const char*, char**, int);
 #ifdef WIN32
 /*
  * map 'filename' and return a pointer to it.
@@ -364,10 +363,13 @@ xmlNodeTest(const xmlId *id, const char *path)
     nnc = nc = cacheNodeGet(id);
 
     if (!strcmp(path, XML_COMMENT)) {
-//      rv = strcmp(xid->name, XML_COMMENT) ? 0 : 1;
-        rv = (xid->name == comment) ? 1 : 0;
+        rv = (xid->name == comment) ? XML_TRUE : XML_FALSE;
     } else {
-        rv = __xmlNodeGetPath(&nnc, xid->start, &len, &node, &slen) ? 1 : 0;
+        if (__xmlNodeGetPath(&nnc, xid->start, &len, &node, &slen)) {
+            rv  = XML_TRUE;
+        } else {
+            rv = XML_FALSE;
+        }
     }
 
     if (!rv) {
@@ -448,22 +450,22 @@ xmlNodeGetName(const xmlId *id)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     int len;
-    char *ret;
+    char *rv;
 
     assert(xid != 0);
 
     len = xid->name_len;
-    ret = malloc(len+1);
-    if (ret)
+    rv = malloc(len+1);
+    if (rv)
     {
-        memcpy(ret, xid->name, len);
-        *(ret + len) = 0;
+        memcpy(rv, xid->name, len);
+        *(rv + len) = 0;
     }
     else {
         xmlErrorSet(xid, 0, XML_OUT_OF_MEMORY);
     }
 
-    return ret;
+    return rv;
 }
 
 XML_API int XML_APIENTRY
@@ -487,18 +489,19 @@ xmlNodeCopyName(const xmlId *id, char *buf, int buflen)
     return slen;
 }
 
-XML_API int XML_APIENTRY xmlNodeCompareName(const xmlId *id, const char *str)
+XML_API int XML_APIENTRY
+xmlNodeCompareName(const xmlId *id, const char *str)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     int slen = str ? strlen(str) : 0;
-    int nlen, ret = -1;
+    int nlen, rv = XML_TRUE;
 
     nlen = xid->name_len;
     if (nlen >= slen) {
-        ret = strncasecmp(xid->name, str, slen);
+        rv = strncasecmp(xid->name, str, slen);
     }
 
-    return ret;
+    return rv;
 }
 
 XML_API int XML_APIENTRY
@@ -553,23 +556,64 @@ xmlAttributeGetName(const xmlId *id, int pos)
 {
    struct _xml_id *xid = (struct _xml_id *)id;
    char buf[4096];
+   char *rv;
    int len;
-   char *ret;
 
     assert(xid != 0);
 
     len = xmlAttributeCopyName(id, buf, 4096, pos);
-    ret = malloc(len+1);
-    if (ret)
+    rv = malloc(len+1);
+    if (rv)
     {
-        memcpy(ret, buf, len);
-        *(ret + len) = 0;
+        memcpy(rv, buf, len);
+        *(rv + len) = 0;
     }
     else {
         xmlErrorSet(xid, 0, XML_OUT_OF_MEMORY);
     }
 
-    return ret;
+    return rv;
+}
+
+XML_API int XML_APIENTRY
+xmlNodeAttributeCompareName(const xmlId *id, int pos, const char *str)
+{
+    struct _xml_id *xid = (struct _xml_id *)id;
+    int rv = XML_TRUE;
+
+    assert(buf != 0);
+    assert(buflen > 0);
+
+    if (xid->name_len && xid->name != comment)
+    {
+        const char *ps, *pe, *new;
+        int num = 0;
+
+        assert(xid->start > xid->name);
+
+        ps = xid->name + xid->name_len + 1;
+        pe = xid->start - 1;
+        while (ps<pe)
+        {
+            while ((ps<pe) && isspace(*ps)) ps++;
+
+            new = memchr(ps, '=', pe-ps);
+            if (!new) break;
+
+            if (num++ == pos)
+            {
+                int slen = new-ps;
+                rv = strncasecmp(ps, str, slen);
+                break;
+            }
+
+            ps = new+2;
+            while ((ps<pe) && (*ps != '"' && *ps != '\'')) ps++;
+            ps++;
+        }
+    }
+
+    return rv;
 }
 
 static int
@@ -615,13 +659,14 @@ __xmlNodeGetNum(const xmlId *id, const char *path, char raw)
 
         if (p)
         {
-            const char *ret, *node = nodename;
+            const char *node = nodename;
+            const char *rv;
 #ifndef XML_USE_NODECACHE
-            ret = __xmlNodeGet(nc, p, &len, &node, &slen, &num, raw);
+            rv = __xmlNodeGet(nc, p, &len, &node, &slen, &num, raw);
 #else
-            ret = __xmlNodeGetFromCache(&nc, p, &len, &node, &slen, &num);
+            rv = __xmlNodeGetFromCache(&nc, p, &len, &node, &slen, &num);
 #endif
-            if (ret == NULL && len != 0)
+            if (rv == NULL && len != 0)
             {
                 xmlErrorSet(xid, node, len);
                 num = 0;
@@ -678,7 +723,7 @@ __xmlNodeGetPos(const xmlId *pid, xmlId *id, const char *element, int num, char 
     const cacheId *nc;
     const char *ptr, *node;
     int len, slen;
-    xmlId *ret = 0;
+    xmlId *rv = NULL;
 
     assert(xpid != 0);
     assert(xid != 0);
@@ -702,13 +747,13 @@ __xmlNodeGetPos(const xmlId *pid, xmlId *id, const char *element, int num, char 
 #ifdef XML_USE_NODECACHE
         xid->node = nc;
 #endif
-        ret = (xmlId*)xid;
+        rv = (xmlId*)xid;
     }
     else if (slen == 0) {
         xmlErrorSet(xpid, node, len);
     }
 
-    return ret;
+    return rv;
 }
 
 XML_API xmlId* XML_APIENTRY
@@ -792,7 +837,7 @@ XML_API int XML_APIENTRY
 xmlCopyString(const xmlId *id, char *buffer, int buflen)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    int ret = 0;
+    int rv = 0;
 
     assert(xid != 0);
     assert(buffer != 0);
@@ -817,17 +862,17 @@ xmlCopyString(const xmlId *id, char *buffer, int buflen)
             memcpy(buffer, ps, len);
             *(buffer+len) = 0;
         }
-        ret = len;
+        rv = len;
     }
 
-    return ret;
+    return rv;
 }
 
 XML_API int XML_APIENTRY
 xmlCompareString(const xmlId *id, const char *s)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    int ret = -1;
+    int rv = XML_TRUE;
 
     assert(xid != 0);
     assert(s != 0);
@@ -840,10 +885,10 @@ xmlCompareString(const xmlId *id, const char *s)
         ps = xid->start;
         len = xid->len;
         __xmlPrepareData(&ps, &len, 0);
-        ret = strncasecmp(ps, s, len);
+        rv = strncasecmp(ps, s, len) ? XML_TRUE : XML_FALSE;
     }
 
-    return ret;
+    return rv;
 }
 
 XML_API char* XML_APIENTRY
@@ -892,7 +937,7 @@ XML_API int XML_APIENTRY
 xmlNodeCopyString(const xmlId *id, const char *path, char *buffer, int buflen)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    int ret = 0;
+    int rv = 0;
 
     assert(xid != 0);
     assert(path != 0);
@@ -923,14 +968,14 @@ xmlNodeCopyString(const xmlId *id, const char *path, char *buffer, int buflen)
                 memcpy(buffer, p, len);
                 *(buffer+len) = '\0';
             }
-            ret = len;
+            rv = len;
         }
         else if (slen == 0) {
             xmlErrorSet(xid, node, len);
         }
     }
 
-    return ret;
+    return rv;
 }
 
 XML_API int XML_APIENTRY
@@ -972,24 +1017,24 @@ XML_API int XML_APIENTRY
 xmlGetBool(const xmlId *id)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    int li = 0;
+    int rv = 0;
 
     assert(xid != 0);
 
     if (xid->len)
     {
         const char *end = xid->start + xid->len;
-        li = __xmlDecodeBoolean(xid->start, end);
+        rv = __xml_strtob(xid->start, end);
     }
 
-    return li;
+    return rv;
 }
 
 XML_API int XML_APIENTRY
 xmlNodeGetBool(const xmlId *id, const char *path)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    int li = 0;
+    int rv = 0;
 
     assert(xid != 0);
     assert(path != 0);
@@ -1008,38 +1053,38 @@ xmlNodeGetBool(const xmlId *id, const char *path)
         if (str)
         {
             const char *end = str+len;
-            li = __xmlDecodeBoolean(str, end);
+            rv = __xml_strtob(str, end);
         }
         else if (slen == 0) {
             xmlErrorSet(xid, node, len);
         }
     }
 
-    return li;
+    return rv;
 }
 
 XML_API long int XML_APIENTRY
 xmlGetInt(const xmlId *id)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    long int li = __XML_NONE;
+    long int rv = __XML_NONE;
 
     assert(xid != 0);
 
     if (xid->len)
     {
         char *end = (char*)xid->start + xid->len;
-        li = __xml_strtol(xid->start, &end, 10);
+        rv = __xml_strtol(xid->start, &end, 10);
     }
 
-    return li;
+    return rv;
 }
 
 XML_API long int XML_APIENTRY
 xmlNodeGetInt(const xmlId *id, const char *path)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    long int li = __XML_NONE;
+    long int rv = __XML_NONE;
 
     assert(xid != 0);
     assert(path != 0);
@@ -1058,38 +1103,38 @@ xmlNodeGetInt(const xmlId *id, const char *path)
         if (str)
         {
             char *end = (char*)str+len;
-            li = __xml_strtol(str, &end, 10);
+            rv = __xml_strtol(str, &end, 10);
         }
         else if (slen == 0) {
             xmlErrorSet(xid, node, len);
         }
     }
 
-    return li;
+    return rv;
 }
 
 XML_API double XML_APIENTRY
 xmlGetDouble(const xmlId *id)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    double d = __XML_FPNONE;
+    double rv = __XML_FPNONE;
 
     assert(xid != 0);
 
     if (xid->len)
     {
         char *end = (char*)xid->start + xid->len;
-        d = strtod(xid->start, &end);
+        rv = strtod(xid->start, &end);
     }
 
-    return d;
+    return rv;
 }
 
 XML_API double XML_APIENTRY
 xmlNodeGetDouble(const xmlId *id, const char *path)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    double d = __XML_FPNONE;
+    double rv = __XML_FPNONE;
 
     assert(xid != 0);
     assert(path != 0);
@@ -1108,20 +1153,20 @@ xmlNodeGetDouble(const xmlId *id, const char *path)
         if (str)
         {
             char *end = (char*)str+len;
-            d = strtod(str, &end);
+            rv = strtod(str, &end);
         }
         else if (slen == 0) {
             xmlErrorSet(xid, node, len);
         }
     }
 
-    return d;
+    return rv;
 }
 
 XML_API xmlId* XML_APIENTRY
 xmlMarkId(const xmlId *id)
 {
-    struct _xml_id *xmid = 0;
+    struct _xml_id *xmid = NULL;
 
     assert(id != 0);
 
@@ -1167,12 +1212,12 @@ XML_API int XML_APIENTRY
 xmlAttributeExists(const xmlId *id, const char *name)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    int rv = 0;
+    int rv = XML_FALSE;
 
     if (xid->name_len && xid->name != comment)
     {
         int len;
-        rv = __xmlAttributeGetDataPtr(xid, name, &len) ? -1 : 0;
+        rv = __xmlAttributeGetDataPtr(xid, name, &len) ? XML_TRUE : XML_FALSE;
     }
     return rv;
 }
@@ -1181,70 +1226,70 @@ XML_API double XML_APIENTRY
 xmlAttributeGetDouble(const xmlId *id, const char *name)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    double ret = __XML_FPNONE;
+    double rv = __XML_FPNONE;
 
     if (xid->name_len && xid->name != comment)
     {
-        int len;
         const char *ptr;
+        int len;
 
         ptr = __xmlAttributeGetDataPtr(xid, name, &len);
         if (ptr)
         {
             char *eptr = (char*)ptr+len;
-            ret = strtod(ptr, &eptr);
+            rv = strtod(ptr, &eptr);
         }
     }
-    return ret;
+    return rv;
 }
 
 XML_API int XML_APIENTRY
 xmlAttributeGetBool(const xmlId *id, const char *name)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    int ret = 0;
+    int rv = 0;
 
     if (xid->name_len && xid->name != comment)
     {
-        int len;
         const char *ptr;
+        int len;
 
         ptr = __xmlAttributeGetDataPtr(xid, name, &len);
         if (ptr)
         {
             const char *eptr = ptr+len;
-            ret = __xmlDecodeBoolean(ptr, eptr);
+            rv = __xml_strtob(ptr, eptr);
         }
     }
-    return ret;
+    return rv;
 }
 
 XML_API long int XML_APIENTRY
 xmlAttributeGetInt(const xmlId *id, const char *name)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    long int ret = __XML_NONE;
+    long int rv = __XML_NONE;
 
     if (xid->name_len && xid->name != comment)
     {
-        int len;
         const char *ptr;
+        int len;
 
         ptr = __xmlAttributeGetDataPtr(xid, name, &len);
         if (ptr)
         {
             char *eptr = (char*)ptr+len;
-            ret = __xml_strtol(ptr, &eptr, 10);
+            rv = __xml_strtol(ptr, &eptr, 10);
         }
     }
-    return ret;
+    return rv;
 }
 
 XML_API char * XML_APIENTRY
 xmlAttributeGetString(const xmlId *id, const char *name)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    char *ret = 0;
+    char *rv = NULL;
 
     if (xid->name_len && xid->name != comment)
     {
@@ -1254,18 +1299,18 @@ xmlAttributeGetString(const xmlId *id, const char *name)
         ptr = __xmlAttributeGetDataPtr(xid, name, &len);
         if (ptr)
         {
-            ret = malloc(len+1);
-            if (ret)
+            rv = malloc(len+1);
+            if (rv)
             {
-                memcpy(ret, ptr, len);
-                *(ret+len) = '\0';
+                memcpy(rv, ptr, len);
+                *(rv+len) = '\0';
             }
             else {
                 xmlErrorSet(xid, 0, XML_OUT_OF_MEMORY);
             }
         }
     }
-    return ret;
+    return rv;
 }
 
 XML_API int XML_APIENTRY
@@ -1305,7 +1350,7 @@ XML_API int XML_APIENTRY
 xmlAttributeCompareString(const xmlId *id, const char *name, const char *s)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    int rv = -1;
+    int rv = XML_TRUE;
 
     if (xid->name_len && xid->name != comment)
     {
@@ -1327,7 +1372,7 @@ xmlAttributeCompareString(const xmlId *id, const char *name, const char *s)
 XML_API int XML_APIENTRY
 xmlErrorGetNo(const xmlId *id, int clear)
 {
-    int ret = 0;
+    int rv = 0;
 
     if (id)
     {
@@ -1338,23 +1383,23 @@ xmlErrorGetNo(const xmlId *id, int clear)
         {
             struct _zeroxml_error *err = rid->info;
 
-            ret = __zeroxml_info.err_no = err->err_no;
+            rv = __zeroxml_info.err_no = err->err_no;
             if (clear) {
                 err->err_no = __zeroxml_info.err_no = 0;
             }
         }
     }
     else {
-        ret = __zeroxml_info.err_no;
+        rv = __zeroxml_info.err_no;
     }
 
-    return ret;
+    return rv;
 }
 
 XML_API int XML_APIENTRY
 xmlErrorGetLineNo(const xmlId *id, int clear)
 {
-    int ret = 0;
+    int rv = 0;
 
     if (id)
     {
@@ -1373,11 +1418,11 @@ xmlErrorGetLineNo(const xmlId *id, int clear)
             const char *pe = err->pos;
             const char *new;
 
-            ret++;
+            rv++;
             while (ps<pe)
             {
                 new = memchr(ps, '\n', pe-ps);
-                if (new) ret++;
+                if (new) rv++;
                 else break;
                 ps = new+1;
             }
@@ -1388,13 +1433,13 @@ xmlErrorGetLineNo(const xmlId *id, int clear)
         }
     }
 
-    return ret;
+    return rv;
 }
 
 XML_API int XML_APIENTRY
 xmlErrorGetColumnNo(const xmlId *id, int clear)
 {
-    int ret = 0;
+    int rv = 0;
 
     if (id)
     {
@@ -1417,11 +1462,11 @@ xmlErrorGetColumnNo(const xmlId *id, int clear)
             {
                 new = memchr(ps, '\n', pe-ps);
                 new = memchr(ps, '\n', pe-ps);
-                if (new) ret++;
+                if (new) rv++;
                 else break;
                 ps = new+1;
             }
-            ret = pe-ps;
+            rv = pe-ps;
 
             if (clear) {
                 err->err_no = __zeroxml_info.err_no = 0;
@@ -1429,13 +1474,13 @@ xmlErrorGetColumnNo(const xmlId *id, int clear)
         }
     }
 
-    return ret;
+    return rv;
 }
 
 XML_API const char* XML_APIENTRY
 xmlErrorGetString(const xmlId *id, int clear)
 {
-    char *ret = 0;
+    char *rv = NULL;
 
     if (id)
     {
@@ -1450,13 +1495,10 @@ xmlErrorGetString(const xmlId *id, int clear)
         if (rid->info)
         {
             struct _zeroxml_error *err = rid->info;
-            if (XML_NO_ERROR <= err->err_no && err->err_no < XML_MAX_ERROR)
-            {
-                ret = (char*)__zeroxml_error_str[err->err_no];
-            }
-            else
-            {
-                ret = "incorrect error number.";
+            if (XML_NO_ERROR <= err->err_no && err->err_no < XML_MAX_ERROR) {
+                rv = (char*)__zeroxml_error_str[err->err_no];
+            } else {
+                rv = "incorrect error number.";
             }
 
             if (clear) {
@@ -1465,10 +1507,10 @@ xmlErrorGetString(const xmlId *id, int clear)
         }
     }
     else {
-       ret = (char*)__zeroxml_error_str[__zeroxml_info.err_no];
+       rv = (char*)__zeroxml_error_str[__zeroxml_info.err_no];
     }
 
-    return ret;
+    return rv;
 }
 
 #else
@@ -1529,7 +1571,7 @@ static const char*
 __xmlAttributeGetDataPtr(const struct _xml_id *id, const char *name, int *len)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    const char *ret = 0;
+    const char *rv = NULL;
 
     assert(xid != 0);
     assert(name != 0);
@@ -1568,7 +1610,7 @@ __xmlAttributeGetDataPtr(const struct _xml_id *id, const char *name, int *len)
                     if (ps<pe)
                     {
                         start++;
-                        ret = start;
+                        rv = start;
                         *len = ps-start;
                     }
                     else
@@ -1589,39 +1631,8 @@ __xmlAttributeGetDataPtr(const struct _xml_id *id, const char *name, int *len)
         }
     }
 
-    return ret;
-}
-
-/*
- * Interpret a string as a boolean.
- *
- * Values for true are "on", "yes", "true" and any number not being zero.
- *
- * @param start a pointer to the start of the string to interpret
- * @param end a pointer to the end of the string to interpret
- * @return 0 when false or -1 when true
- */
-static int
-__xmlDecodeBoolean(const char *start, const char *end)
-{
-    int rv = 0;
-    char *ptr;
-
-    ptr = (char*)end;
-    rv = __xml_strtol(start, &ptr, 10) ? -1 : 0;
-    if (ptr == start)
-    {
-        int len = end-start;
-        if (!strncasecmp(start, "on", len) || !strncasecmp(start, "yes", len)
-            || !strncasecmp(start, "true", len))
-        {
-            rv = -1;
-        }
-    }
-
     return rv;
 }
-
 
 /*
  * Search for the subsection of the last node in the node path inside the
@@ -2321,6 +2332,36 @@ __xml_strtol(const char *str, char **end, int base)
         return strtol(str+2, end, 16);
     }
     return strtol(str, end, base);
+}
+
+/*
+ * Interpret a string as a boolean.
+ *
+ * Values for true are "on", "yes", "true" and any number not being zero.
+ *
+ * @param start a pointer to the start of the string to interpret
+ * @param end a pointer to the end of the string to interpret
+ * @return 0 when false or -1 when true
+ */
+static int
+__xml_strtob(const char *start, const char *end)
+{
+    int rv = XML_FALSE;
+    char *ptr;
+
+    ptr = (char*)end;
+    rv = __xml_strtol(start, &ptr, 10) ? XML_TRUE : XML_FALSE;
+    if (ptr == start)
+    {
+        int len = end-start;
+        if (!strncasecmp(start, "on", len) || !strncasecmp(start, "yes", len)
+            || !strncasecmp(start, "true", len))
+        {
+            rv = XML_TRUE;
+        }
+    }
+
+    return rv;
 }
 
 /*

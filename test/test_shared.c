@@ -69,7 +69,7 @@ int test(xmlId *rid)
     if (!rid)
     {
         printf("Invalid XML-id\n");
-        return -1;
+        return XML_TRUE;
     }
 
     p = "xmlNodeTest for "ROOTNODE"/nasal/YF23";
@@ -85,21 +85,21 @@ int test(xmlId *rid)
     i = xmlNodeGetBool(rid, OUTPUTNODE"/boolean");
     TESTINT(p, i, 0, "should be false");
 
-    p = "xmlNodeGetBool for "OUTPUTNODE"/boolean[1] (-1)";
+    p = "xmlNodeGetBool for "OUTPUTNODE"/boolean[1] (XML_TRUE)";
     i = xmlNodeGetBool(nid, "boolean[1]");
-    TESTINT(p, i, -1, "should be true");
+    TESTINT(p, i, XML_TRUE, "should be true");
 
     p = "xmlNodeGetBool for "OUTPUTNODE"/boolean[2] (on)";
     i = xmlNodeGetBool(nid, "boolean[2]");
-    TESTINT(p, i, -1, "should be true");
+    TESTINT(p, i, XML_TRUE, "should be true");
 
     p = "xmlNodeGetBool for "OUTPUTNODE"/boolean[3] (true)";
     i = xmlNodeGetBool(nid, "boolean[3]");
-    TESTINT(p, i, -1, "should be true");
+    TESTINT(p, i, XML_TRUE, "should be true");
 
     p = "xmlNodeGetBool for "OUTPUTNODE"/boolean[4] (yes)";
     i = xmlNodeGetBool(nid, "boolean[4]");
-    TESTINT(p, i, -1, "should be true");
+    TESTINT(p, i, XML_TRUE, "should be true");
 
     p = "xmlNodeGetInt for "OUTPUTNODE"/boolean[1] (-1)";
     i = xmlNodeGetInt(nid, "boolean[1]");
@@ -165,7 +165,7 @@ int test(xmlId *rid)
     p = "xmlGetBool for "OUTPUTNODE"/boolean[2] (on)";
     nid = xmlNodeGet(rid, OUTPUTNODE"/boolean[2]");
     i = xmlGetBool(nid);
-    TESTINT(p, i, -1, "should be true");
+    TESTINT(p, i, XML_TRUE, "should be true");
     xmlFree(nid);
 
     p = "xmlGetInt for "OUTPUTNODE"/boolean[1] (-1)";
@@ -221,7 +221,7 @@ int test(xmlId *rid)
 
     p = "xmlAttributeExists on "AUDIOFRAMEPATH" for 'pan'";
     i = xmlAttributeExists(nid, "pan");
-    TESTINT(p, i, -1, "should be true");
+    TESTINT(p, i, XML_TRUE, "should be true");
 
     p = "xmlAttributeGetInt on "AUDIOFRAMEPATH" for 'emitters'";
     i = xmlAttributeGetInt(nid, "emitters");

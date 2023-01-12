@@ -1,5 +1,5 @@
 2023-01-11
- * Add xmlNodeCompareName
+ * Add xmlNodeCompareName and xmlNodeAttributeCompareName
  * Add the compile time option to treat comments as nodes (defaults to on)
    This makes it possible to walk the node tree and also print comment sections.
  * Fix numerous problems in the node-cache.
