@@ -18,6 +18,11 @@
   <boolean>true</boolean>
   <boolean>yes</boolean>
 
+  <binary>0b1011</binary>
+  <octal>070374</octal>
+  <octal>0o70374</octal>
+  <hexadecimal>0x7FA32</hexadecimal>
+
   <menu><name>* Traffic, # taxiing to runway (.</name></menu>
   <sample><test>  	* Traffic, # taxiing to runway (.    </test></sample>
 

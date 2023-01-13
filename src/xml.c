@@ -2309,7 +2309,10 @@ __xmlErrorSet(const struct _xml_id *id, const char *pos, int err_no)
 /*
  * Convert a non NULL-terminated string to a long integer.
  *
- * When the string starts with "0x" or "\x" base 16 is being used (hexadecimal)
+ * When the string starts with "0b" or "\b" base 2 is being used (binary),
+ * when the string starts with "0x" or "\x" base 16 is being used (hexadecimal),
+ * else when the string starts with "0" and the length is greater than 2,
+ * or when the string starts with "0o" or "\0" base 8 is being used (octal).
  * otherwise the provided base is being used.
  *
  * Upon succes *end will point to first unconvertable character in the string.
@@ -2328,8 +2331,33 @@ __xml_strtol(const char *str, char **end, int base)
 {
     int len = *end - str;
 
-    if (len > 2 && str[1] == 'x' && (str[0] == '0' || str[0] == '\\')) {
-        return strtol(str+2, end, 16);
+    if (len >= 2)
+    {
+        if (str[0] == '0' || str[0] == '\\')
+        {
+            switch(str[1])
+            {
+            case 'b': /* binary */
+                str += 2;
+                base = 2;
+                break;
+            case 'd': /* decimal */
+                str += 2;
+                base = 10;
+                break;
+            case 'x': /* hexadecimal */
+                str += 2;
+                base = 16;
+                break;
+            case 'o': /* octal */
+               str++;
+               // intentional fallthrough
+            default:
+                str++;
+                base = 8;
+                break;
+            }
+        }
     }
     return strtol(str, end, base);
 }
@@ -2365,7 +2393,9 @@ __xml_strtob(const char *start, const char *end)
 }
 
 /*
- * Locate a sunstring in a memory block.
+ * Locate a sub-string in a memory block.
+ *
+ * The comparisson is case sensitive.
  *
  * @param haystack a pointer to the beginning of the memory block
  * @param haystacklen the length of the memory block
@@ -2417,6 +2447,7 @@ __xml_memmem(const char *haystack, int haystacklen, const char *needle, int need
 static const char*
 __xml_memncasestr(const char *haystack, int haystacklen, const char *needle)
 {
+    const char *rv = NULL;
     int needlelen;
 
     assert(needle);
@@ -2427,16 +2458,13 @@ __xml_memncasestr(const char *haystack, int haystacklen, const char *needle)
         char first = tolower(*needle++);
         do
         {
-            do {
-                if (haystacklen-- < 1) return NULL;
-            } while (tolower(*haystack++) != first);
-
-            if (needlelen > haystacklen) return NULL;
+            while (--haystacklen && tolower(*haystack++) != first);
+            if (haystacklen < needlelen) break;
         }
         while (strncasecmp(haystack, needle, needlelen) != 0);
-        haystack--;
+        rv = haystack-1;
     }
-   return haystack;
+   return rv;
 }
 
 /*

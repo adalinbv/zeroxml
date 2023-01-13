@@ -109,6 +109,22 @@ int test(xmlId *rid)
     i = xmlNodeGetInt(nid, "boolean[1]");
     TESTINT(p, i, -1, "should be -1");
 
+    p = "xmlNodeGetInt for "OUTPUTNODE"/binary (0b1011)";
+    i = xmlNodeGetInt(nid, "binary");
+    TESTINT(p, i, 11, "should be 11");
+
+    p = "xmlNodeGetInt for "OUTPUTNODE"/octal (070374)";
+    i = xmlNodeGetInt(nid, "octal[0]");
+    TESTINT(p, i, 28924, "should be 28924");
+
+    p = "xmlNodeGetInt for "OUTPUTNODE"/octal (0o70374)";
+    i = xmlNodeGetInt(nid, "octal[1]");
+    TESTINT(p, i, 28924, "should be 28924");
+
+    p = "xmlNodeGetInt for "OUTPUTNODE"/hexadecimal (0x7FA32)";
+    i = xmlNodeGetInt(nid, "hexadecimal");
+    TESTINT(p, i, 522802, "should be 522802");
+
     p = "xmlNodeGetDouble for "OUTPUTNODE"/interval-hz (20.0)";
     f = xmlNodeGetDouble(nid, "interval-hz");
     TESTFLOAT(p, f, 20.0, "should be 20.0");
