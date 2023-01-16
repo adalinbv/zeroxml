@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- comment -->
+
+ <a/>
+ <b> data </b>
+ <c> <!-- comment --> data </c>
+ <d> data <!-- comment --> </d>
+ <e> <![CDATA[ data ]]> </e>
+ <f> <!-- comment --> <![CDATA[ data ]]> </f>
+ <g> <![CDATA[ data ]]> <!-- comment --> </g>
+
+ <s>
+  <!-- subnodes -->
+  <!-- with comment -->
+
+  <h/>
+  <i> data </i>
+  <j> <!-- comment --> data </j>
+  <k> data <!-- comment --> </k>
+  <l> <![CDATA[ data ]]> </l>
+  <m> <!-- comment --> <![CDATA[ data ]]> </m>
+  <n> <![CDATA[ data ]]> <!-- comment --> </n>
+
+  <!-- more comment -->
+  <!-- the end -->
+ </s>
+
