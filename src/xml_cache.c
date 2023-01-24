@@ -75,22 +75,6 @@ cacheNodeGet(const xmlId *id) {
 
 #else
 
-# ifndef NDEBUG
-#  define PRINT(a, b, c) { \
-    int l1 = (b), l2 = (c); \
-    const char *s = (a); \
-    if (s) { \
-    int q, len = l2; \
-    if (l1 < l2) len = l1; \
-    if (len < 50000) { \
-        printf("(%i) '", len); \
-        for (q=0; q<len; q++) printf("%c", s[q]); \
-        printf("'\n"); \
-    } else printf("Length (%i) seems too large at line %i\n",len, __LINE__); \
-    } else printf("NULL pointer at line %i\n", __LINE__); \
-}
-# endif
-
 /* number of pointers to allocate for every block increase */
 # define NODE_BLOCKSIZE		16
 
@@ -238,7 +222,7 @@ cacheDataSet(const cacheId *n, const char *name, int namelen, const char *data, 
            or NULL in case of an error
  */
 const char*
-__xmlNodeGetFromCache(const cacheId **nc, const char *start, int *len,
+__xmlNodeGetFromCache(const cacheId **nc, const char **buf, int *len,
                       const char **element, int *elementlen, int *nodenum)
 {
     struct _xml_node *cache;
@@ -247,7 +231,12 @@ __xmlNodeGetFromCache(const cacheId **nc, const char *start, int *len,
     int found;
     int num;
 
-    assert(nc != 0);
+    assert(buf != 0);
+    assert(*buf != 0);
+    assert(len != 0);
+    assert(element != 0);
+    assert(elementlen != 0);
+    assert(nodenum != 0);
 
     cache = (struct _xml_node*)*nc;
     assert(cache != 0);
@@ -255,7 +244,7 @@ __xmlNodeGetFromCache(const cacheId **nc, const char *start, int *len,
     num = *nodenum;
     if (cache->no_nodes == 0) /* leaf node */
     {
-        rv = cache->data;
+        rv = *buf = cache->data;
         *len = cache->data_len;
         *element = cache->name;
         *elementlen = cache->name_len;
@@ -267,7 +256,7 @@ __xmlNodeGetFromCache(const cacheId **nc, const char *start, int *len,
         {
             const struct _xml_node *node = cache->node[num];
             *nc = (cacheId*)node;
-            rv = node->data;
+            rv = *buf = node->data;
             *len = node->data_len;
             *element = node->name;
             *elementlen = node->name_len;
@@ -291,7 +280,7 @@ __xmlNodeGetFromCache(const cacheId **nc, const char *start, int *len,
                       if (found == num)
                       {
                            *nc = (cacheId*)node;
-                           rv = node->data;
+                           rv = *buf = node->data;
                            *len = node->data_len;
                            *element = node->name;
                            *elementlen = node->name_len;

@@ -86,12 +86,27 @@
 #endif
 
 #ifdef XML_NONEVALUE
+# define __XML_BOOL_NONE	XML_BOOL_NONE
 # define __XML_FPNONE		XML_FPNONE
 # define __XML_NONE		XML_NONE
 #else
+# define __XML_BOOL_NONE	0
 # define __XML_FPNONE		0.0
 # define __XML_NONE		0
 #endif
+
+#define PRINT(s, b, c) { \
+  int l1 = (b), l2 = (c); \
+  if (s) { \
+    int q, len = l2; \
+    if (l1 < l2) len = l1; \
+    if (len < 50000) { \
+        printf("(%i) '", len); \
+        for (q=0; q<len; q++) printf("%c", s[q]); \
+        printf("'\n"); \
+    } else printf("Length (%i) seems too large at line %i\n",len, __LINE__); \
+  } else printf("NULL pointer at line %i\n", __LINE__); \
+}
 
 #include <xml_cache.h>
 
@@ -162,4 +177,3 @@ struct _xml_id
 };
 
 #endif /* __XML_API_H */
-

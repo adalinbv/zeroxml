@@ -7,6 +7,9 @@
  <c> <!-- comment --> data </c>
  <d> data <!-- comment --> </d>
  <e> <![CDATA[ data ]]> </e>
+<<<<<<< HEAD
+ <f> <!-- comment --> <![CDATA[ data ]]> </f>
+ <g> <![CDATA[ data ]]> <!-- comment --> </g>
 
  <s>
   <!-- subnodes -->
@@ -17,8 +20,11 @@
   <j> <!-- comment --> data </j>
   <k> data <!-- comment --> </k>
   <l> <![CDATA[ data ]]> </l>
+  <m> <!-- comment --> <![CDATA[ data ]]> </m>
+  <n> <![CDATA[ data ]]> <!-- comment --> </n>
 
   <!-- more comment -->
   <!-- the end -->
  </s>
 
+ <!-- more comment -->

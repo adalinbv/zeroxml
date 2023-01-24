@@ -123,6 +123,7 @@ void cacheDataSet(const cacheId *cid, const char *name, int namelen, const char 
  * Get the data from a cached node.
  *
  * When finished *cid will return a pointer to the request node XML-id,
+ * *start points to the data section with the requested name
  * *len will be set to the length of the requested section,
  * *name will point to the actual name of the node (useful in case the name was
  * a wildcard character), *nlen will return the length of the actual name and
@@ -134,9 +135,9 @@ void cacheDataSet(const cacheId *cid, const char *name, int namelen, const char 
  * @param *name name of the node to look for
  * @param rlen length of the name of the node to look for
  * @param nodenum which occurence of the node name to look for
- * @return a pointer to the start of the node data section
+ * @return a pointer right after the section or NULL in case of an error
  */
-const char* __xmlNodeGetFromCache(const cacheId **cid, const char *start, int *len, const char **name, int *rlen , int *nodenum);
+const char* __xmlNodeGetFromCache(const cacheId **cid, const char **start, int *len, const char **name, int *rlen , int *nodenum);
 
 #ifdef __cplusplus
 }

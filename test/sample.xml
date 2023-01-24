@@ -2,6 +2,8 @@
 
 <Configuration>
 
+ <!-- comment -->
+
  <output>
   <frequency-hz>48000</frequency-hz>
   <interval-hz>20</interval-hz>

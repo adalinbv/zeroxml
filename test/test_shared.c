@@ -1,12 +1,9 @@
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "test_shared.h"
 #include "xml.h"
 
 #define ROOTNODE	"/Configuration"
@@ -22,44 +19,6 @@
 #define BACKENDPATH	ROOTNODE"/backend/"NAMENODE
 #define AUDIOFRAMEPATH	ROOTNODE"/audioframe"
 #define NONVALIDNODE	MENUNODE"/"TESTNODE
-#define BUFLEN		4096
-
-#define PRINT_ERROR_AND_EXIT(id) \
-  if (xmlErrorGetNo(id, 0) != XML_NO_ERROR) { \
-      const char *errstr = xmlErrorGetString(id, 0); \
-      int column = xmlErrorGetColumnNo(id, 0); \
-      int lineno = xmlErrorGetLineNo(id, 1); \
-      printf("\n\tError at line %i, column %i: %s\n", lineno, column, errstr);\
-      exit(-1); \
-  }
-
-#define TESTINT(p, a, b, c) \
-  if (a == b) printf("Testing %-63s: succes\n", p); \
-  else printf("Testing %-63s: failed\n\t'%i' %s.\n", p, b, c);
-
-#define TESTFLOAT(p, a, b, c) \
-  if (a == b) printf("Testing %-63s: succes\n", p); \
-  else printf("Testing %-63s: failed\n\t'%f' %s.\n", p, b, c);
-
-#define TESTSTR(p, fn, a, b) \
-  if (!fn(a, b)) printf("Testing %-63s: succes\n", p); \
-  else printf("Testing %-63s: failed.\n\t'%s' differs from '%s'\n",p,a,b);
-
-#define TESTSTRCMP(p, fn, a, b, c) \
-  if (!fn(a, b)) printf("Testing %-63s: succes\n", p); \
-  else printf("Testing %-63s: failed.\n\t'%s' differs from '%s'\n",p,b,c);
-
-#define TESTCMP(p, fn, a, b, c) \
-  if (!fn(a, b, c)) printf("Testing %-63s: succes\n", p); \
-  else printf("Testing %-63s: failed.\n\t'%s' differs from '%s'\n",p,b,c);
-
-#define TESTPTR(p, a, b, c) \
-  if (a == b) printf("Testing %-63s: succes\n", p); \
-  else printf("Testing %-63s: failed\n\t'%p' %s.\n", p, b, c);
-
-#define TESTATTR(p, fn, a, b, c) \
-  if (!fn(a, b, c)) printf("Testing %-63s: succes\n", p); \
-  else printf("Testing %-63s: failed.\n\tattribute '%i' differs from '%s'\n",p,b,c);
 
 int test(xmlId *rid)
 {
@@ -130,16 +89,14 @@ int test(xmlId *rid)
     TESTFLOAT(p, f, 20.0, "should be 20.0");
     xmlFree(nid);
 
-    p = "xmlNodeGetString for /*/*/test";
-    s = xmlNodeGetString(rid , "/*/*/test");
+    p = "xmlNodeGetString for /*[1]/*/test";
+    s = xmlNodeGetString(rid , "/*[1]/*/test");
     TESTPTR(p, s, NULL, "should be empty");
-    xmlFree(s);
 
     p = "xmlGetString for "TESTPATH;
     pid = xmlNodeGet(rid, TESTPATH);
     if (!pid) PRINT_ERROR_AND_EXIT(rid);
     s = xmlGetString(pid);
-    if (!s) PRINT_ERROR_AND_EXIT(pid);
     TESTPTR(p, s, NULL, "should be empty");
     xmlFree(pid);
     xmlFree(s);
@@ -317,12 +274,13 @@ int test(xmlId *rid)
     i = xmlNodeGetNum(nid, SPEAKERNODE);
     TESTINT(p, i, 2, "should be 2");
 
+    p = buf;
     for (q=0; q<i; ++q)
     {
         xmlId *sid = xmlNodeGetPos(pid, nid, SPEAKERNODE, q);
         if (!sid) PRINT_ERROR_AND_EXIT(pid);
 
-        p = "xmlNodeGetPos for "OUTPUTNODE"/"SPEAKERNODE"/channel";
+        snprintf(buf, BUFLEN, "%s/%s/channel[%i]", OUTPUTNODE, SPEAKERNODE, q);
         TESTINT(p, q, (int)xmlNodeGetInt(sid, "channel"), "mismatch");
 
         // used later by xmlNodeCopyPos
@@ -331,17 +289,20 @@ int test(xmlId *rid)
     xmlFree(nid);
 
     // xmlNodeCopyPos
+    p = "xmlNodeCopyPos for "OUTPUTNODE"/"SPEAKERNODE"[1]";
     nid = xmlMarkId(pid);
     if (!nid) PRINT_ERROR_AND_EXIT(pid);
     do
     {
-        xmlId *cid = xmlNodeCopyPos(pid, nid, SPEAKERNODE, 1);
+        xmlId *cid;
+        char *cs;
+
+        cid = xmlNodeCopyPos(pid, nid, SPEAKERNODE, 1);
         if (!cid) PRINT_ERROR_AND_EXIT(pid);
 
-        char *cs = xmlGetString(cid);
-        if (!cs) PRINT_ERROR_AND_EXIT(pid);
+        cs = xmlGetString(cid);
+        if (cs == NULL) PRINT_ERROR_AND_EXIT(cid);
 
-        p = "xmlNodeCopyPos for "OUTPUTNODE"/"SPEAKERNODE"[1]";
         TESTSTR(p, strcmp, s, cs);
         xmlFree(cs);
         xmlFree(s);
@@ -351,7 +312,6 @@ int test(xmlId *rid)
     xmlFree(nid);
     xmlFree(pid);
 
-    p = "xmlNodeGetPos for "OUTPUTNODE"/"SPEAKERNODE;
     if (xmlErrorGetNo(rid, 0) != XML_NO_ERROR)
     {
         const char *errstr = xmlErrorGetString(rid, 0);
