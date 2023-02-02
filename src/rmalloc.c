@@ -218,13 +218,13 @@
  * Posix allows this but there are some old malloc libraries
  * which crash on this. Switch on if you want to be compatible.
  */
-#define ALLOW_REALLOC_NULL
+/* #define ALLOW_REALLOC_NULL */
 
 /* Allows free(NULL)
  * I still consider this an error in my progs because I use
  * NULL always as a very special value.
  */
-/* #define ALLOW_FREE_NULL */
+#define ALLOW_FREE_NULL
 
 
 /* ================================================================== */
@@ -582,7 +582,7 @@ static void ControlBlock(begin *B, const char *file)
 	begin *b = (begin *)((*(unsigned char **)E)-START_SPACE);
 	if (IsPossibleFilePos(b->File, b->Size)) {
 	  fprintf(stderr,
-		  "\tFirst %zd bytes of overwritten memory can be interpreted\n"
+		  "\tFirst %ld bytes of overwritten memory can be interpreted\n"
 		  "\t\tas a pointer to a block "
 		  " allocated in:\n"
 #ifdef GENERATIONS
@@ -725,8 +725,8 @@ static void Initialize(void)
 	  "\t\tflags:  \tUNUSED\n"
 #endif
 	  "\t\talignment:\t" INT2STRING(ALIGNMENT) "\n"
-	  "\t\tpre space:\t%zd\n"
-	   "\t\tpost space:\t%zd\n"
+	  "\t\tpre space:\t%ld\n"
+	   "\t\tpost space:\t%ld\n"
 	  "\t\thash tab size:\t" INT2STRING(HASHSIZE) "\n\n",
 	  START_SPACE, END_SPACE);
 #endif /* ndef SILENT */
@@ -892,7 +892,6 @@ found_actual_block:
   /* test integrity of actual block */
   ControlBlock(Blk, file);
 #endif
-  Blk->StpA  = 0xFADEDBAD;
 
   /* remove: */
   Blk->Next->Prev = Blk->Prev;
@@ -1131,63 +1130,6 @@ RMALLOC_API void* RMALLOC_APIENTRY Rcalloc(size_t nelem, size_t size, const char
 
 
 /* =============================================================================
-   Function:            Raligned_alloc // external //
-   Author:              EMH
-   Date:                19/12/2019
-
-   Return:              New prepared memory block with size size (user)
-                        alligned to align
-
-   Parameter:           align		allignent
-                        size            demanded size
-                        file            called from where?
-
-   Purpose:             wrapper for malloc
-   ============================================================================= */
-void *Raligned_malloc(size_t align, size_t size, const char *file)
-{
-  void *ret;                    /* ret val */
-
-  if (size == 0) {
-    fprintf(stderr, HEAD "WARNING: malloc() demands 0 Bytes (in %s)\n", file);
-  }
-
-
-#if __MINGW32__
-# if defined(_aligned_malloc)
-   ret = _aligned_malloc(size+EXTRA_SPACE, align);
-# else
-   ret = _mm_malloc(size+EXTRA_SPACE, align);
-# endif
-#elif ISOC11_SOURCE 
-   ret = aligned_alloc(align, size+EXTRA_SPACE);
-#elif  _POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600
-   if (posix_memalign(&ret, align, size+EXTRA_SPACE) != 0) {
-      ret = NULL;
-   }
-#elif _MSC_VER
-   ret = _aligned_malloc(size+EXTRA_SPACE, align);
-#else
-   assert(1 == 0);
-#endif
-
-  if (ret) {
-    /* initialize */
-#ifdef WITH_FLAGS
-    return SetBlk(ret, size, file, 0);
-#else
-    return SetBlk(ret, size, file);
-#endif
-  }
-  else {
-    fprintf(stderr,
-            HEAD "WARNING: Out of memory! Returning NULL (in %s)\n", file);
-    return NULL;
-  }
-}
-
-
-/* =============================================================================
    Function:		Rrealloc	// external //
    Author:		Rammi
    Date:		11/16/1995
@@ -1294,7 +1236,17 @@ RMALLOC_API void RMALLOC_APIENTRY Rfree(void *p, const char *file)
 
 }
 
-
+size_t Rmalloc_usable_size(void *p, const char *file)
+{
+#ifdef ELOQUENT
+  fprintf(stderr, HEAD "UsableSize: %p (called from: %s)\n", p, file);
+#endif /* ELOQUENT */
+  if (!p)
+    return 0;
+  struct _begin *info = (struct _begin *)(((char *)p) - START_SPACE);
+  ControlBlock(info, file);
+  return info->Size;
+}
 
 /* =============================================================================
    Function:		Rstrdup		// external //

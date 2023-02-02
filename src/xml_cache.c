@@ -69,8 +69,30 @@
 #ifndef XML_USE_NODECACHE
 
 const cacheId*
+cacheInit() {
+    return NULL;
+}
+
+void
+cacheInitLevel(const cacheId *nc) {
+}
+
+void
+cacheFree(const cacheId *nc) {
+}
+
+const cacheId*
 cacheNodeGet(const xmlId *id) {
-    return 0;
+    return NULL;
+}
+
+const cacheId*
+cacheNodeNew(const cacheId *nc) {
+    return NULL;
+}
+
+void
+cacheDataSet(const cacheId *n, const char *name, int namelen, const char *data, int datalen) {
 }
 
 #else
@@ -115,20 +137,21 @@ cacheFree(const cacheId *nc)
 {
     struct _xml_node *cache = (struct _xml_node *)nc;
 
-    assert(nc != 0);
-
-    if (cache->no_nodes)
+    if (cache)
     {
-        const struct _xml_node **node = cache->node;
-        int i = 0;
+        if (cache->no_nodes)
+        {
+            const struct _xml_node **node = cache->node;
+            int i = 0;
 
-        while(i < cache->no_nodes) {
-            cacheFree((cacheId*)node[i++]);
+            while(i < cache->no_nodes) {
+                cacheFree((cacheId*)node[i++]);
+            }
+
+            free(node);
         }
-
-        free(node);
+        free(cache);
     }
-    free(cache);
 }
 
 const cacheId*
@@ -200,6 +223,13 @@ cacheDataSet(const cacheId *n, const char *name, int namelen, const char *data, 
     node->data_len = datalen;
 }
 
+void
+cacheNodeAdd(const cacheId *n, const char *name, int namelen, const char *data, int datalen)
+{
+    const cacheId *nc = cacheNodeNew(n);
+    cacheDataSet(nc, name, strlen(name), data, datalen);
+}
+
 /*
  * Recursively walk the node tree to get te section with the '*element' name.
  *
@@ -222,7 +252,7 @@ cacheDataSet(const cacheId *n, const char *name, int namelen, const char *data, 
            or NULL in case of an error
  */
 const char*
-__xmlNodeGetFromCache(const cacheId **nc, const char **buf, int *len,
+__zeroxml_get_node_from_cache(const cacheId **nc, const char **buf, int *len,
                       const char **element, int *elementlen, int *nodenum)
 {
     struct _xml_node *cache;
@@ -254,7 +284,7 @@ __xmlNodeGetFromCache(const cacheId **nc, const char **buf, int *len,
     {
         if (*name == '*') /* everything goes */
         {
-            const struct _xml_node *node = cache->node[num];
+            const struct _xml_node *node = cache->node[(num > 0) ? num : 0];
             *nc = (cacheId*)node;
             rv = *buf = node->data;
             *len = node->data_len;
@@ -277,7 +307,7 @@ __xmlNodeGetFromCache(const cacheId **nc, const char **buf, int *len,
                  if ((node->name_len == namelen) &&
                      (!strncasecmp(node->name, name, namelen)))
                  {
-                      if (found == num)
+                      if (found == num || num == -1)
                       {
                            *nc = (cacheId*)node;
                            rv = *buf = node->data;

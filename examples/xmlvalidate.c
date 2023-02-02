@@ -207,7 +207,7 @@ int main(int argc, char **argv)
           printf(">");
 
           print_xml(xid);
-          printf("\n</%s>\n", name);
+          printf("</%s>\n", name);
         }
       }
       free(xid);

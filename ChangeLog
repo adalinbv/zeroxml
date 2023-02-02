@@ -1,4 +1,12 @@
-2023-01-18
+2023-02-02 Erik Hofman <tech@adalin.org>
+ * Increase the version number to 2.1
+ * Make element name comparison case sensitive by default as per spec.
+   and introduce the CASEINSENSITIVE option to make it insensitive instead.
+ * Improved handling of multiple comment sections and a data or CDATA section.
+ * Search for a matching quote character, not just a double or a single quote.
+ * Fix multiple issues for the non-nodecache build.
+
+2023-01-18 Erik Hofman <tech@adalin.org>
  * Increase the version number to 2.0
  * Add XML_BOOL_NONE as a return option when NONEVALUE is ON
  * Introduce XML_TRUE and XML_FALSE as boolean results.

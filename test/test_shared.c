@@ -89,9 +89,10 @@ int test(xmlId *rid)
     TESTFLOAT(p, f, 20.0, "should be 20.0");
     xmlFree(nid);
 
-    p = "xmlNodeGetString for /*[1]/*/test";
-    s = xmlNodeGetString(rid , "/*[1]/*/test");
+    p = "xmlNodeGetString for /*/*[1]/test";
+    s = xmlNodeGetString(rid , "/*/*[1]/test");
     TESTPTR(p, s, NULL, "should be empty");
+    xmlFree(s);
 
     p = "xmlGetString for "TESTPATH;
     pid = xmlNodeGet(rid, TESTPATH);

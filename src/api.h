@@ -82,6 +82,9 @@
 # include <string.h>
 # if HAVE_STRINGS_H
 #  include <strings.h>
+#  if defined(WIN32)
+#   define strncasecmp _strnicmp
+#  endif
 # endif
 #endif
 
@@ -95,6 +98,36 @@
 # define __XML_NONE		0
 #endif
 
+#ifndef XML_NONVALIDATING
+# define FILENAME_LEN		1024
+# define BUF_LEN		2048
+
+# ifndef NDEBUG
+#  define PRINT_INFO(a, b, c) \
+    if (0 <= (c) && (c) < XML_MAX_ERROR) { \
+        int i, last = 0, nl = 1; \
+        for (i=0; i<(b)-(a)->root->start; ++i) { \
+            if ((a)->root->start[i] == '\n') { last = i+1; nl++; } \
+        } \
+        snprintf(__zeroxml_strerror, BUF_LEN, "%s:\n\t%s at line %i offset %i\n", __zeroxml_filename, __zeroxml_error_str[(c)], nl, i-last); \
+        fprintf(stderr, "%s\tdetected in %s at line %i\n", __zeroxml_strerror, __func__, __LINE__); \
+    } else { \
+        fprintf(stderr, "%s: in %s at line %i: Unknown error number %i\n", \
+                        __zeroxml_filename, __func__, __LINE__, c); \
+    }
+
+#  define xmlErrorSet(a, b, c) do { \
+     __zeroxml_set_error(a, b, c); PRINT_INFO(a, (char*)b, c); \
+   } while(0)
+# else /* NDEBUG */
+#  define xmlErrorSet(a, b, c) __zeroxml_set_error(a, b, c);
+#  define PRINT_INFO(a, b, c)
+# endif
+#else /* XML_NONVALIDATING */
+# define PRINT_INFO(a, b, c)
+# define xmlErrorSet(a, b, c)
+#endif
+
 #define PRINT(s, b, c) { \
   int l1 = (b), l2 = (c); \
   if (s) { \
@@ -102,11 +135,26 @@
     if (l1 < l2) len = l1; \
     if (len < 50000) { \
         printf("(%i) '", len); \
-        for (q=0; q<len; q++) printf("%c", s[q]); \
+        for (q=0; q<len; q++) printf("%c", (s)[q]); \
         printf("'\n"); \
     } else printf("Length (%i) seems too large at line %i\n",len, __LINE__); \
   } else printf("NULL pointer at line %i\n", __LINE__); \
 }
+
+#ifndef XML_CASE_INSENSITIVE
+# define CASE(a)	(a)
+# define CASECMP(a,b)	((a) == (b))
+# define STRCMP(a,b,c)	strncmp((a),(b),(c))
+#else
+# define CASE(a)	tolower(a)
+# define CASECMP(a,b)	(tolower(a)==tolower(b))
+# define STRCMP(a,b,c)	strncasecmp((a),(b),(c))
+#endif
+
+#define MMAP_FREE	-2
+#define MMAP_ERROR	-1
+#define STRIPPED	 0
+#define RAW		 1
 
 #include <xml_cache.h>
 

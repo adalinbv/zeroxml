@@ -11,11 +11,11 @@
  * modification, are permitted provided that the following conditions are met:
  *
  *    1. Redistributions of source code must retain the above copyright notice,
- *        this list of conditions and the following disclaimer.
+ *          this list of conditions and the following disclaimer.
  *
  *    2. Redistributions in binary form must reproduce the above copyright
- *        notice, this list of conditions and the following disclaimer in the
- *        documentation and/or other materials provided with the distribution.
+ *          notice, this list of conditions and the following disclaimer in the
+ *          documentation and/or other materials provided with the distribution.
  *
  * THIS SOFTWARE IS PROVIDED BY ADALIN B.V. ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
@@ -61,99 +61,105 @@
 #include <types.h>
 #include "xml.h"
 
+#define MAX_BUF	4096
 void print_xml(xmlId*, char*, unsigned int);
 
 int main(int argc, char **argv)
 {
-  if (argc < 1)
-  {
-    printf("usage: printtree <filename>\n\n");
-  }
-  else
-  {
-    xmlId *rid;
-
-    rid = xmlOpen(argv[1]);
-    if (xmlErrorGetNo(rid, 0) != XML_NO_ERROR)
+    if (argc < 1)
     {
-       printf("%s\n", xmlErrorGetString(rid, 1));
-    }
-    else if (rid)
-    {
-      unsigned int i, num;
-      xmlId *xid;
- 
-      xid = xmlMarkId(rid);
-      num = xmlNodeGetNum(xid, "*");
-      for (i=0; i<num; i++)
-      {
-        if (xmlNodeGetPos(rid, xid, "*", i) != 0)
-        {
-          if (xmlNodeTest(xid, XML_COMMENT)) continue;
-
-          char name[4096] = "";
-          print_xml(xid, (char *)&name, 0);
-        }
-      }
-      free(xid);
-
-      xmlClose(rid);
+        printf("usage: printtree <filename>\n\n");
     }
     else
     {
-      printf("Error while opening file for reading: '%s'\n", argv[1]);
-    }
-  }
+        xmlId *rid;
 
-  return 0;
+        rid = xmlOpen(argv[1]);
+        if (xmlErrorGetNo(rid, 0) != XML_NO_ERROR)
+        {
+             printf("%s\n", xmlErrorGetString(rid, 1));
+        }
+        else if (rid)
+        {
+            int i, num, res;
+            xmlId *xid;
+
+            xid = xmlMarkId(rid);
+            num = xmlNodeGetNum(xid, "*");
+            for (i=0; i<num; i++)
+            {
+                char name[MAX_BUF+1] = "/";
+                if (xmlNodeGetPos(rid, xid, "*", i) != 0)
+                {
+                    if (xmlNodeTest(xid, XML_COMMENT)) continue;
+
+                    res = xmlNodeCopyName(xid, name+1, MAX_BUF-1);
+                    print_xml(xid, name, res+1);
+                }
+            }
+            free(xid);
+
+            xmlClose(rid);
+        }
+        else
+        {
+            printf("Error while opening file for reading: '%s'\n", argv[1]);
+        }
+    }
+
+    return 0;
 }
 
 void print_xml(xmlId *id, char *name, unsigned int len)
 {
-  xmlId *xid = xmlMarkId(id);
-  unsigned int num;
-  
-  num = xmlNodeGetNum(xid, "*");
-  if (num == 0)
-  {
-    char *s;
-    s = xmlGetString(xid);
-    if (s)
+    xmlId *xid = xmlMarkId(id);
+    unsigned int num, i, q;
+
+    num = xmlNodeGetNum(xid, "*");
+    name[len] = 0;
+    for (i=0; i<xmlAttributeGetNum(xid); ++i)
     {
-      name[len] = 0;
-      printf("%s = %s\n", name, s);
-      free(s);
+        char attr[256], value[256];
+        xmlAttributeCopyName(xid, (char *)&attr, 256, i);
+        xmlAttributeCopyString(xid, attr, value, 256);
+        printf("%s[@%s] = \"%s\"\n", name, attr, value);
     }
-  }
-  else
-  {
-    unsigned int i;
 
-    name[len++] = '/';
-    for (i=0; i<num; i++)
+    if (num == 0)
     {
-      if (xmlNodeGetPos(id, xid, "*", i) != 0)
-      {
-        if (xmlNodeTest(xid, XML_COMMENT)) continue;
+        char s[MAX_BUF+1];
+        xmlCopyString(xid, s, MAX_BUF);
+        printf("%s = \"%s\"\n", name, s);
+    }
+    else
+    {
+        unsigned int i;
 
-        unsigned int res, i = 4096 - len;
-        res = xmlNodeCopyName(xid, (char *)&name[len], i);
-        if (res)
+        name[len++] = '/';
+        for (i=0; i<num; i++)
         {
-          unsigned int index = xmlAttributeGetInt(xid, "n");
-          if (index)
-          {
-            unsigned int pos = len+res;
+            if (xmlNodeGetPos(id, xid, "*", i) != 0)
+            {
+                if (xmlNodeTest(xid, XML_COMMENT)) continue;
 
-            name[pos++] = '[';
-            i = snprintf((char *)&name[pos], 4096-pos, "%i", index);
-            name[pos+i] = ']';
-            res += i+2;
-          }
+                unsigned int res, i = MAX_BUF - len;
+                res = xmlNodeCopyName(xid, (char *)&name[len], i);
+                if (res)
+                {
+                    unsigned int index = xmlAttributeGetInt(xid, "n");
+                    if (index)
+                    {
+                        unsigned int pos = len+res;
+
+                        name[pos++] = '[';
+                        i = snprintf((char *)&name[pos], 4096-pos, "%i", index);
+                        name[pos+i] = ']';
+                        res += i+2;
+                    }
+                }
+                print_xml(xid, name, len+res);
+            }
+            else printf("error\n");
         }
-        print_xml(xid, name, len+res);
-      }
-      else printf("error\n");
     }
-  }
 }

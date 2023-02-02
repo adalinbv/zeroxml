@@ -19,46 +19,37 @@
 
 #define TESTINT(p, a, b, c) \
   if (a == b) printf("Testing %-63s: succes\n", p); \
-  else printf("Testing %-63s: failed\n\t'%i' %s.\n", p, b, c);
+  else printf("Testing %-63s: failed\n\t%i should be %i.\n", p, (int)a, (int)b);
 
 #define TESTFLOAT(p, a, b, c) \
   if (a == b) printf("Testing %-63s: succes\n", p); \
-  else printf("Testing %-63s: failed\n\t'%f' %s.\n", p, b, c);
+  else printf("Testing %-63s: failed\n\t%.1f should be %0.1f.\n", p, a, b);
 
 #define TESTSTR(p, fn, a, b) \
   if (!fn(a, b)) printf("Testing %-63s: succes\n", p); \
   else printf("Testing %-63s: failed.\n\t'%s' differs from '%s'\n",p,a,b);
 
-#define TESTSTRN(p, fn, a, b, c) \
-  if (!fn(a, b, c)) printf("Testing %-63s: succes\n", p); \
+#define TESTSTRNCASE(p, fn, a, b, c) \
+  if (!(a)) printf("NULL returned at line %i\n", __LINE__); \
+  else if (!fn(a, b, c)) printf("Testing %-63s: succes\n", p); \
   else printf("Testing %-63s: failed.\n\t'%s' differs from '%s'\n",p,a,b);
 
 #define TESTSTRCMP(p, fn, a, b, c) \
-  if (!fn(a, b)) printf("Testing %-63s: succes\n", p); \
+  if (!(a)) printf("NULL returned at line %i\n", __LINE__); \
+  else if (!fn(a, b)) printf("Testing %-63s: succes\n", p); \
   else printf("Testing %-63s: failed.\n\t'%s' differs from '%s'\n",p,b,c);
 
 #define TESTCMP(p, fn, a, b, c) \
-  if (!fn(a, b, c)) printf("Testing %-63s: succes\n", p); \
+  if (!(a)) printf("NULL returned at line %i\n", __LINE__); \
+  else if (!fn(a, b, c)) printf("Testing %-63s: succes\n", p); \
   else printf("Testing %-63s: failed.\n\t'%s' differs from '%s'\n",p,b,c);
 
 #define TESTPTR(p, a, b, c) \
   if (a == b) printf("Testing %-63s: succes\n", p); \
-  else printf("Testing %-63s: failed\n\t'%p' %s.\n", p, b, c);
+  else printf("Testing %-63s: failed\n\t'%p' should be '%p'.\n", p, a, b);
 
 #define TESTATTR(p, fn, a, b, c) \
-  if (!fn(a, b, c)) printf("Testing %-63s: succes\n", p); \
+  if (!(a)) printf("NULL returned at line %i\n", __LINE__); \
+  else if (!fn(a, b, c)) printf("Testing %-63s: succes\n", p); \
   else printf("Testing %-63s: failed.\n\tattribute '%i' differs from '%s'\n",p,b,c);
-
-#define PRINT(s, b, c) { \
-  int l1 = (b), l2 = (c); \
-  if (s) { \
-    int q, len = l2; \
-    if (l1 < l2) len = l1; \
-    if (len < 50000) { \
-        printf("(%i) '", len); \
-        for (q=0; q<len; q++) printf("%c", s[q]); \
-        printf("'\n"); \
-    } else printf("Length (%i) seems too large at line %i\n",len, __LINE__); \
-  } else printf("NULL pointer at line %i\n", __LINE__); \
-}
 
