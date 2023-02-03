@@ -146,7 +146,7 @@ xmlOpen(const char *filename)
 
                 /* UTF-8 unicode support */
 #ifdef HAVE_LOCALE_H
-//              rid->locale = setlocale(LC_CTYPE, "");
+                rid->locale = setlocale(LC_ALL, "");
 #endif
 
                 fstat(fd, &statbuf);
@@ -254,7 +254,7 @@ xmlInitBuffer(const char *buffer, int blocklen)
 #endif
 
 #ifdef HAVE_LOCALE_H
-//              rid->locale = setlocale(LC_CTYPE, "");
+                rid->locale = setlocale(LC_ALL, "");
 #endif
             }
         }
@@ -293,7 +293,7 @@ xmlClose(xmlId *id)
 
 #ifdef HAVE_LOCALE_H
         if (rid->locale) {
-//         setlocale(LC_CTYPE, rid->locale);
+           setlocale(LC_CTYPE, rid->locale);
         }
 #endif
         free(rid);
@@ -319,7 +319,7 @@ xmlNodeTest(const xmlId *id, const char *path)
 
     nnc = nc = cacheNodeGet(id);
 
-    if (!strcmp(path, XML_COMMENT)) {
+    if (!strcoll(path, XML_COMMENT)) {
         rv = (xid->name == comment) ? XML_TRUE : XML_FALSE;
     } else {
         if (__zeroxml_node_get_path(&nnc, xid->start, &len, &node, &slen)) {
@@ -1615,7 +1615,6 @@ __zeroxml_node_get_path(const cacheId **nc, const char *start, int *len, const c
  const char*
 __zeroxml_get_node(const cacheId *nc, const char **buf, int *len, const char **name, int *rlen, int *nodenum, char mode)
 {
-static int level = 0;
 #ifndef NDEBUG
     const char *end = *buf + *len;
 #endif
@@ -1630,7 +1629,6 @@ static int level = 0;
     int found;
     int num;
 
-++level;
     assert(buf != 0);
     assert(*buf != 0);
     assert(len != 0);
@@ -1679,7 +1677,6 @@ static int level = 0;
             if (STRCMP(cur, element, elementlen))
             {
                 *len = new-start-2; /* strlen("</") */
---level;
                 return rv;
             }
 
@@ -1961,7 +1958,6 @@ __zeroxml_get_nodeExit:
         *name = open_element;
         *nodenum = found;
     }
-level--;
     return rv;
 }
 
@@ -2233,12 +2229,12 @@ __zeroxml_process_declaration(const char *start, int len)
                     len--;
                     if (len >= slen && !STRCMP(cur, str, len)
 #ifdef HAVE_LANGINFO_H
-                         && !strcmp(nl_langinfo(CODESET), str)
+                         && !strcoll(nl_langinfo(CODESET), str)
 #endif
                       )
                     {
 #ifdef HAVE_LOCALE_H
-//                      setlocale(LC_CTYPE, "C.UTF-8");
+                       setlocale(LC_ALL, "en_US.UTF-8");
 #endif
                     }
                 }
@@ -2297,9 +2293,10 @@ __zeroxml_prepare_data(const char **start, int *blocklen, char mode)
                 restlen = (pe-ps)+1;
 
                 /* find comment before the data */
-                if (!strncmp(ps, "<!--", 3))
+                if (restlen >= 7 && !strncmp(ps, "<!--", 4))
                 {
-                    if ((rptr = __zeroxml_memmem(ps, restlen, "-->", 3)) == NULL) {
+                    rptr = __zeroxml_memmem(ps, restlen, "-->", 3);
+                    if (rptr == NULL) {
                         return;
                     }
 
@@ -2317,12 +2314,12 @@ __zeroxml_prepare_data(const char **start, int *blocklen, char mode)
                 restlen = pe-ps;
             }
         }
-    }
 
-    pe = ps + restlen-1;
-    while ((ps<pe) && isspace(*ps)) ps++;
-    while ((pe>ps) && isspace(*pe)) pe--;
-    restlen = (pe-ps)+1;
+        pe = ps + restlen-1;
+        while ((ps<pe) && isspace(*ps)) ps++;
+        while ((pe>ps) && isspace(*pe)) pe--;
+        restlen = (pe-ps)+1;
+    }
 
     *start = ps;
     *blocklen = restlen;
