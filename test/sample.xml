@@ -37,11 +37,13 @@
    <channel>0</channel>
    <volume-norm>1.0</volume-norm>
    <desc><!-- empty --></desc>
+   <test><node>4</node></test>
   </speaker>
 
   <speaker n="1">
    <channel>1</channel>
    <volume-norm>1.0</volume-norm>
+   <test><node>3</node></test>
    <desc>
                                    <!--
       empty                                            --></desc>
