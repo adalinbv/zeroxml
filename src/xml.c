@@ -1414,7 +1414,7 @@ __zeroxml_get_attribute_data_ptr(const struct _xml_id *id, const char *name, int
     assert(len != 0);
 
     *len = 0;
-    if (xid->name_len)
+    if (xid->name && xid->name_len > 0)
     {
         int slen = strlen(name);
         const char *ps, *pe;
