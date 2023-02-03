@@ -20,6 +20,13 @@
 #define AUDIOFRAMEPATH	ROOTNODE"/audioframe"
 #define NONVALIDNODE	MENUNODE"/"TESTNODE
 
+#ifdef WIN32
+# define NEWLINE	"\r\n"
+#else
+# define NEWLINE	"\n"
+#endif
+#define STRING1		"* Traffic, # taxiing to runway (."
+
 int test(xmlId *rid)
 {
     char buf[BUFLEN+1];
@@ -114,12 +121,12 @@ int test(xmlId *rid)
     p = "xmlNodeGetName for "SAMPLEPATH;
     s = xmlNodeGetName(pid);
     if (!s) PRINT_ERROR_AND_EXIT(pid);
-    TESTSTR(p, strcmp, s, TESTNODE);
+    TESTSTR(p, strcoll, s, TESTNODE);
 
     p = "xmlNodeCopyName for "SAMPLEPATH;
     i = xmlNodeCopyName(pid, buf, BUFLEN);
     if (!i) PRINT_ERROR_AND_EXIT(pid);
-    TESTSTR(p, strcmp, buf, s);
+    TESTSTR(p, strcoll, buf, s);
 
     p = "xmlNodeCompareName for "SAMPLEPATH;
     TESTSTRCMP(p, xmlNodeCompareName, pid, s, buf);
@@ -129,7 +136,7 @@ int test(xmlId *rid)
     p = "xmlNodeCopyString against xmlGetString";
     s = xmlGetString(pid);
     if (!s) PRINT_ERROR_AND_EXIT(pid);
-    TESTSTR(p, strcmp, s, buf);
+    TESTSTR(p, strcoll, s, buf);
     xmlFree(s);
 
     p = "xmlGetStringRaw against xmlNodeCopyString";
@@ -137,7 +144,7 @@ int test(xmlId *rid)
     if (!nid) PRINT_ERROR_AND_EXIT(rid);
     s = xmlGetStringRaw(nid);
     if (!s) PRINT_ERROR_AND_EXIT(nid);
-    TESTSTR(p, strcmp, s, buf);
+    TESTSTR(p, strcoll, s, buf);
     xmlFree(nid);
 
     p = "xmlGetBool for "OUTPUTNODE"/boolean[2] (on)";
@@ -161,7 +168,7 @@ int test(xmlId *rid)
 
     p = "xmlCopyString against xmlGetString";
     xmlCopyString(pid, buf, BUFLEN);
-    TESTSTR(p, strcmp, s, buf);
+    TESTSTR(p, strcoll, s, buf);
     xmlFree(s);
 
     p = "xmlCopyString against xmlCompareString";
@@ -178,10 +185,14 @@ int test(xmlId *rid)
     p = "xmlCopyString against xmlNodeGetString";
     s = xmlNodeGetString(nid, NAMENODE);
     if (!s) printf("failed.\n\t'%s' not found.\n", NAMENODE);
-    TESTSTR(p, strcmp, s, buf);
+    TESTSTR(p, strcoll, s, buf);
     xmlFree(s);
     xmlFree(nid);
     xmlFree(pid);
+
+    p = "xmlAttributeExists on / for 'pan'";
+    i = xmlAttributeExists(rid, "pan");
+    TESTINT(p, i, XML_FALSE, "should be false");
 
     pid = xmlNodeGet(rid, BACKENDPATH);
     if (!pid) PRINT_ERROR_AND_EXIT(rid);
@@ -220,24 +231,24 @@ int test(xmlId *rid)
 
     s = xmlAttributeGetString(pid, "type");
     if (!s) PRINT_ERROR_AND_EXIT(pid);
-    TESTSTR(p, strcmp, s, buf);
+    TESTSTR(p, strcoll, s, buf);
     xmlFree(s);
     xmlClose(nid);
 
     p = "xmlAttributeCopyString against xmlAttributeGetString";
     s = xmlAttributeGetString(pid, "type");
     if (!s) PRINT_ERROR_AND_EXIT(pid);
-    TESTSTR(p, strcmp, s, buf);
+    TESTSTR(p, strcoll, s, buf);
     xmlFree(s);
 
     p = "xmlAttributeGetName for attribute 0";
     s = xmlAttributeGetName(pid, 0);
-    TESTSTR(p, strcmp, s, "type");
+    TESTSTR(p, strcoll, s, "type");
 
     p = "xmlAttributeCopyName against xmlAttributeGetName";
     i = xmlAttributeCopyName(pid, buf, BUFLEN, 0);
     if (!i) PRINT_ERROR_AND_EXIT(pid);
-    TESTSTR(p, strcmp, s, buf);
+    TESTSTR(p, strcoll, s, buf);
     xmlFree(s);
 
     xmlFree(pid);
@@ -248,21 +259,21 @@ int test(xmlId *rid)
     p = "xmlNodeCopyString against xmlNodeCopyString";
     xmlNodeCopyString(rid , MENUPATH, buf, BUFLEN);
     s = xmlNodeGetString(pid, MENUPATH);
-    TESTSTR(p, strcmp, s, buf);
+    TESTSTR(p, strcoll, s, buf);
     xmlFree(s);
 
     p = "xmlCompareString against a fixed string";
-    TESTSTRCMP(p, xmlCompareString, pid, buf, "* Traffic, # taxiing to runway (.");
+    TESTSTRCMP(p, xmlCompareString, pid, buf, STRING1);
 
     p = "xmlGetString against xmlNodeCopyString";
     s = xmlGetString(pid);
     if (!s) PRINT_ERROR_AND_EXIT(pid);
-    TESTSTR(p, strcmp, s, buf);
+    TESTSTR(p, strcoll, s, buf);
     xmlFree(s);
 
     p = "xmlCopyString gainst a fixed string";
     xmlCopyString(pid, buf, BUFLEN);
-    TESTSTR(p, strcmp, buf, "* Traffic, # taxiing to runway (.");
+    TESTSTR(p, strcoll, buf, "* Traffic, # taxiing to runway (.");
     xmlFree(pid);
 
     pid = xmlNodeGet(rid, OUTPUTNODE);
@@ -304,10 +315,18 @@ int test(xmlId *rid)
         cs = xmlGetString(cid);
         if (cs == NULL) PRINT_ERROR_AND_EXIT(cid);
 
-        TESTSTR(p, strcmp, s, cs);
-        xmlFree(cs);
+        TESTSTR(p, strcoll, s, cs);
         xmlFree(s);
 
+        p = "- xmlAttributeExists on / for 'n'";
+        i = xmlAttributeExists(cid, "n");
+        TESTINT(p, i, XML_FALSE, "should be false");
+
+        p = "- xmlNodeGetInt for /test/node (3)";
+        i = xmlNodeGetInt(cid, "/test/node");
+        TESTINT(p, i, 3, "should be 3");       
+
+        xmlFree(cs);
         xmlClose(cid);
     } while(0);
     xmlFree(nid);
