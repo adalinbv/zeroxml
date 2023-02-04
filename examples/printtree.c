@@ -124,15 +124,16 @@ int main(int argc, char **argv)
 void print_xml(xmlId *id, char *name, unsigned int len)
 {
     xmlId *xid = xmlMarkId(id);
-    unsigned int num, i, q;
+    unsigned int num, i;
 
     num = xmlNodeGetNum(xid, "*");
     name[len] = 0;
     for (i=0; i<xmlAttributeGetNum(xid); ++i)
     {
-        char attr[256], value[256];
+        char value[256] = "";
+        char attr[256] = "";
 
-        xmlAttributeCopyName(xid, (char *)&attr, 256, i);
+        xmlAttributeCopyName(xid, attr, 256, i);
         if (xmlErrorGetNo(xid, 0) != XML_NO_ERROR) {
             printf("Error for xmlAttributeCopyName: %s\n",
                     xmlErrorGetString(xid, XML_TRUE));
@@ -148,7 +149,7 @@ void print_xml(xmlId *id, char *name, unsigned int len)
 
     if (num == 0)
     {
-        char s[MAX_BUF+1];
+        char s[MAX_BUF+1] = "";
         xmlCopyString(xid, s, MAX_BUF);
         printf("%s = \"%s\"\n", name, s);
         if (xmlErrorGetNo(xid, 0) != XML_NO_ERROR) {
@@ -168,7 +169,7 @@ void print_xml(xmlId *id, char *name, unsigned int len)
                 if (xmlNodeTest(xid, XML_COMMENT)) continue;
 
                 unsigned int res, i = MAX_BUF - len;
-                if ((res = xmlNodeCopyName(xid, (char *)&name[len], i)) != NULL)
+                if ((res = xmlNodeCopyName(xid, (char *)&name[len], i)) != 0)
                 {
                     unsigned int index = xmlAttributeGetInt(xid, "n");
                     if (index)
