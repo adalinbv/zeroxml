@@ -83,6 +83,6 @@
 
  <audioframe pan="-0.2" emitters="64"/>
 
- <mixer/>
+ <mixer copyright="©" element="Mötley Crüe"/>
 
 </Configuration>

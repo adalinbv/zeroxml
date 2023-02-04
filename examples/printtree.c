@@ -55,8 +55,15 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 #include <stdio.h>
 #include <malloc.h>
+#ifdef HAVE_LOCALE_H
+# include <locale.h>
+#endif
 
 #include <types.h>
 #include "xml.h"
@@ -73,6 +80,10 @@ int main(int argc, char **argv)
     else
     {
         xmlId *rid;
+
+#ifdef HAVE_LOCALE_H
+        setlocale(LC_ALL, "");
+#endif
 
         rid = xmlOpen(argv[1]);
         if (xmlErrorGetNo(rid, 0) != XML_NO_ERROR)
@@ -120,9 +131,19 @@ void print_xml(xmlId *id, char *name, unsigned int len)
     for (i=0; i<xmlAttributeGetNum(xid); ++i)
     {
         char attr[256], value[256];
+
         xmlAttributeCopyName(xid, (char *)&attr, 256, i);
+        if (xmlErrorGetNo(xid, 0) != XML_NO_ERROR) {
+            printf("Error for xmlAttributeCopyName: %s\n",
+                    xmlErrorGetString(xid, XML_TRUE));
+        }
+
         xmlAttributeCopyString(xid, attr, value, 256);
         printf("%s[@%s] = \"%s\"\n", name, attr, value);
+        if (xmlErrorGetNo(xid, 0) != XML_NO_ERROR) {
+            printf("Error for xmlAttributeCopyString: %s\n",
+                    xmlErrorGetString(xid, XML_TRUE));
+        }
     }
 
     if (num == 0)
@@ -130,6 +151,10 @@ void print_xml(xmlId *id, char *name, unsigned int len)
         char s[MAX_BUF+1];
         xmlCopyString(xid, s, MAX_BUF);
         printf("%s = \"%s\"\n", name, s);
+        if (xmlErrorGetNo(xid, 0) != XML_NO_ERROR) {
+            printf("Error for xmlCopyString: %s\n",
+                    xmlErrorGetString(xid, XML_TRUE));
+        }
     }
     else
     {
@@ -143,8 +168,7 @@ void print_xml(xmlId *id, char *name, unsigned int len)
                 if (xmlNodeTest(xid, XML_COMMENT)) continue;
 
                 unsigned int res, i = MAX_BUF - len;
-                res = xmlNodeCopyName(xid, (char *)&name[len], i);
-                if (res)
+                if ((res = xmlNodeCopyName(xid, (char *)&name[len], i)) != NULL)
                 {
                     unsigned int index = xmlAttributeGetInt(xid, "n");
                     if (index)
@@ -156,6 +180,10 @@ void print_xml(xmlId *id, char *name, unsigned int len)
                         name[pos+i] = ']';
                         res += i+2;
                     }
+                }
+                else {
+                    printf("Error for xmlNodeCopyName: %s\n",
+                            xmlErrorGetString(xid, XML_TRUE));
                 }
                 print_xml(xid, name, len+res);
             }

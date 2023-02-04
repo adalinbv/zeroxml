@@ -2463,18 +2463,20 @@ __zeroxml_iconv(iconv_t cd, const char *in, size_t ilen,
     char cvt = XML_FALSE;
     int rv = XML_NO_ERROR;
 #if HAVE_ICONV_H
+printf("\ncd: %li\n", cd);
     if (cd != (iconv_t)-1)
     {
-        size_t nconv;
-
-        iconv (cd, NULL, NULL, &outbuf, &outlen);
-        nconv = iconv(cd, &inbuf, &inlen, &outbuf, &outlen);
+        size_t nconv = iconv(cd, &inbuf, &inlen, &outbuf, &outlen);
         outbuf[outlen] = 0;
-        if (nconv != (size_t)-1) {
+
+        if (nconv != (size_t)-1)
+        {
+            iconv(cd, NULL, NULL, &outbuf, &outlen);
             cvt = XML_TRUE;
         }
         else
         {
+            iconv(cd, NULL, NULL, NULL, NULL);
             switch (errno)
             {
             case EILSEQ:
