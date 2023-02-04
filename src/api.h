@@ -154,6 +154,7 @@
 # define STRCMP(a,b,c)	strncasecmp((a),(b),(c))
 #endif
 
+#define MAX_ENCODING	32
 #define MMAP_FREE	-2
 #define MMAP_ERROR	-1
 #define STRIPPED	 0
@@ -198,7 +199,7 @@ struct _root_id
     /* _root_id specifics */
     int fd;
     char *mmap;
-    char *encoding;
+    char encoding[MAX_ENCODING+1];
 #if HAVE_ICONV_H
     iconv_t cd;
 #endif

@@ -88,7 +88,7 @@
 
 static long __zeroxml_strtol(const char*, char**, int);
 static int __zeroxml_strtob(const char*, const char*);
-static int __zeroxml_iconv(iconv_t, const char*, size_t, char*, size_t);
+static int __zeroxml_iconv(iconv_t, char*, size_t, const char*, size_t);
 static void __zeroxml_prepare_data( const char**, int*, char);
 static char *__zeroxml_get_string(const xmlId*, char);
 static int __zeroxml_node_get_num(const xmlId*, const char*, char);
@@ -150,9 +150,9 @@ xmlOpen(const char *filename)
                     int blocklen = statbuf.st_size;
                     const char *start;
 
-                    rid->encoding = "";
+                    rid->encoding[0] = 0;
                     start = __zeroxml_process_declaration(mm, blocklen,
-                                                          &rid->encoding);
+                                                        (char**)&rid->encoding);
                     blocklen -= start-mm;
 
                     __zeroxml_prepare_data(&start, &blocklen, RAW);
@@ -224,9 +224,9 @@ xmlInitBuffer(const char *buffer, int blocklen)
         {
             const char *start;
 
-            rid->encoding = "";
+            rid->encoding[0] = 0;
             start = __zeroxml_process_declaration(buffer, blocklen,
-                                                  &rid->encoding);
+                                                  (char**)&rid->encoding);
             blocklen -= start-buffer;
 
             __zeroxml_prepare_data(&start, &blocklen, RAW);
@@ -426,9 +426,9 @@ xmlNodeGetName(const xmlId *id)
     assert(xid != 0);
 
     len = xid->name_len;
-    if ((rv = malloc(len+1)) != NULL)
+    if ((rv = malloc(6*len+1)) != NULL)
     {
-        int res = __zeroxml_iconv(xid->root->cd, xid->name, len, rv, len);
+        int res = __zeroxml_iconv(xid->root->cd, rv, 6*len, xid->name, len);
         if (res) xmlErrorSet(xid, 0, res);
     }
     else {
@@ -454,7 +454,7 @@ xmlNodeCopyName(const xmlId *id, char *buf, int buflen)
         xmlErrorSet(xid, 0, XML_TRUNCATE_RESULT);
     }
 
-    res = __zeroxml_iconv(xid->root->cd, xid->name, slen, buf, slen);
+    res = __zeroxml_iconv(xid->root->cd, buf, buflen, xid->name, slen);
     if (res) xmlErrorSet(xid, 0, res);
 
     return slen;
@@ -510,7 +510,7 @@ xmlAttributeCopyName(const xmlId *id, char *buf, int buflen, int pos)
                     xmlErrorSet(xid, 0, XML_TRUNCATE_RESULT);
                 }
 
-                res = __zeroxml_iconv(xid->root->cd, ps, slen, buf, slen);
+                res = __zeroxml_iconv(xid->root->cd, buf, buflen, ps, slen);
                 if (res) xmlErrorSet(xid, 0, res);
                 break;
             }
@@ -536,9 +536,9 @@ xmlAttributeGetName(const xmlId *id, int pos)
     assert(xid != 0);
 
     len = xmlAttributeCopyName(id, buf, 4096, pos);
-    if ((rv = malloc(len+1)) != NULL)
+    if ((rv = malloc(6*len+1)) != NULL)
     {
-        int res = __zeroxml_iconv(xid->root->cd, buf, len, rv, len);
+        int res = __zeroxml_iconv(xid->root->cd, rv, 6*len, buf, len);
         if (res) xmlErrorSet(xid, 0, res);
     }
     else {
@@ -700,7 +700,7 @@ xmlCopyString(const xmlId *id, char *buffer, int buflen)
                 len = buflen-1;
                 xmlErrorSet(xid, 0, XML_TRUNCATE_RESULT);
             }
-            res = __zeroxml_iconv(xid->root->cd , ps, len, buffer, len);
+            res = __zeroxml_iconv(xid->root->cd, buffer, buflen,  ps, len);
             if (res) xmlErrorSet(xid, 0, res);
         }
         rv = len;
@@ -756,9 +756,9 @@ xmlNodeGetString(const xmlId *id, const char *path)
         {
             const char *ps = str;
             __zeroxml_prepare_data(&ps, &len, STRIPPED);
-            if ((rv = malloc(len+1)) != NULL)
+            if ((rv = malloc(6*len+1)) != NULL)
             {
-                int res = __zeroxml_iconv(xid->root->cd, ps, len, rv, len);
+                int res = __zeroxml_iconv(xid->root->cd, rv, 6*len, ps, len);
                 if (res) xmlErrorSet(xid, 0, res);
             }
             else {
@@ -787,16 +787,16 @@ xmlNodeCopyString(const xmlId *id, const char *path, char *buffer, int buflen)
     *buffer = '\0';
     if (xid->len)
     {
-        const char *p, *node = (const char *)path;
+        const char *ptr, *node = (const char *)path;
         int res, slen = strlen(node);
         int len = xid->len;
         const cacheId *nc;
 
         nc = cacheNodeGet(id);
-        p = __zeroxml_node_get_path(&nc, xid->start, &len, &node, &slen);
-        if (p)
+        ptr = __zeroxml_node_get_path(&nc, xid->start, &len, &node, &slen);
+        if (ptr)
         {
-            __zeroxml_prepare_data(&p, &len, STRIPPED);
+            __zeroxml_prepare_data(&ptr, &len, STRIPPED);
             if (len)
             {
                 if (len >= buflen)
@@ -805,7 +805,7 @@ xmlNodeCopyString(const xmlId *id, const char *path, char *buffer, int buflen)
                     xmlErrorSet(xid, 0, XML_TRUNCATE_RESULT);
                 }
 
-                res = __zeroxml_iconv(xid->root->cd, p, len, buffer, len);
+                res = __zeroxml_iconv(xid->root->cd, buffer, buflen, ptr, len);
                 if (res) xmlErrorSet(xid, 0, res);
             }
             rv = len;
@@ -1133,9 +1133,9 @@ xmlAttributeGetString(const xmlId *id, const char *name)
         ptr = __zeroxml_get_attribute_data_ptr(xid, name, &len);
         if (ptr)
         {
-            if ((rv = malloc(len+1)) != NULL)
+            if ((rv = malloc(6*len+1)) != NULL)
             {
-                int res = __zeroxml_iconv(xid->root->cd, ptr, len, rv, len);
+                int res = __zeroxml_iconv(xid->root->cd, rv, 6*len, ptr, len);
                 if (res) xmlErrorSet(xid, 0, res);
             }
             else {
@@ -1171,7 +1171,7 @@ xmlAttributeCopyString(const xmlId *id, const char *name,
                 xmlErrorSet(xid, ptr, XML_TRUNCATE_RESULT);
             }
 
-            res = __zeroxml_iconv(xid->root->cd, ptr, restlen, buffer, restlen);
+            res = __zeroxml_iconv(xid->root->cd, buffer, buflen, ptr, restlen);
             if (res) xmlErrorSet(xid, 0, res);
             rv = restlen;
         }
@@ -2113,9 +2113,9 @@ __zeroxml_get_string(const xmlId *id, char mode)
         }
         if (len)
         {
-            if ((rv = malloc(len+1)) != NULL)
+            if ((rv = malloc(6*len+1)) != NULL)
             {
-                int res = __zeroxml_iconv(xid->root->cd, ps, len, rv, len);
+                int res = __zeroxml_iconv(xid->root->cd, rv, 6*len, ps, len);
                 if (res) xmlErrorSet(xid, 0, res);
             }
             else {
@@ -2233,13 +2233,10 @@ __zeroxml_process_declaration(const char *start, int len, char **locale)
                 cur = new+elementlen;
                 if ((end = memchr(cur, '"', len)) != NULL)
                 {
-                    static char *str = "UTF-8";
-                    int slen = strlen(str);
                     len--;
-                    if (len >= slen && !STRCMP(cur, str, len))
-                    {
-                       *locale = str;
-                    }
+                    if (len > MAX_ENCODING) len = MAX_ENCODING;
+                    memcpy(locale, cur, len);
+                    locale[len] = 0;
                 }
             }
         }
@@ -2453,8 +2450,8 @@ __zeroxml_strtob(const char *start, const char *end)
 }
 
 static int
-__zeroxml_iconv(iconv_t cd, const char *in, size_t ilen,
-                            char *out, size_t olen)
+__zeroxml_iconv(iconv_t cd, char *out, size_t olen,
+                            const char *in, size_t ilen)
 {
     char *inbuf = (char*)in;
     char *outbuf = out;
@@ -2462,21 +2459,22 @@ __zeroxml_iconv(iconv_t cd, const char *in, size_t ilen,
     size_t outlen = olen;
     char cvt = XML_FALSE;
     int rv = XML_NO_ERROR;
+
+    out[0] = 0;
 #if HAVE_ICONV_H
-printf("\ncd: %li\n", cd);
     if (cd != (iconv_t)-1)
     {
+        iconv(cd, NULL, NULL, NULL, NULL);
         size_t nconv = iconv(cd, &inbuf, &inlen, &outbuf, &outlen);
-        outbuf[outlen] = 0;
-
         if (nconv != (size_t)-1)
         {
             iconv(cd, NULL, NULL, &outbuf, &outlen);
+            outbuf[outlen] = 0;
             cvt = XML_TRUE;
         }
         else
         {
-            iconv(cd, NULL, NULL, NULL, NULL);
+            outbuf[outlen] = 0;
             switch (errno)
             {
             case EILSEQ:
