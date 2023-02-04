@@ -70,6 +70,9 @@
 #if HAVE_UNISTD_H
 # include <unistd.h>
 #endif
+#if HAVE_LOCALE_H
+# include <locale.h>
+#endif
 #include <ctype.h>
 #include <fcntl.h>
 #include <ctype.h>
@@ -84,6 +87,7 @@
 
 static long __zeroxml_strtol(const char*, char**, int);
 static int __zeroxml_strtob(const char*, const char*);
+static void __zeroxml_iconv(iconv_t, const char*, size_t, char*, size_t);
 static void __zeroxml_prepare_data( const char**, int*, char);
 static char *__zeroxml_get_string(const xmlId*, char);
 static int __zeroxml_node_get_num(const xmlId*, const char*, char);
@@ -145,9 +149,9 @@ xmlOpen(const char *filename)
                     int blocklen = statbuf.st_size;
                     const char *start;
 
-                    rid->locale = "";
+                    rid->encoding = "";
                     start = __zeroxml_process_declaration(mm, blocklen,
-                                                          &rid->locale);
+                                                          &rid->encoding);
                     blocklen -= start-mm;
 
                     __zeroxml_prepare_data(&start, &blocklen, RAW);
@@ -182,6 +186,18 @@ xmlOpen(const char *filename)
                         rid->start = start;
                         rid->len = blocklen;
                         rid->root = rid;
+#if HAVE_ICONV_H
+# if HAVE_LOCALE_H
+                        do
+                        {
+                            char *locale = setlocale(LC_CTYPE, NULL);
+                            char *ptr = strrchr(locale, '.');
+                            if (ptr) locale = ptr+1;
+                            rid->cd = iconv_open(locale, rid->encoding);
+                        }
+                        while(0);
+# endif
+#endif
                     }
                 }
             }
@@ -207,9 +223,9 @@ xmlInitBuffer(const char *buffer, int blocklen)
         {
             const char *start;
 
-            rid->locale = "";
+            rid->encoding = "";
             start = __zeroxml_process_declaration(buffer, blocklen,
-                                                  &rid->locale);
+                                                  &rid->encoding);
             blocklen -= start-buffer;
 
             __zeroxml_prepare_data(&start, &blocklen, RAW);
@@ -241,6 +257,18 @@ xmlInitBuffer(const char *buffer, int blocklen)
                 rid->start = start;
                 rid->len = blocklen;
                 rid->root = rid;
+#if HAVE_ICONV_H
+# if HAVE_LOCALE_H
+                do
+                {
+                    char *locale = setlocale(LC_CTYPE, NULL);
+                    char *ptr = strrchr(locale, '.');
+                    if (ptr) locale = ptr+1;
+                    rid->cd = iconv_open(locale, rid->encoding);
+                }
+                while(0);
+# endif
+#endif
             }
         }
     }
@@ -271,6 +299,12 @@ xmlClose(xmlId *id)
 #ifndef XML_NONVALIDATING
         if (rid->info) free(rid->info);
 #endif
+#if HAVE_ICONV_H
+        if (rid->cd != (iconv_t)-1) {
+            iconv_close(rid->cd);
+        }
+#endif
+
         free(rid);
         id = 0;
     }
@@ -280,7 +314,7 @@ XML_API const char* XML_APIENTRY
 xmlGetEncoding(const xmlId *id)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    return xid->root->locale;
+    return xid->root->encoding;
 }
 
 XML_API int XML_APIENTRY
@@ -391,13 +425,9 @@ xmlNodeGetName(const xmlId *id)
     assert(xid != 0);
 
     len = xid->name_len;
-    rv = malloc(len+1);
-    if (rv)
-    {
-        memcpy(rv, xid->name, len);
-        rv[len] = 0;
-    }
-    else {
+    if ((rv = malloc(len+1)) != NULL) {
+        __zeroxml_iconv(xid->root->cd, xid->name, len, rv, len);
+    } else {
         xmlErrorSet(xid, 0, XML_OUT_OF_MEMORY);
     }
 
@@ -419,8 +449,8 @@ xmlNodeCopyName(const xmlId *id, char *buf, int buflen)
         slen = buflen-1;
         xmlErrorSet(xid, 0, XML_TRUNCATE_RESULT);
     }
-    memcpy(buf, xid->name, slen);
-    buf[slen] = 0;
+
+    __zeroxml_iconv(xid->root->cd, xid->name, slen, buf, slen);
 
     return slen;
 }
@@ -474,8 +504,8 @@ xmlAttributeCopyName(const xmlId *id, char *buf, int buflen, int pos)
                     slen = buflen-1;
                     xmlErrorSet(xid, 0, XML_TRUNCATE_RESULT);
                 }
-                memcpy(buf, ps, slen);
-                buf[slen] = 0;
+
+                __zeroxml_iconv(xid->root->cd, ps, slen, buf, slen);
                 break;
             }
 
@@ -500,13 +530,9 @@ xmlAttributeGetName(const xmlId *id, int pos)
     assert(xid != 0);
 
     len = xmlAttributeCopyName(id, buf, 4096, pos);
-    rv = malloc(len+1);
-    if (rv)
-    {
-        memcpy(rv, buf, len);
-        rv[len] = 0;
-    }
-    else {
+    if ((rv = malloc(len+1)) != NULL) {
+        __zeroxml_iconv(xid->root->cd, buf, len, rv, len);
+    } else {
         xmlErrorSet(xid, 0, XML_OUT_OF_MEMORY);
     }
 
@@ -665,8 +691,7 @@ xmlCopyString(const xmlId *id, char *buffer, int buflen)
                 len = buflen-1;
                 xmlErrorSet(xid, 0, XML_TRUNCATE_RESULT);
             }
-            memcpy(buffer, ps, len);
-            buffer[len] = 0;
+            __zeroxml_iconv(xid->root->cd , ps, len, buffer, len);
         }
         rv = len;
     }
@@ -721,13 +746,9 @@ xmlNodeGetString(const xmlId *id, const char *path)
         {
             const char *ps = str;
             __zeroxml_prepare_data(&ps, &len, STRIPPED);
-            rv = calloc(1, len+1);
-            if (rv)
-            {
-                memcpy(rv, ps, len);
-                rv[len] = 0;
-            }
-            else {
+            if ((rv = malloc(len+1)) != NULL) {
+                __zeroxml_iconv(xid->root->cd, ps, len, rv, len);
+            } else {
                 xmlErrorSet(xid, 0, XML_OUT_OF_MEMORY);
             }
         }
@@ -771,8 +792,7 @@ xmlNodeCopyString(const xmlId *id, const char *path, char *buffer, int buflen)
                     xmlErrorSet(xid, 0, XML_TRUNCATE_RESULT);
                 }
 
-                memcpy(buffer, p, len);
-                buffer[len] = 0;
+                __zeroxml_iconv(xid->root->cd, p, len, buffer, len);
             }
             rv = len;
         }
@@ -1099,13 +1119,9 @@ xmlAttributeGetString(const xmlId *id, const char *name)
         ptr = __zeroxml_get_attribute_data_ptr(xid, name, &len);
         if (ptr)
         {
-            rv = malloc(len+1);
-            if (rv)
-            {
-                memcpy(rv, ptr, len);
-                rv[len] = 0;
-            }
-            else {
+            if ((rv = malloc(len+1)) != NULL) {
+                __zeroxml_iconv(xid->root->cd, ptr, len, rv, len);
+            } else {
                 xmlErrorSet(xid, 0, XML_OUT_OF_MEMORY);
             }
         }
@@ -1138,8 +1154,7 @@ xmlAttributeCopyString(const xmlId *id, const char *name,
                 xmlErrorSet(xid, ptr, XML_TRUNCATE_RESULT);
             }
 
-            memcpy(buffer, ptr, restlen);
-            buffer[restlen] = 0;
+            __zeroxml_iconv(xid->root->cd, ptr, restlen, buffer, restlen);
             rv = restlen;
         }
     }
@@ -2079,12 +2094,9 @@ __zeroxml_get_string(const xmlId *id, char mode)
         }
         if (len)
         {
-            if ((rv = malloc(len+1)) != NULL)
-            {
-                memcpy(rv, ps, len);
-                rv[len] = 0;
-            }
-            else {
+            if ((rv = malloc(len+1)) != NULL) {
+                __zeroxml_iconv(xid->root->cd, ps, len, rv, len);
+            } else {
                 xmlErrorSet(xid, 0, XML_OUT_OF_MEMORY);
             }
         }
@@ -2416,6 +2428,32 @@ __zeroxml_strtob(const char *start, const char *end)
         rv = res;
     }
     return rv;
+}
+
+static void
+__zeroxml_iconv(iconv_t cd, const char *in, size_t inlen,
+                            char *out, size_t outlen)
+{
+    char *inbuf = (char*)in;
+    char *outbuf = out;
+    char cvt = XML_FALSE;
+#if HAVE_ICONV_H
+    if (cd != (iconv_t)-1)
+    {
+        size_t nconv;
+
+        nconv = iconv(cd, &inbuf, &inlen, &outbuf, &outlen);
+        if (nconv != (size_t)-1) {
+            cvt = XML_TRUE;
+        }
+    }
+#endif
+    if (cvt == XML_FALSE)
+    {
+        if (outlen > inlen) outlen = inlen;
+        memcpy(outbuf, inbuf, outlen);
+        outbuf[inlen] = 0;
+    }
 }
 
 /*
