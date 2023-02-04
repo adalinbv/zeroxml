@@ -70,12 +70,6 @@
 #if HAVE_UNISTD_H
 # include <unistd.h>
 #endif
-#ifdef HAVE_LOCALE_H
-# include <locale.h>
-#endif
-#ifdef HAVE_LANGINFO_H
-# include <langinfo.h>
-#endif
 #include <ctype.h>
 #include <fcntl.h>
 #include <ctype.h>
@@ -93,7 +87,7 @@ static int __zeroxml_strtob(const char*, const char*);
 static void __zeroxml_prepare_data( const char**, int*, char);
 static char *__zeroxml_get_string(const xmlId*, char);
 static int __zeroxml_node_get_num(const xmlId*, const char*, char);
-static const char *__zeroxml_process_declaration(const char*, int);
+static const char *__zeroxml_process_declaration(const char*, int, char**);
 static const char *__zeroxml_node_get_path(const cacheId**, const char*, int*,  const char**, int*);
 static const char *__zeroxml_get_node(const cacheId*, const char**, int*,  const char**, int*, int*, char);
 static xmlId *__zeroxml_get_node_pos(const xmlId*, xmlId*, const char*, int, char);
@@ -144,11 +138,6 @@ xmlOpen(const char *filename)
                 struct stat statbuf;
                 char *mm;
 
-                /* UTF-8 unicode support */
-#ifdef HAVE_LOCALE_H
-                rid->locale = setlocale(LC_ALL, "");
-#endif
-
                 fstat(fd, &statbuf);
                 mm = simple_mmap(fd, (int)statbuf.st_size, &rid->un);
                 if (mm != (void *)MMAP_ERROR)
@@ -156,7 +145,9 @@ xmlOpen(const char *filename)
                     int blocklen = statbuf.st_size;
                     const char *start;
 
-                    start = __zeroxml_process_declaration(mm, blocklen);
+                    rid->locale = "";
+                    start = __zeroxml_process_declaration(mm, blocklen,
+                                                          &rid->locale);
                     blocklen -= start-mm;
 
                     __zeroxml_prepare_data(&start, &blocklen, RAW);
@@ -190,9 +181,7 @@ xmlOpen(const char *filename)
                         rid->mmap = mm;
                         rid->start = start;
                         rid->len = blocklen;
-#ifndef XML_NONVALIDATING
                         rid->root = rid;
-#endif
                     }
                 }
             }
@@ -218,7 +207,9 @@ xmlInitBuffer(const char *buffer, int blocklen)
         {
             const char *start;
 
-            start = __zeroxml_process_declaration(buffer, blocklen);
+            rid->locale = "";
+            start = __zeroxml_process_declaration(buffer, blocklen,
+                                                  &rid->locale);
             blocklen -= start-buffer;
 
             __zeroxml_prepare_data(&start, &blocklen, RAW);
@@ -249,13 +240,7 @@ xmlInitBuffer(const char *buffer, int blocklen)
                 rid->mmap = (char*)buffer;
                 rid->start = start;
                 rid->len = blocklen;
-#ifndef XML_NONVALIDATING
                 rid->root = rid;
-#endif
-
-#ifdef HAVE_LOCALE_H
-                rid->locale = setlocale(LC_ALL, "");
-#endif
             }
         }
     }
@@ -269,11 +254,7 @@ xmlClose(xmlId *id)
     struct _root_id *rid = (struct _root_id *)id;
 
 
-    if (rid && !rid->name
-#ifndef XML_NONVALIDATING
-         && rid->root == rid
-#endif
-       )
+    if (rid && rid->root == rid)
     {
         if (rid->fd == MMAP_FREE) {
            free(rid->mmap);
@@ -290,15 +271,16 @@ xmlClose(xmlId *id)
 #ifndef XML_NONVALIDATING
         if (rid->info) free(rid->info);
 #endif
-
-#ifdef HAVE_LOCALE_H
-        if (rid->locale) {
-           setlocale(LC_CTYPE, rid->locale);
-        }
-#endif
         free(rid);
         id = 0;
     }
+}
+
+XML_API const char* XML_APIENTRY
+xmlGetEncoding(const xmlId *id)
+{
+    struct _xml_id *xid = (struct _xml_id *)id;
+    return xid->root->locale;
 }
 
 XML_API int XML_APIENTRY
@@ -359,14 +341,13 @@ xmlNodeGet(const xmlId *id, const char *path)
             xsid->name_len = slen;
             xsid->start = (char*)ptr;
             xsid->len = len;
+            if (xid->name) {
+                xsid->root = xid->root;
+            } else {
+                xsid->root = (struct _root_id *)xid;
+            }
 #ifdef XML_USE_NODECACHE
             xsid->node = nnc;
-#endif
-#ifndef XML_NONVALIDATING
-            if (xid->name)
-                xsid->root = xid->root;
-            else
-                xsid->root = (struct _root_id *)xid;
 #endif
         }
         else {
@@ -999,21 +980,15 @@ xmlMarkId(const xmlId *id)
     if (xmid)
     {
         struct _root_id *xrid = (struct _root_id *)id;
-#ifndef XML_NONVALIDATING
         if (xrid->root == xrid)
-#else
-        if (xrid->name == NULL)
-#endif
         {
             xmid->name = "";
             xmid->name_len = 0;
             xmid->start = xrid->start;
             xmid->len = xrid->len;
+            xmid->root = xrid;
 #ifdef XML_USE_NODECACHE
             xmid->node = xrid->node;
-#endif
-#ifndef XML_NONVALIDATING
-            xmid->root = xrid;
 #endif
         }
         else {
@@ -1397,7 +1372,7 @@ static const char *__zeroxml_error_str[XML_MAX_ERROR] =
  * Either single or double quotes can be used.
  *
  * When finished *len will return the length of the attribute value section.
- * 
+ *
  * @param id XML-id of the node
  * @param name a pointer to the attribute name.
  * @param len length of the attribute name.
@@ -2191,7 +2166,7 @@ __zeroxmlProcessCDATA(const char **start, int *len, char mode)
  * @return a pointer to the memory location right after the declaration
  */
 const char*
-__zeroxml_process_declaration(const char *start, int len)
+__zeroxml_process_declaration(const char *start, int len, char **locale)
 {
     const char *cur, *end;
     const char *rv = start;
@@ -2224,18 +2199,12 @@ __zeroxml_process_declaration(const char *start, int len)
                 cur = new+elementlen;
                 if ((end = memchr(cur, '"', len)) != NULL)
                 {
-                    const char *str = "UTF-8";
+                    static char *str = "UTF-8";
                     int slen = strlen(str);
                     len--;
-                    if (len >= slen && !STRCMP(cur, str, len)
-#ifdef HAVE_LANGINFO_H
-                         && !strcoll(nl_langinfo(CODESET), str)
-#endif
-                      )
+                    if (len >= slen && !STRCMP(cur, str, len))
                     {
-#ifdef HAVE_LOCALE_H
-                       setlocale(LC_ALL, "en_US.UTF-8");
-#endif
+                       *locale = str;
                     }
                 }
             }
@@ -2672,7 +2641,6 @@ __zeroxml_memncasecmp(const char **haystack_ptr, int *haystacklen,
         }
         *haystack_ptr = hs;
     }
-    
 
     return rptr;
 }

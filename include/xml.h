@@ -604,6 +604,14 @@ XML_API int XML_APIENTRY xmlErrorGetColumnNo(const xmlId *xid, int clear);
  */
 XML_API const char* XML_APIENTRY xmlErrorGetString(const xmlId *xid, int clear);
 
+/**
+ * Get the encoding as specified by the XML document.
+ *
+ * @param xid XML-id
+ * @return a string containing the encoding as specified by the XML document
+ */
+XML_API const char* XML_APIENTRY xmlGetEncoding(const xmlId *xid);
+
 #if defined(TARGET_OS_MAC) && TARGET_OS_MAC
 # pragma export off
 #endif

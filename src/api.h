@@ -63,7 +63,7 @@
 #include "config.h"
 #endif
 
-#include <xml.h> 
+#include <xml.h>
 
 #ifdef NDEBUG
 # ifdef DEBUG
@@ -184,9 +184,7 @@ struct _zeroxml_error
  */
 struct _root_id
 {
-#ifndef XML_NONVALIDATING
     struct _root_id *root;
-#endif
     const char *name;
     const char *start;
     off_t len;
@@ -197,9 +195,7 @@ struct _root_id
     /* _root_id specifics */
     int fd;
     char *mmap;
-#ifdef HAVE_LOCALE_H
-    const char *locale;
-#endif
+    char *locale;
 #ifndef XML_NONVALIDATING
     struct _zeroxml_error *info;
 #endif
@@ -210,9 +206,7 @@ struct _root_id
 
 struct _xml_id
 {
-#ifndef XML_NONVALIDATING
     struct _root_id *root;
-#endif
     const char *name;
     const char *start;
     off_t len;
