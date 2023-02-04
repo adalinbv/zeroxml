@@ -10,7 +10,7 @@
   <num-speakers>2</num-speakers>
 
   <tmp><!-- --></tmp>
-  <test n="0" xtamp="erer" ëlémènt="bjôrn"/>
+  <test n="0" xtamp="erer" Ã«lÃ©mÃ¨nt="bjÃ´rn"/>
   <test n="1"/>
   <test n="2"/>
 
@@ -83,6 +83,6 @@
 
  <audioframe pan="-0.2" emitters="64"/>
 
- <mixer copyright="©" element="Mötley Crüe"/>
+ <mixer copyright="Â©" element="MÃ¶tley CrÃ¼e"/>
 
 </Configuration>
