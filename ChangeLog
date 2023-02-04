@@ -1,3 +1,9 @@
+2023-02-04 Erik Hofman <tech@adalin.org>
+ * Increase the version number to 2.1.1
+ * Add xmlGetEncoding which returns the decoding of the XML document.
+ * Fix a segmentation fault when trying to get attributes from the root node.
+ * Fix xmlNodeCopy not returning the correct boundaries.
+
 2023-02-02 Erik Hofman <tech@adalin.org>
  * Increase the version number to 2.1
  * Make element name comparison case sensitive by default as per spec.
