@@ -79,6 +79,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <assert.h>
+#include <errno.h>
 
 #include <xml.h>
 
@@ -87,7 +88,7 @@
 
 static long __zeroxml_strtol(const char*, char**, int);
 static int __zeroxml_strtob(const char*, const char*);
-static void __zeroxml_iconv(iconv_t, const char*, size_t, char*, size_t);
+static int __zeroxml_iconv(iconv_t, const char*, size_t, char*, size_t);
 static void __zeroxml_prepare_data( const char**, int*, char);
 static char *__zeroxml_get_string(const xmlId*, char);
 static int __zeroxml_node_get_num(const xmlId*, const char*, char);
@@ -425,9 +426,12 @@ xmlNodeGetName(const xmlId *id)
     assert(xid != 0);
 
     len = xid->name_len;
-    if ((rv = malloc(len+1)) != NULL) {
-        __zeroxml_iconv(xid->root->cd, xid->name, len, rv, len);
-    } else {
+    if ((rv = malloc(len+1)) != NULL)
+    {
+        int res = __zeroxml_iconv(xid->root->cd, xid->name, len, rv, len);
+        if (res) xmlErrorSet(xid, 0, res);
+    }
+    else {
         xmlErrorSet(xid, 0, XML_OUT_OF_MEMORY);
     }
 
@@ -438,7 +442,7 @@ XML_API int XML_APIENTRY
 xmlNodeCopyName(const xmlId *id, char *buf, int buflen)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    int slen = 0;
+    int res, slen = 0;
 
     assert(buf != 0);
     assert(buflen > 0);
@@ -450,7 +454,8 @@ xmlNodeCopyName(const xmlId *id, char *buf, int buflen)
         xmlErrorSet(xid, 0, XML_TRUNCATE_RESULT);
     }
 
-    __zeroxml_iconv(xid->root->cd, xid->name, slen, buf, slen);
+    res = __zeroxml_iconv(xid->root->cd, xid->name, slen, buf, slen);
+    if (res) xmlErrorSet(xid, 0, res);
 
     return slen;
 }
@@ -482,8 +487,8 @@ xmlAttributeCopyName(const xmlId *id, char *buf, int buflen, int pos)
     if (xid->name_len && xid->name != comment)
     {
         const char *ps, *pe, *new;
+        int res, num = 0;
         char quote;
-        int num = 0;
 
         assert(xid->start > xid->name);
 
@@ -505,7 +510,8 @@ xmlAttributeCopyName(const xmlId *id, char *buf, int buflen, int pos)
                     xmlErrorSet(xid, 0, XML_TRUNCATE_RESULT);
                 }
 
-                __zeroxml_iconv(xid->root->cd, ps, slen, buf, slen);
+                res = __zeroxml_iconv(xid->root->cd, ps, slen, buf, slen);
+                if (res) xmlErrorSet(xid, 0, res);
                 break;
             }
 
@@ -530,9 +536,12 @@ xmlAttributeGetName(const xmlId *id, int pos)
     assert(xid != 0);
 
     len = xmlAttributeCopyName(id, buf, 4096, pos);
-    if ((rv = malloc(len+1)) != NULL) {
-        __zeroxml_iconv(xid->root->cd, buf, len, rv, len);
-    } else {
+    if ((rv = malloc(len+1)) != NULL)
+    {
+        int res = __zeroxml_iconv(xid->root->cd, buf, len, rv, len);
+        if (res) xmlErrorSet(xid, 0, res);
+    }
+    else {
         xmlErrorSet(xid, 0, XML_OUT_OF_MEMORY);
     }
 
@@ -678,8 +687,8 @@ xmlCopyString(const xmlId *id, char *buffer, int buflen)
     *buffer = '\0';
     if (xid->len)
     {
-        int len;
         const char *ps;
+        int res, len;
 
         ps = xid->start;
         len = xid->len;
@@ -691,7 +700,8 @@ xmlCopyString(const xmlId *id, char *buffer, int buflen)
                 len = buflen-1;
                 xmlErrorSet(xid, 0, XML_TRUNCATE_RESULT);
             }
-            __zeroxml_iconv(xid->root->cd , ps, len, buffer, len);
+            res = __zeroxml_iconv(xid->root->cd , ps, len, buffer, len);
+            if (res) xmlErrorSet(xid, 0, res);
         }
         rv = len;
     }
@@ -746,9 +756,12 @@ xmlNodeGetString(const xmlId *id, const char *path)
         {
             const char *ps = str;
             __zeroxml_prepare_data(&ps, &len, STRIPPED);
-            if ((rv = malloc(len+1)) != NULL) {
-                __zeroxml_iconv(xid->root->cd, ps, len, rv, len);
-            } else {
+            if ((rv = malloc(len+1)) != NULL)
+            {
+                int res = __zeroxml_iconv(xid->root->cd, ps, len, rv, len);
+                if (res) xmlErrorSet(xid, 0, res);
+            }
+            else {
                 xmlErrorSet(xid, 0, XML_OUT_OF_MEMORY);
             }
         }
@@ -775,7 +788,7 @@ xmlNodeCopyString(const xmlId *id, const char *path, char *buffer, int buflen)
     if (xid->len)
     {
         const char *p, *node = (const char *)path;
-        int slen = strlen(node);
+        int res, slen = strlen(node);
         int len = xid->len;
         const cacheId *nc;
 
@@ -792,7 +805,8 @@ xmlNodeCopyString(const xmlId *id, const char *path, char *buffer, int buflen)
                     xmlErrorSet(xid, 0, XML_TRUNCATE_RESULT);
                 }
 
-                __zeroxml_iconv(xid->root->cd, p, len, buffer, len);
+                res = __zeroxml_iconv(xid->root->cd, p, len, buffer, len);
+                if (res) xmlErrorSet(xid, 0, res);
             }
             rv = len;
         }
@@ -1119,9 +1133,12 @@ xmlAttributeGetString(const xmlId *id, const char *name)
         ptr = __zeroxml_get_attribute_data_ptr(xid, name, &len);
         if (ptr)
         {
-            if ((rv = malloc(len+1)) != NULL) {
-                __zeroxml_iconv(xid->root->cd, ptr, len, rv, len);
-            } else {
+            if ((rv = malloc(len+1)) != NULL)
+            {
+                int res = __zeroxml_iconv(xid->root->cd, ptr, len, rv, len);
+                if (res) xmlErrorSet(xid, 0, res);
+            }
+            else {
                 xmlErrorSet(xid, 0, XML_OUT_OF_MEMORY);
             }
         }
@@ -1147,14 +1164,15 @@ xmlAttributeCopyString(const xmlId *id, const char *name,
         ptr = __zeroxml_get_attribute_data_ptr(xid, name, &len);
         if (ptr)
         {
-            int restlen = len;
+            int res, restlen = len;
             if (restlen >= buflen)
             {
                 restlen = buflen-1;
                 xmlErrorSet(xid, ptr, XML_TRUNCATE_RESULT);
             }
 
-            __zeroxml_iconv(xid->root->cd, ptr, restlen, buffer, restlen);
+            res = __zeroxml_iconv(xid->root->cd, ptr, restlen, buffer, restlen);
+            if (res) xmlErrorSet(xid, 0, res);
             rv = restlen;
         }
     }
@@ -1377,7 +1395,8 @@ static const char *__zeroxml_error_str[XML_MAX_ERROR] =
     "incompatible opening tag for element",
     "missing or invalid closing tag for element",
     "missing or invalid opening quote for attribute",
-    "missing or invalid closing quote for attribute"
+    "missing or invalid closing quote for attribute",
+    "invalid multibyte sequence."
 };
 #endif
 
@@ -2094,9 +2113,12 @@ __zeroxml_get_string(const xmlId *id, char mode)
         }
         if (len)
         {
-            if ((rv = malloc(len+1)) != NULL) {
-                __zeroxml_iconv(xid->root->cd, ps, len, rv, len);
-            } else {
+            if ((rv = malloc(len+1)) != NULL)
+            {
+                int res = __zeroxml_iconv(xid->root->cd, ps, len, rv, len);
+                if (res) xmlErrorSet(xid, 0, res);
+            }
+            else {
                 xmlErrorSet(xid, 0, XML_OUT_OF_MEMORY);
             }
         }
@@ -2430,21 +2452,43 @@ __zeroxml_strtob(const char *start, const char *end)
     return rv;
 }
 
-static void
-__zeroxml_iconv(iconv_t cd, const char *in, size_t inlen,
-                            char *out, size_t outlen)
+static int
+__zeroxml_iconv(iconv_t cd, const char *in, size_t ilen,
+                            char *out, size_t olen)
 {
     char *inbuf = (char*)in;
     char *outbuf = out;
+    size_t inlen = ilen;
+    size_t outlen = olen;
     char cvt = XML_FALSE;
+    int rv = XML_NO_ERROR;
 #if HAVE_ICONV_H
     if (cd != (iconv_t)-1)
     {
         size_t nconv;
 
+        iconv (cd, NULL, NULL, &outbuf, &outlen);
         nconv = iconv(cd, &inbuf, &inlen, &outbuf, &outlen);
+        outbuf[outlen] = 0;
         if (nconv != (size_t)-1) {
             cvt = XML_TRUE;
+        }
+        else
+        {
+            switch (errno)
+            {
+            case EILSEQ:
+                rv = XML_INVALID_MULTIBYTE_SEQUENCE;
+                break;
+            case EINVAL:
+                rv = XML_INVALID_MULTIBYTE_SEQUENCE;
+                break;
+            case E2BIG:
+                rv = XML_OUT_OF_MEMORY;
+                break;
+            default:
+                break;
+            }
         }
     }
 #endif
@@ -2454,6 +2498,7 @@ __zeroxml_iconv(iconv_t cd, const char *in, size_t inlen,
         memcpy(outbuf, inbuf, outlen);
         outbuf[inlen] = 0;
     }
+    return rv;
 }
 
 /*

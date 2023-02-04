@@ -71,6 +71,9 @@
 # endif
 #endif
 
+#if HAVE_ICONV_H
+# include <iconv.h>
+#endif
 #ifdef USE_RMALLOC
 # define USE_LOGGING    1
 # include <stdio.h>
@@ -195,7 +198,10 @@ struct _root_id
     /* _root_id specifics */
     int fd;
     char *mmap;
-    char *locale;
+    char *encoding;
+#if HAVE_ICONV_H
+    iconv_t cd;
+#endif
 #ifndef XML_NONVALIDATING
     struct _zeroxml_error *info;
 #endif

@@ -111,6 +111,7 @@ include_directories("${CMAKE_SOURCE_DIR}/src"
   src 
 )
 
+check_include_file(iconv.h HAVE_ICONV_H)
 check_include_file(strings.h HAVE_STRINGS_H)
 check_include_file(unistd.h HAVE_UNISTD_H)
 check_include_file(locale.h HAVE_LOCALE_H)
