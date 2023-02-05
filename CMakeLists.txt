@@ -15,6 +15,7 @@ option(COMMENTNODE "Treat XML comment sections as nodes"      ON)
 option(NODECACHE "Use XML Node cache"                         ON)
 option(NONVALIDATING "Trun off XML validation"                OFF)
 option(NONEVALUE "Allow NONE as a return value"               OFF)
+option(LOCALIZATION "Add support for localized strings"       ON)
 option(CASEINSENSITIVE "Case insensitive element comparisson" OFF)
 option(RMALLOC "Enable memory debugging functions"            OFF)
 
@@ -213,6 +214,7 @@ set(XML_COMMENTNODE ${COMMENTNODE})
 set(XML_USE_NODECACHE ${NODECACHE})
 set(XML_NONVALIDATING ${NONVALIDATING})
 set(XML_CASE_INSENSITIVE ${CASEINSENSITIVE})
+set(XML_LOCALIZATION ${LOCALIZATION})
 set(XML_NONEVALUE ${NONEVALUE})
 
 configure_file(
@@ -222,6 +224,7 @@ configure_file(
 set(ZEROXML_OBJS
     src/xml.c
     src/xml_cache.c
+    src/localize.c
    )
 
 # Build a library

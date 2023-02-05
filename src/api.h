@@ -144,14 +144,33 @@
   } else printf("NULL pointer at line %i\n", __LINE__); \
 }
 
-#ifndef XML_CASE_INSENSITIVE
-# define CASE(a)	(a)
-# define CASECMP(a,b)	((a) == (b))
-# define STRCMP(a,b,c)	strncmp((a),(b),(c))
-#else
-# define CASE(a)	tolower(a)
-# define CASECMP(a,b)	(tolower(a)==tolower(b))
-# define STRCMP(a,b,c)	strncasecmp((a),(b),(c))
+
+#define MEMCMP(a,b,c)		memcmp((a),(b),(c))
+#define MEMCHR(a,b,c)		memchr((a),(b),(c))
+#define CASECMP(a,b)		(CASE(a)==CASE(b))
+#ifdef XML_LOCALIZATION
+/* Localization support */
+int localized_tolower(int c);
+int localized_char_cmp(const char s1, const char s2);
+void *localized_memchr(const void *s, int c, size_t n);
+int localized_memcmp(const void *s1, const void *s2, size_t n);
+int localized_strncmp(const char *s1, const char *s2, size_t n);
+int localized_strncasecmp(const char *s1, const char *s2, size_t n);
+# ifndef XML_CASE_INSENSITIVE
+#  define CASE(a)		(a)
+#  define STRNCMP(a,b,c)	strncmp((a),(b),(c))
+# else
+#  define CASE(a)		localized_tolower(a)
+#  define STRNCMP(a,b,c)	strncasecmp((a),(b),(c))
+# endif
+#else /* XML_LOCALIZATION */
+# ifndef XML_CASE_INSENSITIVE
+#  define CASE(a)		(a)
+#  define STRNCMP(a,b,c)	strncmp((a),(b),(c))
+# else
+#  define CASE(a)		tolower(a)
+#  define STRNCMP(a,b,c)	strncasecmp((a),(b),(c))
+# endif
 #endif
 
 #define MAX_ENCODING	32

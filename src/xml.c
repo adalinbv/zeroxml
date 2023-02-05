@@ -78,6 +78,8 @@
 #include <ctype.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <wctype.h>
+#include <wchar.h>
 #include <assert.h>
 #include <errno.h>
 
@@ -469,7 +471,7 @@ xmlNodeCompareName(const xmlId *id, const char *str)
 
     nlen = xid->name_len;
     if (nlen >= slen) {
-        rv = STRCMP(xid->name, str, slen);
+        rv = STRNCMP(xid->name, str, slen);
     }
 
     return rv;
@@ -498,7 +500,7 @@ xmlAttributeCopyName(const xmlId *id, char *buf, int buflen, int pos)
         {
             while ((ps<pe) && isspace(*ps)) ps++;
 
-            new = memchr(ps, '=', pe-ps);
+            new = MEMCHR(ps, '=', pe-ps);
             if (!new) break;
 
             if (num++ == pos)
@@ -570,13 +572,13 @@ xmlAttributeCompareName(const xmlId *id, int pos, const char *str)
         {
             while ((ps<pe) && isspace(*ps)) ps++;
 
-            new = memchr(ps, '=', pe-ps);
+            new = MEMCHR(ps, '=', pe-ps);
             if (!new) break;
 
             if (num++ == pos)
             {
                 int slen = new-ps;
-                rv = STRCMP(ps, str, slen);
+                rv = STRNCMP(ps, str, slen);
                 break;
             }
 
@@ -618,7 +620,7 @@ xmlAttributeGetNum(const xmlId *id)
         pe = xid->start - 1;
         while (ps<pe)
         {
-            new = memchr(ps, '=', pe-ps);
+            new = MEMCHR(ps, '=', pe-ps);
             if (!new) break;
 
             ps = new+1;
@@ -726,7 +728,7 @@ xmlCompareString(const xmlId *id, const char *s)
         ps = xid->start;
         len = xid->len;
         __zeroxml_prepare_data(&ps, &len, STRIPPED);
-        rv = STRCMP(ps, s, len) ? XML_TRUE : XML_FALSE;
+        rv = STRNCMP(ps, s, len) ? XML_TRUE : XML_FALSE;
     }
 
     return rv;
@@ -843,7 +845,7 @@ xmlNodeCompareString(const xmlId *id, const char *path, const char *s)
         {
             const char *ps = str;
             __zeroxml_prepare_data(&ps, &len, STRIPPED);
-            rv = STRCMP(ps, s, len);
+            rv = STRNCMP(ps, s, len);
         }
         else if (slen == 0) {
             xmlErrorSet(xid, node, len);
@@ -1194,7 +1196,7 @@ xmlAttributeCompareString(const xmlId *id, const char *name, const char *s)
 
         ptr = __zeroxml_get_attribute_data_ptr(xid, name, &len);
         if (ptr && (len == strlen(s))) {
-            rv = STRCMP(ptr, s, len);
+            rv = STRNCMP(ptr, s, len);
         }
     }
     return rv;
@@ -1254,7 +1256,7 @@ xmlErrorGetLineNo(const xmlId *id, int clear)
             rv++;
             while (ps<pe)
             {
-                new = memchr(ps, '\n', pe-ps);
+                new = MEMCHR(ps, '\n', pe-ps);
                 if (new) rv++;
                 else break;
                 ps = new+1;
@@ -1293,8 +1295,8 @@ xmlErrorGetColumnNo(const xmlId *id, int clear)
 
             while (ps<pe)
             {
-                new = memchr(ps, '\n', pe-ps);
-                new = memchr(ps, '\n', pe-ps);
+                new = MEMCHR(ps, '\n', pe-ps);
+                new = MEMCHR(ps, '\n', pe-ps);
                 if (new) rv++;
                 else break;
                 ps = new+1;
@@ -1435,7 +1437,7 @@ __zeroxml_get_attribute_data_ptr(const struct _xml_id *id, const char *name, int
         while (ps<pe)
         {
             while ((ps<pe) && isspace(*ps)) ps++;
-            if (((int)(pe-ps) > slen) && (STRCMP(ps, name, slen) == 0))
+            if (((int)(pe-ps) > slen) && (STRNCMP(ps, name, slen) == 0))
             {
                 ps += slen;
                 if ((ps<pe) && (*ps == '='))
@@ -1531,11 +1533,11 @@ __zeroxml_node_get_path(const cacheId **nc, const char *start, int *len, const c
 
         node = path;
         nodelen = end - node;
-        path = memchr(node, '/', nodelen);
+        path = MEMCHR(node, '/', nodelen);
         if (path) nodelen = path - node;
 
         num = 0;
-        if ((p = memchr(node, '[', nodelen)) != NULL)
+        if ((p = MEMCHR(node, '[', nodelen)) != NULL)
         {
             char *e;
 
@@ -1667,7 +1669,7 @@ __zeroxml_get_node(const cacheId *nc, const char **buf, int *len, const char **n
     elementlen = *rlen;
 
     assert(cur+restlen == end);
-    while ((new = memchr(cur, '<', restlen)) != 0)
+    while ((new = MEMCHR(cur, '<', restlen)) != 0)
     {
 
         new++; /* skip '<' */
@@ -1683,7 +1685,7 @@ __zeroxml_get_node(const cacheId *nc, const char **buf, int *len, const char **n
 
             /* different name?: end of a subsection */
             /* protected from buffer overflow by DECR_LEN above */
-            if (STRCMP(cur, element, elementlen))
+            if (STRNCMP(cur, element, elementlen))
             {
                 *len = new-start-2; /* strlen("</") */
                 return rv;
@@ -1808,7 +1810,7 @@ __zeroxml_get_node(const cacheId *nc, const char **buf, int *len, const char **n
                 }
             }
 
-            if ((new = memchr(cur, '<', restlen)) == 0) {
+            if ((new = MEMCHR(cur, '<', restlen)) == 0) {
                 SET_ERROR_AND_RETURN(cur, XML_ELEMENT_NO_OPENING_TAG);
             }
 
@@ -1834,7 +1836,7 @@ __zeroxml_get_node(const cacheId *nc, const char **buf, int *len, const char **n
                 /*
                  * Skip the value of the node and get the next XML tag.
                  */
-                if ((new = memchr(cur, '<', restlen)) == 0) {
+                if ((new = MEMCHR(cur, '<', restlen)) == 0) {
                     SET_ERROR_AND_RETURN(cur, XML_ELEMENT_NO_CLOSING_TAG);
                 }
 
@@ -1865,7 +1867,7 @@ __zeroxml_get_node(const cacheId *nc, const char **buf, int *len, const char **n
                 continue;
             }
             /* protected from buffer overflow by DECR_LEN above */
-            else if (!STRCMP(cur+1, element, elementlen))
+            else if (!STRNCMP(cur+1, element, elementlen))
             {
                 cacheDataSet(nnc, element, elementlen, rptr, new-rptr-1);
 
@@ -1893,7 +1895,7 @@ __zeroxml_get_node(const cacheId *nc, const char **buf, int *len, const char **n
                 }
                 else
                 {
-                    if ((new = memchr(cur, '>', restlen)) == 0) {
+                    if ((new = MEMCHR(cur, '>', restlen)) == 0) {
                         SET_ERROR_AND_RETURN(cur, XML_ELEMENT_NO_OPENING_TAG);
                     }
 
@@ -2150,7 +2152,7 @@ __zeroxmlProcessCDATA(const char **start, int *len, char mode)
     int restlen = *len;
 
     /* comment: "<!---->" */
-    if ((restlen >= 7) && (memcmp(cur, "!--", 3) == 0))
+    if ((restlen >= 7) && (MEMCMP(cur, "!--", 3) == 0))
     {
         cur += 3;
         restlen -= 3;
@@ -2166,7 +2168,7 @@ __zeroxmlProcessCDATA(const char **start, int *len, char mode)
     }
 
     /* CDATA: "<![CDATA[]]>" */
-    else if (restlen >= 12 && (memcmp(cur, "![CDATA[", 8) == 0))
+    else if (restlen >= 12 && (MEMCMP(cur, "![CDATA[", 8) == 0))
     {
         cur += 8;
         restlen -= 8;
@@ -2231,7 +2233,7 @@ __zeroxml_process_declaration(const char *start, int len, char **locale)
                 int elementlen = strlen(element);
                 len -= new-cur+elementlen;
                 cur = new+elementlen;
-                if ((end = memchr(cur, '"', len)) != NULL)
+                if ((end = MEMCHR(cur, '"', len)) != NULL)
                 {
                     len--;
                     if (len > MAX_ENCODING) len = MAX_ENCODING;
@@ -2293,7 +2295,7 @@ __zeroxml_prepare_data(const char **start, int *blocklen, char mode)
                 restlen = (pe-ps)+1;
 
                 /* find comment before the data */
-                if (restlen >= 7 && !strncmp(ps, "<!--", 4))
+                if (restlen >= 7 && !STRNCMP(ps, "<!--", 4))
                 {
                     rptr = __zeroxml_memmem(ps, restlen, "-->", 3);
                     if (rptr == NULL) {
@@ -2430,15 +2432,15 @@ __zeroxml_strtob(const char *start, const char *end)
     if (ptr == start)
     {
         int len = end-start;
-        if (!STRCMP(start, "off", len)
-            || !STRCMP(start, "no", len)
-            || !STRCMP(start, "false", len))
+        if (!STRNCMP(start, "off", len)
+            || !STRNCMP(start, "no", len)
+            || !STRNCMP(start, "false", len))
         {
             rv = XML_FALSE;
         }
-        else if (!STRCMP(start, "on", len)
-                 || !STRCMP(start, "yes", len)
-                 || !STRCMP(start, "true", len))
+        else if (!STRNCMP(start, "on", len)
+                 || !STRNCMP(start, "yes", len)
+                 || !STRNCMP(start, "true", len))
         {
             rv = XML_TRUE;
         }
@@ -2516,7 +2518,7 @@ static const char*
 __zeroxml_memmem(const char *haystack, int haystacklen, const char *needle, int needlelen)
 {
     const char *rv = NULL;
-    char first;
+    int first;
 
     assert (haystack);
     assert (needle);
@@ -2526,13 +2528,13 @@ __zeroxml_memmem(const char *haystack, int haystacklen, const char *needle, int 
     {
         do
         {
-            const char *new = memchr(haystack, first, haystacklen);
+            const char *new = MEMCHR(haystack, first, haystacklen);
             if (!new) break;
 
             haystacklen -= (new-haystack);
             if (haystacklen < needlelen) break;
 
-            if (memcmp(new, needle, needlelen) == 0)
+            if (MEMCMP(new, needle, needlelen) == 0)
             {
                 rv = new;
                 break;
@@ -2566,13 +2568,13 @@ __zeroxml_memncasestr(const char *haystack, int haystacklen, const char *needle)
     {
         needlelen--;
         haystacklen--;
-        char first = CASE(*needle++);
+        int first = CASE(*needle++);
         do
         {
             while (haystacklen && CASE(*haystack++) != first) haystacklen--;
             if (haystacklen < needlelen) return NULL;
         }
-        while (STRCMP(haystack, needle, needlelen) != 0);
+        while (STRNCMP(haystack, needle, needlelen) != 0);
         rv = --haystack;
     }
    return rv;
@@ -2645,7 +2647,7 @@ __zeroxml_memncasecmp(const char **haystack_ptr, int *haystacklen,
                     *needlelen = hs - haystack;
 
                     /* find the closing character */
-                    if ((ns = memchr(hs, '>', he-hs)) != NULL)
+                    if ((ns = MEMCHR(hs, '>', he-hs)) != NULL)
                     {
                         if ((ns-hs) >= 1 && *(ns-1) == '/') hs = ns-1;
                         else hs = ns;
@@ -2686,7 +2688,7 @@ __zeroxml_memncasecmp(const char **haystack_ptr, int *haystacklen,
 
                     /* find the closing character */
 //                  while ((hs < he) && !ISCLOSING(*hs)) ++hs;
-                    if ((ns = memchr(hs, '>', he-hs)) != NULL)
+                    if ((ns = MEMCHR(hs, '>', he-hs)) != NULL)
                     {
                         if ((ns-hs) >= 1 && *(ns-1) == '/') hs = ns-1;
                         else hs = ns;
@@ -2704,7 +2706,7 @@ __zeroxml_memncasecmp(const char **haystack_ptr, int *haystacklen,
                         *needlelen = hs - haystack;
 
                         /* find the closing character */
-                        if ((ns = memchr(hs, '>', he-hs)) != NULL) hs = ns+1;
+                        if ((ns = MEMCHR(hs, '>', he-hs)) != NULL) hs = ns+1;
                         else hs = he;
                     }
                     else /* invalid character in the node name */
