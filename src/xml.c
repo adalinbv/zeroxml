@@ -490,6 +490,8 @@ xmlAttributeCopyName(const xmlId *id, char *buf, int buflen, int pos)
     assert(buf != 0);
     assert(buflen > 0);
 
+    buf[0] = 0;
+
     if (xid->name_len && xid->name != comment)
     {
         const char *ps, *pe, *new;
@@ -2491,7 +2493,7 @@ __zeroxml_iconv(iconv_t cd, char *out, size_t olen,
                 rv = XML_INVALID_MULTIBYTE_SEQUENCE;
                 break;
             case E2BIG:
-                rv = XML_OUT_OF_MEMORY;
+                rv = XML_TRUNCATE_RESULT;
                 break;
             default:
                 break;
