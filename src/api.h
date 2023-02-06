@@ -185,6 +185,8 @@ int localized_strncasecmp(const char *s1, const char *s2, size_t n);
 # define WIN32_LEAN_AND_MEAN
 # include <windows.h>
 
+typedef const char* iconv_t;
+
 typedef struct
 {
     HANDLE m;
@@ -219,7 +221,7 @@ struct _root_id
     int fd;
     char *mmap;
     char encoding[MAX_ENCODING+1];
-#if HAVE_ICONV_H
+#if defined(HAVE_ICONV_H) || defined(WIN32)
     iconv_t cd;
 #endif
 #ifndef XML_NONVALIDATING

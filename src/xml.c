@@ -113,9 +113,13 @@ static const char *comment = XML_COMMENT;
 #endif
 
 #ifdef WIN32
-/*
- * map 'filename' and return a pointer to it.
- */
+
+/* perform character set conversion */
+#define iconv_close(l)
+#define iconv_open(l,e)	(e)
+static size_t simple_iconv(iconv_t, char**, size_t*, char**, size_t*);
+
+/* map 'filename' and return a pointer to it. */
 static void *simple_mmap(int, int, SIMPLE_UNMMAP *);
 static void simple_unmmap(void*, int, SIMPLE_UNMMAP *);
 
@@ -189,17 +193,17 @@ xmlOpen(const char *filename)
                         rid->start = start;
                         rid->len = blocklen;
                         rid->root = rid;
-#if HAVE_ICONV_H
-# if HAVE_LOCALE_H
+#if defined(HAVE_ICONV_H) || defined(WIN32)
                         do
                         {
+# if HAVE_LOCALE_H
                             char *locale = setlocale(LC_CTYPE, NULL);
                             char *ptr = strrchr(locale, '.');
                             if (ptr) locale = ptr+1;
+# endif
                             rid->cd = iconv_open(locale, rid->encoding);
                         }
                         while(0);
-# endif
 #endif
                     }
                 }
@@ -260,17 +264,17 @@ xmlInitBuffer(const char *buffer, int blocklen)
                 rid->start = start;
                 rid->len = blocklen;
                 rid->root = rid;
-#if HAVE_ICONV_H
-# if HAVE_LOCALE_H
+#if defined(HAVE_ICONV_H) || defined(WIN32)
                 do
                 {
+# if HAVE_LOCALE_H
                     char *locale = setlocale(LC_CTYPE, NULL);
                     char *ptr = strrchr(locale, '.');
                     if (ptr) locale = ptr+1;
+# endif
                     rid->cd = iconv_open(locale, rid->encoding);
                 }
                 while(0);
-# endif
 #endif
             }
         }
@@ -302,7 +306,7 @@ xmlClose(xmlId *id)
 #ifndef XML_NONVALIDATING
         if (rid->info) free(rid->info);
 #endif
-#if HAVE_ICONV_H
+#if defined(HAVE_ICONV_H) || defined(WIN32)
         if (rid->cd != (iconv_t)-1) {
             iconv_close(rid->cd);
         }
@@ -2463,11 +2467,16 @@ __zeroxml_iconv(iconv_t cd, char *out, size_t olen,
     int rv = XML_NO_ERROR;
 
     out[0] = 0;
-#if HAVE_ICONV_H
+#if defined(HAVE_ICONV_H) || defined(WIN32)
     if (cd != (iconv_t)-1)
     {
+        size_t nconv;
+#ifdef WIN32
+        nconv = simple_iconv(cd, &inbuf, &inlen, &outbuf, &outlen);
+#else
         iconv(cd, NULL, NULL, NULL, NULL);
-        size_t nconv = iconv(cd, &inbuf, &inlen, &outbuf, &outlen);
+        nconv = iconv(cd, &inbuf, &inlen, &outbuf, &outlen);
+#endif
         if (nconv != (size_t)-1)
         {
             iconv(cd, NULL, NULL, &outbuf, &outlen);
@@ -2795,4 +2804,76 @@ simple_unmmap(void *addr, int length, SIMPLE_UNMMAP *un)
     UnmapViewOfFile(un->p);
     CloseHandle(un->m);
 }
+
+/*
+ * A basic implementation of the iconv function for Windows in C:
+ *
+ * This implementation uses the Windows API functions MultiByteToWideChar and
+ * WideCharToMultiByte to convert between different character sets. The
+ * in_charset and out_charset parameters are compared against a list of known
+ * character sets, and the appropriate code page is selected. If the input or
+ * output character set is UTF-8, the corresponding code page is set to CP_UTF8.
+ * The conversion is performed using MultiByteToWideChar to convert the input
+ * buffer to a wide character buffer, and then WideCharToMultiByte to convert
+ * the wide character buffer to the output buffer.
+ *
+ * https://www.iana.org/assignments/character-sets/character-sets.xhtml
+ */
+static UINT
+charset_to_identifier(const char *charset)
+{
+    UINT identifier = AreFileApisANSI() ? CP_ACP : CP_OEMCP;
+
+    if (strcasecmp(charset, "UTF-8") == 0) identifier = CP_UTF8;
+    else if (strcasecmp(charset, "UTF-16") == 0) identifier = CP_UTF16;
+    else if (strcasecmp(charset, "ISO-8859-1") == 0) identifier = CP_LATIN1;
+    else if (strcasecmp(charset, "ASCII") == 0) identifier = CP_ASCII;
+    else if (strcasecmp(charset, "US-ASCII") == 0) identifier = CP_ASCII;
+    else if (strcasecmp(charset, "UTF-32") == 0) identifier = CP_UTF32;
+
+    return identifier;
+}
+
+static size_t
+simple_iconv(const char *in_charset, char *inbuf, size_t *inbytesleft,
+                                     char *outbuf, size_t *outbytesleft)
+{
+    UINT code_page;
+    wchar_t *wbuf;
+    size_t rv;
+
+    code_page = charset_to_identifier(in_charset);
+
+    rv = MultiByteToWideChar(code_page, 0, inbuf, *inbytesleft, NULL, 0);
+    if (rv <= 0)
+    {
+        // call GetLastError
+        // ERROR_INSUFFICIENT_BUFFER: errno = E2BIG
+        // ERROR_NO_UNICODE_TRANSLATION: errno = EILSEQ
+        return -1;
+    }
+
+    wbuf = (wchar_t*)malloc(rv * sizeof(wchar_t));
+    rv = MultiByteToWideChar(code_page, 0, inbuf, *inbytesleft, wbuf, rv);
+    if (rv <= 0)
+    {
+        free(wuf);
+        return -1;
+    }
+
+    rv = WideCharToMultiByte(CP_UTF16, 0, wbuf, rv, outbuf, *outbytesleft, NULL, NULL);
+    free(wbuf);
+    if (rv <= 0)
+    {
+        // call GetLastError
+        // ERROR_INSUFFICIENT_BUFFER: errno = E2BIG
+        // ERROR_NO_UNICODE_TRANSLATION: errno = EILSEQ
+        return -1;
+    }
+
+    *inbytesleft = rv;
+    *outbytesleft -= rv;
+    return 0;
+}
+
 #endif
