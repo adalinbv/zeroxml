@@ -94,7 +94,7 @@ static int __zeroxml_iconv(iconv_t, char*, size_t, const char*, size_t);
 static void __zeroxml_prepare_data( const char**, int*, char);
 static char *__zeroxml_get_string(const xmlId*, char);
 static int __zeroxml_node_get_num(const xmlId*, const char*, char);
-static const char *__zeroxml_process_declaration(const char*, int, char**);
+static const char *__zeroxml_process_declaration(const char*, int, char*);
 static const char *__zeroxml_node_get_path(const cacheId**, const char*, int*,  const char**, int*);
 static const char *__zeroxml_get_node(const cacheId*, const char**, int*,  const char**, int*, int*, char);
 static xmlId *__zeroxml_get_node_pos(const xmlId*, xmlId*, const char*, int, char);
@@ -161,7 +161,7 @@ xmlOpen(const char *filename)
 
                     encoding[0] = 0;
                     start = __zeroxml_process_declaration(mm, blocklen,
-                                                        &encoding);
+                                                        encoding);
                     blocklen -= start-mm;
 
                     __zeroxml_prepare_data(&start, &blocklen, RAW);
@@ -235,7 +235,7 @@ xmlInitBuffer(const char *buffer, int blocklen)
             const char *start;
 
             encoding[0] = 0;
-            start = __zeroxml_process_declaration(buffer, blocklen, &encoding);
+            start = __zeroxml_process_declaration(buffer, blocklen, encoding);
             blocklen -= start-buffer;
 
             __zeroxml_prepare_data(&start, &blocklen, RAW);
@@ -2211,7 +2211,7 @@ __zeroxmlProcessCDATA(const char **start, int *len, char mode)
  * @return a pointer to the memory location right after the declaration
  */
 const char*
-__zeroxml_process_declaration(const char *start, int len, char **locale)
+__zeroxml_process_declaration(const char *start, int len, char *locale)
 {
     const char *cur, *end;
     const char *rv = start;
