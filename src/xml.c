@@ -156,11 +156,12 @@ xmlOpen(const char *filename)
                 if (mm != (void *)MMAP_ERROR)
                 {
                     int blocklen = statbuf.st_size;
+                    char *encoding = (char*)&rid->encoding;
                     const char *start;
 
-                    rid->encoding[0] = 0;
+                    encoding[0] = 0;
                     start = __zeroxml_process_declaration(mm, blocklen,
-                                                        (char**)&rid->encoding);
+                                                        &encoding);
                     blocklen -= start-mm;
 
                     __zeroxml_prepare_data(&start, &blocklen, RAW);
@@ -230,11 +231,11 @@ xmlInitBuffer(const char *buffer, int blocklen)
         rid = calloc(1, sizeof(struct _root_id));
         if (rid)
         {
+            char *encoding = (char*)&rid->encoding;
             const char *start;
 
-            rid->encoding[0] = 0;
-            start = __zeroxml_process_declaration(buffer, blocklen,
-                                                  (char**)&rid->encoding);
+            encoding[0] = 0;
+            start = __zeroxml_process_declaration(buffer, blocklen, &encoding);
             blocklen -= start-buffer;
 
             __zeroxml_prepare_data(&start, &blocklen, RAW);
