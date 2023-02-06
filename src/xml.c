@@ -117,7 +117,7 @@ static const char *comment = XML_COMMENT;
 /* perform character set conversion */
 #define iconv_close(l)
 #define iconv_open(l,e)	(e)
-static size_t simple_iconv(iconv_t, char**, size_t*, char**, size_t*);
+static size_t iconv(iconv_t, char**, size_t*, char**, size_t*);
 
 /* map 'filename' and return a pointer to it. */
 static void *simple_mmap(int, int, SIMPLE_UNMMAP *);
@@ -2471,16 +2471,12 @@ __zeroxml_iconv(iconv_t cd, char *out, size_t olen,
     if (cd != (iconv_t)-1)
     {
         size_t nconv;
-#ifdef WIN32
-        nconv = simple_iconv(cd, &inbuf, &inlen, &outbuf, &outlen);
-#else
         iconv(cd, NULL, NULL, NULL, NULL);
         nconv = iconv(cd, &inbuf, &inlen, &outbuf, &outlen);
-#endif
         if (nconv != (size_t)-1)
         {
             iconv(cd, NULL, NULL, &outbuf, &outlen);
-            outbuf[outlen] = 0;
+            outbuf[0] = 0;
             cvt = XML_TRUE;
         }
         else
@@ -2835,44 +2831,47 @@ charset_to_identifier(const char *charset)
 }
 
 static size_t
-simple_iconv(const char *in_charset, char *inbuf, size_t *inbytesleft,
-                                     char *outbuf, size_t *outbytesleft)
+iconv(iconv_t cd, char **inbuf, size_t *inbytesleft,
+                  char **outbuf, size_t *outbytesleft)
 {
-    UINT code_page;
-    wchar_t *wbuf;
-    size_t rv;
-
-    code_page = charset_to_identifier(in_charset);
-
-    rv = MultiByteToWideChar(code_page, 0, inbuf, *inbytesleft, NULL, 0);
-    if (rv <= 0)
+    if (inbuf && *inbuf && inbytesleft &&
+        outbuf && *outbuf && outbytesleft)
     {
-        // call GetLastError
-        // ERROR_INSUFFICIENT_BUFFER: errno = E2BIG
-        // ERROR_NO_UNICODE_TRANSLATION: errno = EILSEQ
-        return -1;
-    }
+        UINT code_page = charset_to_identifier(cd);
+        wchar_t *wbuf;
+        size_t res;
 
-    wbuf = (wchar_t*)malloc(rv * sizeof(wchar_t));
-    rv = MultiByteToWideChar(code_page, 0, inbuf, *inbytesleft, wbuf, rv);
-    if (rv <= 0)
-    {
-        free(wuf);
-        return -1;
-    }
+        res = MultiByteToWideChar(code_page, 0, inbuf, *inbytesleft, NULL, 0);
+        if (res <= 0)
+        {
+            // call GetLastError
+            // ERROR_INSUFFICIENT_BUFFER: errno = E2BIG
+            // ERROR_NO_UNICODE_TRANSLATION: errno = EILSEQ
+            return -1;
+        }
 
-    rv = WideCharToMultiByte(CP_UTF16, 0, wbuf, rv, outbuf, *outbytesleft, NULL, NULL);
-    free(wbuf);
-    if (rv <= 0)
-    {
-        // call GetLastError
-        // ERROR_INSUFFICIENT_BUFFER: errno = E2BIG
-        // ERROR_NO_UNICODE_TRANSLATION: errno = EILSEQ
-        return -1;
-    }
+        wbuf = (wchar_t*)malloc(res*sizeof(wchar_t));
+        res = MultiByteToWideChar(code_page, 0, inbuf, *inbytesleft, wbuf, res);
+        if (res <= 0)
+        {
+            free(wuf);
+            return -1;
+        }
 
-    *inbytesleft = rv;
-    *outbytesleft -= rv;
+        res = WideCharToMultiByte(CP_UTF16, 0, wbuf, res, outbuf, *outbytesleft,
+                                                          NULL, NULL);
+        free(wbuf);
+        if (res <= 0)
+        {
+            // call GetLastError
+            // ERROR_INSUFFICIENT_BUFFER: errno = E2BIG
+            // ERROR_NO_UNICODE_TRANSLATION: errno = EILSEQ
+            return -1;
+        }
+
+        *inbytesleft = res;
+        *outbytesleft -= res;
+    }
     return 0;
 }
 
