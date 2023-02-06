@@ -185,7 +185,9 @@ int localized_strncasecmp(const char *s1, const char *s2, size_t n);
 # define WIN32_LEAN_AND_MEAN
 # include <windows.h>
 
+# if !defined(__MINGW32__) && !defined(__MINGW64__)
 typedef const char* iconv_t;
+# endif
 
 typedef struct
 {

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.11.0)
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
 
 include(CheckIncludeFile)
@@ -117,6 +117,8 @@ check_include_file(strings.h HAVE_STRINGS_H)
 check_include_file(unistd.h HAVE_UNISTD_H)
 check_include_file(locale.h HAVE_LOCALE_H)
 check_include_file(langinfo.h HAVE_LANGINFO_H)
+
+find_package(Iconv)
 
 add_definitions(-DHAVE_CONFIG_H=1)
 if(WERROR)

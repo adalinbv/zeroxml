@@ -114,10 +114,12 @@ static const char *comment = XML_COMMENT;
 
 #ifdef WIN32
 
+# if !defined(__MINGW32__) && !defined(__MINGW64__)
 /* perform character set conversion */
-#define iconv_close(l)
-#define iconv_open(l,e)	(e)
+# define iconv_close(l)
+# define iconv_open(l,e)	(e)
 static size_t iconv(iconv_t, char**, size_t*, char**, size_t*);
+# endif
 
 /* map 'filename' and return a pointer to it. */
 static void *simple_mmap(int, int, SIMPLE_UNMMAP *);
@@ -2803,6 +2805,7 @@ simple_unmmap(void *addr, int length, SIMPLE_UNMMAP *un)
     CloseHandle(un->m);
 }
 
+# if !defined(__MINGW32__) && !defined(__MINGW64__)
 /*
  * A basic implementation of the iconv function for Windows in C:
  *
@@ -2817,6 +2820,11 @@ simple_unmmap(void *addr, int length, SIMPLE_UNMMAP *un)
  *
  * https://www.iana.org/assignments/character-sets/character-sets.xhtml
  */
+#define CP_UTF16	1200
+#define CP_UTF32	12000
+#define CP_LATIN1	28591
+#define CP_ASCII	20127
+
 static UINT
 charset_to_identifier(const char *charset)
 {
@@ -2843,7 +2851,7 @@ iconv(iconv_t cd, char **inbuf, size_t *inbytesleft,
         wchar_t *wbuf;
         size_t res;
 
-        res = MultiByteToWideChar(code_page, 0, inbuf, *inbytesleft, NULL, 0);
+        res = MultiByteToWideChar(code_page, 0, *inbuf, *inbytesleft, NULL, 0);
         if (res <= 0)
         {
             // call GetLastError
@@ -2853,14 +2861,15 @@ iconv(iconv_t cd, char **inbuf, size_t *inbytesleft,
         }
 
         wbuf = (wchar_t*)malloc(res*sizeof(wchar_t));
-        res = MultiByteToWideChar(code_page, 0, inbuf, *inbytesleft, wbuf, res);
+        res = MultiByteToWideChar(code_page, 0, *inbuf, *inbytesleft, wbuf, res);
         if (res <= 0)
         {
-            free(wuf);
+            free(wbuf);
             return -1;
         }
 
-        res = WideCharToMultiByte(CP_UTF16, 0, wbuf, res, outbuf, *outbytesleft,
+	*inbuf += res;
+        res = WideCharToMultiByte(CP_UTF16, 0, wbuf, res, *outbuf, *outbytesleft,
                                                           NULL, NULL);
         free(wbuf);
         if (res <= 0)
@@ -2873,8 +2882,9 @@ iconv(iconv_t cd, char **inbuf, size_t *inbytesleft,
 
         *inbytesleft = res;
         *outbytesleft -= res;
+	*outbuf += res;
     }
     return 0;
 }
-
+# endif
 #endif
