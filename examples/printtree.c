@@ -61,9 +61,6 @@
 
 #include <stdio.h>
 #include <malloc.h>
-#ifdef HAVE_LOCALE_H
-# include <locale.h>
-#endif
 
 #include <types.h>
 #include "xml.h"
@@ -82,10 +79,6 @@ int main(int argc, char **argv)
     else
     {
         xmlId *rid;
-
-#ifdef HAVE_LOCALE_H
-        setlocale(LC_ALL, "");
-#endif
 
         rid = xmlOpen(argv[1]);
         if (xmlErrorGetNo(rid, 0) != XML_NO_ERROR)
