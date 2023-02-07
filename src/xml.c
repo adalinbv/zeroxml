@@ -196,7 +196,7 @@ xmlOpen(const char *filename)
                         do
                         {
 # if HAVE_LOCALE_H
-                            char *locale = setlocale(LC_CTYPE, NULL);
+                            char *locale = setlocale(LC_ALL, NULL);
                             char *ptr = strrchr(locale, '.');
                             if (ptr) locale = ptr+1;
 # endif
@@ -272,7 +272,7 @@ xmlInitBuffer(const char *buffer, int blocklen)
                 do
                 {
 # if HAVE_LOCALE_H
-                    char *locale = setlocale(LC_CTYPE, NULL);
+                    char *locale = setlocale(LC_ALL, NULL);
                     char *ptr = strrchr(locale, '.');
                     if (ptr) locale = ptr+1;
 # endif
@@ -485,7 +485,7 @@ xmlNodeCompareName(const xmlId *id, const char *str)
     if (nlen >= slen)
     {
         iconv_t cd = xid->root->cd;
-        rv = LSTRNCMP(cd, str, xid->name, nlen);
+        rv = LSTRNCMP(cd, str, xid->name, &nlen);
     }
 
     return rv;
@@ -598,7 +598,7 @@ xmlAttributeCompareName(const xmlId *id, int pos, const char *str)
             {
                 iconv_t cd = xid->root->cd;
                 int slen = new-ps;
-                rv = LSTRNCMP(cd, str, ps, slen);
+                rv = LSTRNCMP(cd, str, ps, &slen);
                 break;
             }
 
@@ -749,7 +749,7 @@ xmlCompareString(const xmlId *id, const char *s)
         ps = xid->start;
         len = xid->len;
         __zeroxml_prepare_data(&ps, &len, STRIPPED);
-        rv = LSTRNCMP(cd, s, ps, len) ? XML_TRUE : XML_FALSE;
+        rv = LSTRNCMP(cd, s, ps, &len) ? XML_TRUE : XML_FALSE;
     }
 
     return rv;
@@ -867,7 +867,7 @@ xmlNodeCompareString(const xmlId *id, const char *path, const char *s)
             iconv_t cd = xid->root->cd;
             const char *ps = str;
             __zeroxml_prepare_data(&ps, &len, STRIPPED);
-            rv = LSTRNCMP(cd, s, ps, len);
+            rv = LSTRNCMP(cd, s, ps, &len);
         }
         else if (slen == 0) {
             xmlErrorSet(xid, node, len);
@@ -1221,7 +1221,7 @@ xmlAttributeCompareString(const xmlId *id, const char *name, const char *s)
         if (ptr && (len == strlen(s)))
         {
             iconv_t cd = xid->root->cd;
-            rv = LSTRNCMP(cd, s, ptr, len);
+            rv = LSTRNCMP(cd, s, ptr, &len);
         }
     }
     return rv;
@@ -1461,14 +1461,14 @@ __zeroxml_get_attribute_data_ptr(const struct _xml_id *id, const char *name, int
         pe = xid->start - 1;
         while (ps<pe)
         {
-            int res, slen = (int)(pe-ps);
+            int slen = (int)(pe-ps);
             while ((ps<pe) && isspace(*ps)) ps++;
 
-            if ((res = LSTRNCMP(cd, name, ps, slen)) > 0)
+            if (!LSTRNCMP(cd, name, ps, &slen))
             {
-                const char *ptr = ps+res;
+                const char *ptr = ps+slen;
                 if (ptr[0] != '=') {
-                   ptr = memchr(ps, '=', res);
+                   ptr = memchr(ps, '=', slen);
                 }
                 if (ptr && ptr[0] == '=')
                 {

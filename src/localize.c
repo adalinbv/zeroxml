@@ -85,18 +85,18 @@
  */
 #define BUFSIZE		1024
 int
-string_compare(iconv_t cd, const char *s1, const char *s2, size_t s2len)
+string_compare(iconv_t cd, const char *s1, const char *s2, int *s2len)
 {
     size_t s1len = strlen(s1);
-    int rv = 0;
+    int rv = -1;
 
-    if (s1len > 0 && s2len > 0)
+    if (s1len > 0 && *s2len > 0)
     {
         char buffer[BUFSIZE+1];
         char *outbuf = buffer;
         char *inbuf = (char*)s2;
         size_t outbytesleft = BUFSIZE;
-        size_t inbytesleft = strlen(s1);
+        size_t inbytesleft = *s2len; // strlen(s1);
         size_t nconv;
 
         iconv(cd, NULL, NULL, NULL, NULL);
@@ -104,8 +104,8 @@ string_compare(iconv_t cd, const char *s1, const char *s2, size_t s2len)
         if (nconv != (size_t)-1)
         {
             iconv(cd, NULL, NULL, &outbuf, &outbytesleft);
-            if (!memcmp(s1, buffer, s1len)) {
-                rv = inbuf-s2;
+            if ((rv = memcmp(s1, buffer, s1len)) != NULL) {
+                *s2len = inbuf-s2;
             }
         }
     }
