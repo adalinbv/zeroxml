@@ -60,6 +60,7 @@
 # include <config.h>
 #endif
 
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #if HAVE_LOCALE_H
@@ -70,12 +71,11 @@
 #include <errno.h>
 
 #include "xml.h"
+#include "api.h"
 
 /*
- * ChatGPT: write a Unicode string comparison function in C which compares
- *          strings with different character enconding
- * Here's an example implementation of a Unicode string comparison function in
- * C that handles strings with different character encodings:
+ * A Unicode string comparison function that handles strings with different
+ * character encodings.
  *
  * In this code, the string_compare function first converts the input strings
  * s1 and s2 from the specified encoding to wide character strings ws1 and ws2
@@ -83,36 +83,33 @@
  * descriptor, and the iconv function performs the conversion. Finally, wcscoll
  * is used to compare the wide character strings.
  */
-int string_compare(char *s1, char *s2, size_t len, const char *encoding) {
-    size_t in_left1 = len;
-    size_t in_left2 = len;
+#define BUFSIZE		1024
+int
+string_compare(iconv_t cd, const char *s1, const char *s2, size_t s2len)
+{
+    size_t s1len = strlen(s1);
+    int rv = 0;
 
-    iconv_t cd = iconv_open("WCHAR_T", encoding);
-    if (cd == (iconv_t)-1) {
-//      perror("iconv_open");
-        return -1;
+    if (s1len > 0 && s2len > 0)
+    {
+        char buffer[BUFSIZE+1];
+        char *outbuf = buffer;
+        char *inbuf = (char*)s2;
+        size_t outbytesleft = BUFSIZE;
+        size_t inbytesleft = strlen(s1);
+        size_t nconv;
+
+        iconv(cd, NULL, NULL, NULL, NULL);
+        nconv = iconv(cd, &inbuf, &inbytesleft, &outbuf, &outbytesleft);
+        if (nconv != (size_t)-1)
+        {
+            iconv(cd, NULL, NULL, &outbuf, &outbytesleft);
+            if (!memcmp(s1, buffer, s1len)) {
+                rv = inbuf-s2;
+            }
+        }
     }
-
-    wchar_t ws1[1024], ws2[1024];
-    wchar_t *pws1 = ws1, *pws2 = ws2;
-    size_t out_left1 = sizeof(ws1) / sizeof(ws1[0]);
-    size_t out_left2 = sizeof(ws2) / sizeof(ws2[0]);
-
-    if (iconv(cd, &s1, &in_left1, (char**)&pws1, &out_left1) == (size_t)-1) {
-//      perror("iconv");
-        return -1;
-    }
-    if (iconv(cd, &s2, &in_left2, (char**)&pws2, &out_left2) == (size_t)-1) {
-//      perror("iconv");
-        return -1;
-    }
-
-    iconv_close(cd);
-
-    *pws1 = L'\0';
-    *pws2 = L'\0';
-
-    return wcscoll(ws1, ws2);
+    return rv;
 }
 
 /*
