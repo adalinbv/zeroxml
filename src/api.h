@@ -158,7 +158,7 @@
 size_t iconv(iconv_t, char**, size_t*, char**, size_t*);
 # endif
 
-int string_compare(const char*, const char*, size_t, const char*);
+int string_compare(iconv_t, const char*, const char*, size_t);
 int __zeroxml_iconv(iconv_t, const char*, size_t, char*, size_t);
 
 # ifndef XML_CASE_INSENSITIVE
