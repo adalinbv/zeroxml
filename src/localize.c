@@ -1,212 +1,263 @@
+/*
+ * This software is available under 2 licenses -- choose whichever you prefer.
+ *
+ * ALTERNATIVE A - Modified BSD license
+ *
+ * Copyright (C) 2008-2023 by Erik Hofman.
+ * Copyright (C) 2009-2023 by Adalin B.V.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *    1. Redistributions of source code must retain the above copyright notice,
+ *        this list of conditions and the following disclaimer.
+ *
+ *    2. Redistributions in binary form must reproduce the above copyright
+ *        notice, this list of conditions and the following disclaimer in the
+ *        documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ADALIN B.V. ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
+ * NO EVENT SHALL ADALIN B.V. OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+ * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUTOF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * The views and conclusions contained in the software and documentation are
+ * those of the authors and should not be interpreted as representing official
+ * policies, either expressed or implied, of Adalin B.V.
+ *
+ * -----------------------------------------------------------------------------
+ * ALTERNATIVE B - Public Domain (www.unlicense.org)
+ *
+ * This is free and unencumbered software released into the public domain.
+ *
+ * Anyone is free to copy, modify, publish, use, compile, sell, or distribute
+ * this software, either in source code form or as a compiled binary, for any
+ * purpose, commercial or non-commercial, and by any means.
+ *
+ * In jurisdictions that recognize copyright laws, the author or authors of
+ * this software dedicate any and all copyright interest in the software to
+ * the public domain. We make this dedication for the benefit of the public at
+ * large and to the detriment of our heirs and successors. We intend this
+ * dedication to be an overt act of relinquishment in perpetuity of all
+ * present and future rights to this software under copyright law.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 #include <string.h>
-#include <locale.h>
 #include <stdlib.h>
-#include <ctype.h>
-#include <wctype.h>
+#if HAVE_LOCALE_H
+# include <locale.h>
+#endif
 #include <wchar.h>
+#include <iconv.h>
+#include <errno.h>
+
+#include "xml.h"
 
 /*
- * ChatGPT: write a localization aware character compare function in C
- * Here's a sample implementation of a localization-aware character comparison
- * function in C:
+ * ChatGPT: write a Unicode string comparison function in C which compares
+ *          strings with different character enconding
+ * Here's an example implementation of a Unicode string comparison function in
+ * C that handles strings with different character encodings:
  *
- * This implementation uses the mbrtowc function to convert sequences of
- * multibyte characters to wide characters, and compares the wide characters
- * using the wcscoll function, which performs a locale-specific comparison of
- * wide character strings. The function returns 0 if the two characters are
- * equal, a negative value if s1 is less than s2, or a positive value if s1
- * is greater than s2.
+ * In this code, the string_compare function first converts the input strings
+ * s1 and s2 from the specified encoding to wide character strings ws1 and ws2
+ * using the iconv library. The iconv_open function opens a conversion
+ * descriptor, and the iconv function performs the conversion. Finally, wcscoll
+ * is used to compare the wide character strings.
  */
-int localized_char_cmp(const char s1, const char s2)
-{
-    mbstate_t mbs1, mbs2;
-    wchar_t wc1, wc2;
-    size_t mblen1, mblen2;
-    int res;
+int string_compare(char *s1, char *s2, size_t len, const char *encoding) {
+    size_t in_left1 = len;
+    size_t in_left2 = len;
 
-    memset(&mbs1, 0, sizeof mbs1);
-    memset(&mbs2, 0, sizeof mbs2);
-    mblen1 = mbrtowc(&wc1, &s1, MB_CUR_MAX, &mbs1);
-    mblen2 = mbrtowc(&wc2, &s2, MB_CUR_MAX, &mbs2);
-    if (mblen1 == (size_t)-1 || mblen1 == (size_t)-2 ||
-        mblen2 == (size_t)-1 || mblen2 == (size_t)-2) {
+    iconv_t cd = iconv_open("WCHAR_T", encoding);
+    if (cd == (iconv_t)-1) {
+//      perror("iconv_open");
         return -1;
     }
-    res = wcscoll(&wc1, &wc2);
-    return res;
-}
 
-/*
- * ChatGPT: write a localization aware tolower function in C
- * Here's a sample implementation of a localization-aware tolower function in C:
- *
- * This implementation uses the mbrtowc function to convert a multibyte
- * character to a wide character, and converts the wide character to lowercase
- * using the towlower function, which performs a locale-specific case conversion
- * of wide characters. The function returns the lowercase equivalent of the
- * input character, or -1 if an error occurs.
- */
-int localized_tolower(int c)
-{
-    mbstate_t mbs;
-    wchar_t wc;
-    size_t mblen;
+    wchar_t ws1[1024], ws2[1024];
+    wchar_t *pws1 = ws1, *pws2 = ws2;
+    size_t out_left1 = sizeof(ws1) / sizeof(ws1[0]);
+    size_t out_left2 = sizeof(ws2) / sizeof(ws2[0]);
 
-    memset(&mbs, 0, sizeof mbs);
-    mblen = mbrtowc(&wc, (const char*)&c, MB_CUR_MAX, &mbs);
-    if (mblen == (size_t)-1 || mblen == (size_t)-2) {
+    if (iconv(cd, &s1, &in_left1, (char**)&pws1, &out_left1) == (size_t)-1) {
+//      perror("iconv");
         return -1;
     }
-    return towlower(wc);
-}
-
-/* ChatGPT: write a localization aware memchr function in C
- * Here's a sample implementation of a localization-aware memchr function in C:
- *
- * This implementation uses the mbrtowc function to convert a sequence of
- * multibyte characters to a wide character, and compares the wide character
- * with the integer c passed as the second argument. If a match is found, the
- * function returns a pointer to the matching multibyte character in the input
- * string.
- */
-void *localized_memchr(const void *s, int c, size_t n)
-{
-    mbstate_t mbs;
-    wchar_t wc;
-    size_t mblen;
-
-    memset(&mbs, 0, sizeof mbs);
-    while (n > 0) {
-        mblen = mbrtowc(&wc, s, n, &mbs);
-        if (mblen == (size_t)-1 || mblen == (size_t)-2) {
-            return NULL;
-        }
-        if (wc == (wchar_t)c) {
-            return (void *)s;
-        }
-        s = (char *)s + mblen;
-        n -= mblen;
+    if (iconv(cd, &s2, &in_left2, (char**)&pws2, &out_left2) == (size_t)-1) {
+//      perror("iconv");
+        return -1;
     }
-    return NULL;
+
+    iconv_close(cd);
+
+    *pws1 = L'\0';
+    *pws2 = L'\0';
+
+    return wcscoll(ws1, ws2);
 }
 
 /*
- * ChatGPT: write a localization aware memcmp function
- * Here's an example implementation of a localization aware memcmp function in C
+ * Convert a string from XML defined character encoding to local encoding.
  *
- * This implementation takes into account the current locale set with setlocale
- * to perform a correct comparison of the strings. The mbrtowc function is used
- * to convert multi-byte characters to wide characters, and the wcscoll function * is used to compare the wide characters according to the current locale.
+ * @param cd character encoding conversion descriptor
+ * @param out 
+ * @param olen
+ * @param in
+ * @param ilen
+ * @return 
  */
-int localized_memcmp(const void *s1, const void *s2, size_t n) {
-  wchar_t wc1, wc2;
-  size_t i, j;
-  mbstate_t state1, state2;
+int
+__zeroxml_iconv(iconv_t cd, const char *inbuf, size_t inbytesleft,
+                            char *outbuf, size_t outbytesleft)
+{
+    char cvt = XML_FALSE;
+    int rv = XML_NO_ERROR;
 
-  memset(&state1, 0, sizeof state1);
-  memset(&state2, 0, sizeof state2);
-
-  for (i = j = 0; i < n && j < n;) {
-    size_t len1 = mbrtowc(&wc1, (const char *)s1 + i, n - i, &state1);
-    size_t len2 = mbrtowc(&wc2, (const char *)s2 + j, n - j, &state2);
-
-    if (len1 == (size_t) -1 || len1 == (size_t) -2)
-      return len2 == 0 ? 0 : -1;
-    if (len2 == (size_t) -1 || len2 == (size_t) -2)
-      return len1 == 0 ? 0 : 1;
-
-    int cmp = wcscoll(&wc1, &wc2);
-    if (cmp != 0)
-      return cmp;
-
-    i += len1;
-    j += len2;
-  }
-
-  if (i < n)
-    return 1;
-  if (j < n)
-    return -1;
-
-  return 0;
+    outbuf[0] = 0;
+#if defined(HAVE_ICONV_H) || defined(WIN32)
+    if (cd != (iconv_t)-1)
+    {
+        char *ptr = (char*)inbuf;
+        size_t nconv;
+        iconv(cd, NULL, NULL, NULL, NULL);
+        nconv = iconv(cd, &ptr, &inbytesleft, &outbuf, &outbytesleft);
+        if (nconv != (size_t)-1)
+        {
+            iconv(cd, NULL, NULL, &outbuf, &outbytesleft);
+            outbuf[0] = 0;
+            cvt = XML_TRUE;
+        }
+        else
+        {
+            outbuf[outbytesleft] = 0;
+            switch (errno)
+            {
+            case EILSEQ:
+                rv = XML_INVALID_MULTIBYTE_SEQUENCE;
+                break;
+            case EINVAL:
+                rv = XML_INVALID_MULTIBYTE_SEQUENCE;
+                break;
+            case E2BIG:
+                rv = XML_TRUNCATE_RESULT;
+                break;
+            default:
+                break;
+            }
+        }
+    }
+#endif
+    if (cvt == XML_FALSE)
+    {
+        if (outbytesleft > inbytesleft) outbytesleft = inbytesleft;
+        memcpy(outbuf, inbuf, outbytesleft);
+        outbuf[inbytesleft] = 0;
+    }
+    return rv;
 }
 
-/* ChatGPT: write a localization aware strncmp function in C
- * Here's a sample implementation of a localization-aware strncmp function in C: *
- * This implementation uses the mbrtowc function to convert sequences of
- * multibyte characters to wide characters, and compares the wide characters
- * using the wcscoll function, which performs a locale-specific comparison of
- * wide character strings. The function returns 0 if the two strings are equal
- * (up to n characters), a negative value if s1 is less than s2, or a positive
- * value if s1 is greater than s2.
- */
-int localized_strncmp(const char *s1, const char *s2, size_t n)
-{
-    mbstate_t mbs1, mbs2;
-    wchar_t wc1, wc2;
-    size_t mblen1, mblen2;
-    int res;
 
-    memset(&mbs1, 0, sizeof mbs1);
-    memset(&mbs2, 0, sizeof mbs2);
-    while (n > 0) {
-        mblen1 = mbrtowc(&wc1, s1, n, &mbs1);
-        mblen2 = mbrtowc(&wc2, s2, n, &mbs2);
-        if (mblen1 == (size_t)-1 || mblen1 == (size_t)-2 ||
-            mblen2 == (size_t)-1 || mblen2 == (size_t)-2) {
+#ifdef WIN32
+# if !defined(__MINGW32__) && !defined(__MINGW64__)
+/*
+ * A basic implementation of the iconv function for Windows in C:
+ *
+ * This implementation uses the Windows API functions MultiByteToWideChar and
+ * WideCharToMultiByte to convert between different character sets. The
+ * in_charset and out_charset parameters are compared against a list of known
+ * character sets, and the appropriate code page is selected. If the input or
+ * output character set is UTF-8, the corresponding code page is set to CP_UTF8.
+ * The conversion is performed using MultiByteToWideChar to convert the input
+ * buffer to a wide character buffer, and then WideCharToMultiByte to convert
+ * the wide character buffer to the output buffer.
+ *
+ * https://www.iana.org/assignments/character-sets/character-sets.xhtml
+ */
+#define CP_UTF16        1200
+#define CP_UTF32        12000
+#define CP_LATIN1       28591
+#define CP_ASCII        20127
+
+static UINT
+charset_to_identifier(const char *charset)
+{
+    UINT identifier = AreFileApisANSI() ? CP_ACP : CP_OEMCP;
+
+    if (strcasecmp(charset, "UTF-8") == 0) identifier = CP_UTF8;
+    else if (strcasecmp(charset, "UTF-16") == 0) identifier = CP_UTF16;
+    else if (strcasecmp(charset, "ISO-8859-1") == 0) identifier = CP_LATIN1;
+    else if (strcasecmp(charset, "ASCII") == 0) identifier = CP_ASCII;
+    else if (strcasecmp(charset, "US-ASCII") == 0) identifier = CP_ASCII;
+    else if (strcasecmp(charset, "UTF-32") == 0) identifier = CP_UTF32;
+
+    return identifier;
+}
+
+static size_t
+iconv(iconv_t cd, char **inbuf, size_t *inbytesleft,
+                  char **outbuf, size_t *outbytesleft)
+{
+    if (inbuf && *inbuf && inbytesleft &&
+        outbuf && *outbuf && outbytesleft)
+    {
+        UINT code_page = charset_to_identifier(cd);
+        wchar_t *wbuf;
+        size_t res;
+
+        res = MultiByteToWideChar(code_page, 0, *inbuf, *inbytesleft, NULL, 0);
+        if (res <= 0)
+        {
+            // call GetLastError
+            // ERROR_INSUFFICIENT_BUFFER: errno = E2BIG
+            // ERROR_NO_UNICODE_TRANSLATION: errno = EILSEQ
             return -1;
         }
-        res = wcscoll(&wc1, &wc2);
-        if (res != 0) {
-            return res;
+
+        wbuf = (wchar_t*)malloc(res*sizeof(wchar_t));
+        res =MultiByteToWideChar(code_page, 0, *inbuf, *inbytesleft, wbuf, res);
+        if (res <= 0)
+        {
+            free(wbuf);
+            return -1;
         }
-        s1 += mblen1;
-        s2 += mblen2;
-        n -= mblen1;
-        if (mblen1 != mblen2) {
-            n = 0;
+
+        *inbuf += res;
+        res = WideCharToMultiByte(CP_UTF16, 0, wbuf, res,
+                                  *outbuf, *outbytesleft, NULL, NULL);
+        free(wbuf);
+        if (res <= 0)
+        {
+            // call GetLastError
+            // ERROR_INSUFFICIENT_BUFFER: errno = E2BIG
+            // ERROR_NO_UNICODE_TRANSLATION: errno = EILSEQ
+            return -1;
         }
+
+        *inbytesleft = res;
+        *outbytesleft -= res;
+        *outbuf += res;
     }
     return 0;
 }
+# endif
+#endif
 
-/* ChatGPT: write a localization aware strncasecmp function in C
- * Here's a sample implementation of a localization-aware strncasecmp function
- * in C:
- *
- * This implementation uses the mbrtowc function to convert sequences of
- * multibyte characters to wide characters, and compares the wide characters
- * after converting them to lowercase using the towlower function, which
- * performs a locale-specific case conversion of wide characters. The function
- * returns 0 if the two strings are equal (up to n characters), a negative value
- * if s1 is less than s2, or a positive value if s1 is greater than s2.
- */
-int localized_strncasecmp(const char *s1, const char *s2, size_t n)
-{
-    mbstate_t mbs1, mbs2;
-    wchar_t wc1, wc2;
-    size_t mblen1, mblen2;
-    int res;
-
-    memset(&mbs1, 0, sizeof mbs1);
-    memset(&mbs2, 0, sizeof mbs2);
-    while (n > 0) {
-        mblen1 = mbrtowc(&wc1, s1, n, &mbs1);
-        mblen2 = mbrtowc(&wc2, s2, n, &mbs2);
-        if (mblen1 == (size_t)-1 || mblen1 == (size_t)-2 ||
-            mblen2 == (size_t)-1 || mblen2 == (size_t)-2) {
-            return -1;
-        }
-        res = towlower(wc1) - towlower(wc2);
-        if (res != 0) {
-            return res;
-        }
-        s1 += mblen1;
-        s2 += mblen2;
-        n -= mblen1;
-        if (mblen1 != mblen2) {
-            n = 0;
-        }
-    }
-    return 0;
-}

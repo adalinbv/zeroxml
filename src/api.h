@@ -122,13 +122,67 @@
 #  define xmlErrorSet(a, b, c) do { \
      __zeroxml_set_error(a, b, c); PRINT_INFO(a, (char*)b, c); \
    } while(0)
+
 # else /* NDEBUG */
 #  define xmlErrorSet(a, b, c) __zeroxml_set_error(a, b, c);
 #  define PRINT_INFO(a, b, c)
-# endif
+
+# endif /* NDEBUG */
+
 #else /* XML_NONVALIDATING */
 # define PRINT_INFO(a, b, c)
 # define xmlErrorSet(a, b, c)
+
+#endif /*XML_NONVALIDATING */
+
+#define MEMCMP(a,b,c)		memcmp((a),(b),(c))
+#define MEMCHR(a,b,c)		memchr((a),(b),(c))
+#define CASECMP(a,b)		(CASE(a)==CASE(b))
+#define STRNCASECMP(a,b,c)	strncasecmp((a),(b),(c))
+
+#ifndef XML_CASE_INSENSITIVE
+# define CASE(a)                (a)
+# define STRNCMP(a,b,c)		strncmp((a),(b),(c))
+
+#else /* XML_CASE_INSENSITIVE */
+# define CASE(a)                tolower(a)
+# define STRNCMP(a,b,c)		STRNCASECMP((a),(b),(c))
+
+#endif /* XML_CASE_INSENSITIVE */
+
+#ifdef XML_LOCALIZATION
+
+# if defined(WIN32) && (!defined(__MINGW32__) && !defined(__MINGW64__))
+#  define iconv_close(l)
+#  define iconv_open(l,e)        (e)
+size_t iconv(iconv_t, char**, size_t*, char**, size_t*);
+# endif
+
+int string_compare(const char*, const char*, size_t, const char*);
+int __zeroxml_iconv(iconv_t, const char*, size_t, char*, size_t);
+
+# ifndef XML_CASE_INSENSITIVE
+#  define LCASE(a)		(a)
+#  define LSTRNCMP(a,b,c,d)	string_compare((a),(b),(c),(d))
+
+# else /* XML_CASE_INSENSITIVE */
+#  define LCASE(a)		localized_tolower(a)
+#  define LSTRNCMP(a,b,c,d)	localized_strncasecmp((a),(b),(c),(d))
+
+# endif /*XML_CASE_INSENSITIVE */
+
+#else /* XML_LOCALIZATION */
+# define LCASE(a)		CASE(a)
+# define LSTRNCMP(a,b,c,d)	STRNCMP((a),(b),(c))
+
+#endif /*XML_LOCALIZATION */
+
+#ifndef XML_CASE_INSENSITIVE
+# define CASE(a)		(a)
+# define STRNCMP(a,b,c)		strncmp((a),(b),(c))
+#else
+# define CASE(a)		tolower(a)
+# define STRNCMP(a,b,c)		strncasecmp((a),(b),(c))
 #endif
 
 #define PRINT(s, b, c) { \
@@ -143,35 +197,6 @@
     } else printf("Length (%i) seems too large at line %i\n",len, __LINE__); \
   } else printf("NULL pointer at line %i\n", __LINE__); \
 }
-
-
-#define MEMCMP(a,b,c)		memcmp((a),(b),(c))
-#define MEMCHR(a,b,c)		memchr((a),(b),(c))
-#define CASECMP(a,b)		(CASE(a)==CASE(b))
-#ifdef XML_LOCALIZATION
-/* Localization support */
-int localized_tolower(int c);
-int localized_char_cmp(const char s1, const char s2);
-void *localized_memchr(const void *s, int c, size_t n);
-int localized_memcmp(const void *s1, const void *s2, size_t n);
-int localized_strncmp(const char *s1, const char *s2, size_t n);
-int localized_strncasecmp(const char *s1, const char *s2, size_t n);
-# ifndef XML_CASE_INSENSITIVE
-#  define CASE(a)		(a)
-#  define STRNCMP(a,b,c)	strncmp((a),(b),(c))
-# else
-#  define CASE(a)		localized_tolower(a)
-#  define STRNCMP(a,b,c)	strncasecmp((a),(b),(c))
-# endif
-#else /* XML_LOCALIZATION */
-# ifndef XML_CASE_INSENSITIVE
-#  define CASE(a)		(a)
-#  define STRNCMP(a,b,c)	strncmp((a),(b),(c))
-# else
-#  define CASE(a)		tolower(a)
-#  define STRNCMP(a,b,c)	strncasecmp((a),(b),(c))
-# endif
-#endif
 
 #define MAX_ENCODING	32
 #define MMAP_FREE	-2
@@ -223,12 +248,18 @@ struct _root_id
     int fd;
     char *mmap;
     char encoding[MAX_ENCODING+1];
+
 #if defined(HAVE_ICONV_H) || defined(WIN32)
     iconv_t cd;
+# ifdef HAVE_LOCALE_H
+    const char *locale;
+# endif
 #endif
+
 #ifndef XML_NONVALIDATING
     struct _zeroxml_error *info;
 #endif
+
 #ifdef WIN32
     SIMPLE_UNMMAP un;
 #endif

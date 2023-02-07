@@ -90,7 +90,6 @@
 
 static long __zeroxml_strtol(const char*, char**, int);
 static int __zeroxml_strtob(const char*, const char*);
-static int __zeroxml_iconv(iconv_t, char*, size_t, const char*, size_t);
 static void __zeroxml_prepare_data( const char**, int*, char);
 static char *__zeroxml_get_string(const xmlId*, char);
 static int __zeroxml_node_get_num(const xmlId*, const char*, char);
@@ -113,14 +112,6 @@ static const char *comment = XML_COMMENT;
 #endif
 
 #ifdef WIN32
-
-# if !defined(__MINGW32__) && !defined(__MINGW64__)
-/* perform character set conversion */
-# define iconv_close(l)
-# define iconv_open(l,e)	(e)
-static size_t iconv(iconv_t, char**, size_t*, char**, size_t*);
-# endif
-
 /* map 'filename' and return a pointer to it. */
 static void *simple_mmap(int, int, SIMPLE_UNMMAP *);
 static void simple_unmmap(void*, int, SIMPLE_UNMMAP *);
@@ -150,6 +141,11 @@ xmlOpen(const char *filename)
             {
                 struct stat statbuf;
                 char *mm;
+
+#ifdef HAVE_LOCALE_H
+                rid->locale = setlocale(LC_ALL, NULL);
+                setlocale(LC_ALL, "");
+#endif
 
                 fstat(fd, &statbuf);
                 mm = simple_mmap(fd, (int)statbuf.st_size, &rid->un);
@@ -234,6 +230,11 @@ xmlInitBuffer(const char *buffer, int blocklen)
             char *encoding = (char*)&rid->encoding;
             const char *start;
 
+#ifdef HAVE_LOCALE_H
+            rid->locale = setlocale(LC_ALL, NULL);
+            setlocale(LC_ALL, "");
+#endif
+
             encoding[0] = 0;
             start = __zeroxml_process_declaration(buffer, blocklen, encoding);
             blocklen -= start-buffer;
@@ -294,6 +295,10 @@ xmlClose(xmlId *id)
 
     if (rid && rid->root == rid)
     {
+#ifdef HAVE_LOCALE_H
+        setlocale(LC_ALL, rid->locale);
+#endif
+
         if (rid->fd == MMAP_FREE) {
            free(rid->mmap);
         }
@@ -437,7 +442,7 @@ xmlNodeGetName(const xmlId *id)
     len = xid->name_len;
     if ((rv = malloc(6*len+1)) != NULL)
     {
-        int res = __zeroxml_iconv(xid->root->cd, rv, 6*len, xid->name, len);
+        int res = __zeroxml_iconv(xid->root->cd, xid->name, len, rv, 6*len);
         if (res) xmlErrorSet(xid, 0, res);
     }
     else {
@@ -463,7 +468,7 @@ xmlNodeCopyName(const xmlId *id, char *buf, int buflen)
         xmlErrorSet(xid, 0, XML_TRUNCATE_RESULT);
     }
 
-    res = __zeroxml_iconv(xid->root->cd, buf, buflen, xid->name, slen);
+    res = __zeroxml_iconv(xid->root->cd, xid->name, slen, buf, buflen);
     if (res) xmlErrorSet(xid, 0, res);
 
     return slen;
@@ -514,14 +519,17 @@ xmlAttributeCopyName(const xmlId *id, char *buf, int buflen, int pos)
 
             if (num++ == pos)
             {
-                slen = new-ps;
+                pe = new-1;
+                while ((pe>ps) && isspace(*pe)) pe--;
+                slen = (pe-ps)+1;
+
                 if (slen >= buflen)
                 {
                     slen = buflen-1;
                     xmlErrorSet(xid, 0, XML_TRUNCATE_RESULT);
                 }
 
-                res = __zeroxml_iconv(xid->root->cd, buf, buflen, ps, slen);
+                res = __zeroxml_iconv(xid->root->cd, ps, slen, buf, buflen);
                 if (res) xmlErrorSet(xid, 0, res);
                 break;
             }
@@ -549,7 +557,7 @@ xmlAttributeGetName(const xmlId *id, int pos)
     len = xmlAttributeCopyName(id, buf, 4096, pos);
     if ((rv = malloc(6*len+1)) != NULL)
     {
-        int res = __zeroxml_iconv(xid->root->cd, rv, 6*len, buf, len);
+        int res = __zeroxml_iconv(xid->root->cd, buf, len, rv, 6*len);
         if (res) xmlErrorSet(xid, 0, res);
     }
     else {
@@ -686,16 +694,16 @@ xmlGetStringRaw(const xmlId *id)
 }
 
 XML_API int XML_APIENTRY
-xmlCopyString(const xmlId *id, char *buffer, int buflen)
+xmlCopyString(const xmlId *id, char *buf, int buflen)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     int rv = 0;
 
     assert(xid != 0);
-    assert(buffer != 0);
+    assert(buf != 0);
     assert(buflen > 0);
 
-    *buffer = '\0';
+    buf[0] = '\0';
     if (xid->len)
     {
         const char *ps;
@@ -711,7 +719,7 @@ xmlCopyString(const xmlId *id, char *buffer, int buflen)
                 len = buflen-1;
                 xmlErrorSet(xid, 0, XML_TRUNCATE_RESULT);
             }
-            res = __zeroxml_iconv(xid->root->cd, buffer, buflen,  ps, len);
+            res = __zeroxml_iconv(xid->root->cd, ps, len, buf, buflen);
             if (res) xmlErrorSet(xid, 0, res);
         }
         rv = len;
@@ -769,7 +777,7 @@ xmlNodeGetString(const xmlId *id, const char *path)
             __zeroxml_prepare_data(&ps, &len, STRIPPED);
             if ((rv = malloc(6*len+1)) != NULL)
             {
-                int res = __zeroxml_iconv(xid->root->cd, rv, 6*len, ps, len);
+                int res = __zeroxml_iconv(xid->root->cd, ps, len, rv, 6*len);
                 if (res) xmlErrorSet(xid, 0, res);
             }
             else {
@@ -785,17 +793,17 @@ xmlNodeGetString(const xmlId *id, const char *path)
 }
 
 XML_API int XML_APIENTRY
-xmlNodeCopyString(const xmlId *id, const char *path, char *buffer, int buflen)
+xmlNodeCopyString(const xmlId *id, const char *path, char *buf, int buflen)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     int rv = 0;
 
     assert(xid != 0);
     assert(path != 0);
-    assert(buffer != 0);
+    assert(buf != 0);
     assert(buflen > 0);
 
-    *buffer = '\0';
+    buf[0] = '\0';
     if (xid->len)
     {
         const char *ptr, *node = (const char *)path;
@@ -816,7 +824,7 @@ xmlNodeCopyString(const xmlId *id, const char *path, char *buffer, int buflen)
                     xmlErrorSet(xid, 0, XML_TRUNCATE_RESULT);
                 }
 
-                res = __zeroxml_iconv(xid->root->cd, buffer, buflen, ptr, len);
+                res = __zeroxml_iconv(xid->root->cd, ptr, len, buf, buflen);
                 if (res) xmlErrorSet(xid, 0, res);
             }
             rv = len;
@@ -1146,7 +1154,7 @@ xmlAttributeGetString(const xmlId *id, const char *name)
         {
             if ((rv = malloc(6*len+1)) != NULL)
             {
-                int res = __zeroxml_iconv(xid->root->cd, rv, 6*len, ptr, len);
+                int res = __zeroxml_iconv(xid->root->cd, ptr, len, rv, 6*len);
                 if (res) xmlErrorSet(xid, 0, res);
             }
             else {
@@ -1159,19 +1167,20 @@ xmlAttributeGetString(const xmlId *id, const char *name)
 
 XML_API int XML_APIENTRY
 xmlAttributeCopyString(const xmlId *id, const char *name,
-                                        char *buffer, int buflen)
+                                        char *buf, int buflen)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     int rv = 0;
 
     if (xid->name_len && xid->name != comment)
     {
-        int len;
         const char *ptr;
+        int len;
 
-        assert(buffer != 0);
+        assert(buf != 0);
         assert(buflen > 0);
 
+        buf[0] = 0;
         ptr = __zeroxml_get_attribute_data_ptr(xid, name, &len);
         if (ptr)
         {
@@ -1182,7 +1191,7 @@ xmlAttributeCopyString(const xmlId *id, const char *name,
                 xmlErrorSet(xid, ptr, XML_TRUNCATE_RESULT);
             }
 
-            res = __zeroxml_iconv(xid->root->cd, buffer, buflen, ptr, restlen);
+            res = __zeroxml_iconv(xid->root->cd, ptr, restlen, buf, buflen);
             if (res) xmlErrorSet(xid, 0, res);
             rv = restlen;
         }
@@ -1198,8 +1207,8 @@ xmlAttributeCompareString(const xmlId *id, const char *name, const char *s)
 
     if (xid->name_len && xid->name != comment)
     {
-        int len;
         const char *ptr;
+        int len;
 
         assert(s != 0);
 
@@ -1436,6 +1445,7 @@ __zeroxml_get_attribute_data_ptr(const struct _xml_id *id, const char *name, int
     *len = 0;
     if (xid->name && xid->name_len > 0)
     {
+        const char *encoding = xid->root->encoding;
         int slen = strlen(name);
         const char *ps, *pe;
 
@@ -1446,14 +1456,17 @@ __zeroxml_get_attribute_data_ptr(const struct _xml_id *id, const char *name, int
         while (ps<pe)
         {
             while ((ps<pe) && isspace(*ps)) ps++;
-            if (((int)(pe-ps) > slen) && (STRNCMP(ps, name, slen) == 0))
+
+            if (((int)(pe-ps) > slen) && (!LSTRNCMP(ps, name, slen, encoding)))
             {
                 ps += slen;
+                while ((ps<pe) && isspace(*ps)) ps++;
                 if ((ps<pe) && (*ps == '='))
                 {
                     const char *start;
                     char quote;
 
+                    /* opening quote */
                     quote = *(++ps);
                     if (quote != '"' && quote != '\'')
                     {
@@ -1461,6 +1474,7 @@ __zeroxml_get_attribute_data_ptr(const struct _xml_id *id, const char *name, int
                         return NULL;
                     }
 
+                    /* closing quote */
                     start = ++ps;
                     while ((ps<pe) && (*ps != quote)) ps++;
                     if (*ps != quote)
@@ -2126,7 +2140,7 @@ __zeroxml_get_string(const xmlId *id, char mode)
         {
             if ((rv = malloc(6*len+1)) != NULL)
             {
-                int res = __zeroxml_iconv(xid->root->cd, rv, 6*len, ps, len);
+                int res = __zeroxml_iconv(xid->root->cd, ps, len, rv, 6*len);
                 if (res) xmlErrorSet(xid, 0, res);
             }
             else {
@@ -2460,59 +2474,6 @@ __zeroxml_strtob(const char *start, const char *end)
     return rv;
 }
 
-static int
-__zeroxml_iconv(iconv_t cd, char *out, size_t olen,
-                            const char *in, size_t ilen)
-{
-    char *inbuf = (char*)in;
-    char *outbuf = out;
-    size_t inlen = ilen;
-    size_t outlen = olen;
-    char cvt = XML_FALSE;
-    int rv = XML_NO_ERROR;
-
-    out[0] = 0;
-#if defined(HAVE_ICONV_H) || defined(WIN32)
-    if (cd != (iconv_t)-1)
-    {
-        size_t nconv;
-        iconv(cd, NULL, NULL, NULL, NULL);
-        nconv = iconv(cd, &inbuf, &inlen, &outbuf, &outlen);
-        if (nconv != (size_t)-1)
-        {
-            iconv(cd, NULL, NULL, &outbuf, &outlen);
-            outbuf[0] = 0;
-            cvt = XML_TRUE;
-        }
-        else
-        {
-            outbuf[outlen] = 0;
-            switch (errno)
-            {
-            case EILSEQ:
-                rv = XML_INVALID_MULTIBYTE_SEQUENCE;
-                break;
-            case EINVAL:
-                rv = XML_INVALID_MULTIBYTE_SEQUENCE;
-                break;
-            case E2BIG:
-                rv = XML_TRUNCATE_RESULT;
-                break;
-            default:
-                break;
-            }
-        }
-    }
-#endif
-    if (cvt == XML_FALSE)
-    {
-        if (outlen > inlen) outlen = inlen;
-        memcpy(outbuf, inbuf, outlen);
-        outbuf[inlen] = 0;
-    }
-    return rv;
-}
-
 /*
  * Locate a sub-string in a memory block.
  *
@@ -2805,87 +2766,4 @@ simple_unmmap(void *addr, int length, SIMPLE_UNMMAP *un)
     UnmapViewOfFile(un->p);
     CloseHandle(un->m);
 }
-
-# if !defined(__MINGW32__) && !defined(__MINGW64__)
-/*
- * A basic implementation of the iconv function for Windows in C:
- *
- * This implementation uses the Windows API functions MultiByteToWideChar and
- * WideCharToMultiByte to convert between different character sets. The
- * in_charset and out_charset parameters are compared against a list of known
- * character sets, and the appropriate code page is selected. If the input or
- * output character set is UTF-8, the corresponding code page is set to CP_UTF8.
- * The conversion is performed using MultiByteToWideChar to convert the input
- * buffer to a wide character buffer, and then WideCharToMultiByte to convert
- * the wide character buffer to the output buffer.
- *
- * https://www.iana.org/assignments/character-sets/character-sets.xhtml
- */
-#define CP_UTF16	1200
-#define CP_UTF32	12000
-#define CP_LATIN1	28591
-#define CP_ASCII	20127
-
-static UINT
-charset_to_identifier(const char *charset)
-{
-    UINT identifier = AreFileApisANSI() ? CP_ACP : CP_OEMCP;
-
-    if (strcasecmp(charset, "UTF-8") == 0) identifier = CP_UTF8;
-    else if (strcasecmp(charset, "UTF-16") == 0) identifier = CP_UTF16;
-    else if (strcasecmp(charset, "ISO-8859-1") == 0) identifier = CP_LATIN1;
-    else if (strcasecmp(charset, "ASCII") == 0) identifier = CP_ASCII;
-    else if (strcasecmp(charset, "US-ASCII") == 0) identifier = CP_ASCII;
-    else if (strcasecmp(charset, "UTF-32") == 0) identifier = CP_UTF32;
-
-    return identifier;
-}
-
-static size_t
-iconv(iconv_t cd, char **inbuf, size_t *inbytesleft,
-                  char **outbuf, size_t *outbytesleft)
-{
-    if (inbuf && *inbuf && inbytesleft &&
-        outbuf && *outbuf && outbytesleft)
-    {
-        UINT code_page = charset_to_identifier(cd);
-        wchar_t *wbuf;
-        size_t res;
-
-        res = MultiByteToWideChar(code_page, 0, *inbuf, *inbytesleft, NULL, 0);
-        if (res <= 0)
-        {
-            // call GetLastError
-            // ERROR_INSUFFICIENT_BUFFER: errno = E2BIG
-            // ERROR_NO_UNICODE_TRANSLATION: errno = EILSEQ
-            return -1;
-        }
-
-        wbuf = (wchar_t*)malloc(res*sizeof(wchar_t));
-        res = MultiByteToWideChar(code_page, 0, *inbuf, *inbytesleft, wbuf, res);
-        if (res <= 0)
-        {
-            free(wbuf);
-            return -1;
-        }
-
-	*inbuf += res;
-        res = WideCharToMultiByte(CP_UTF16, 0, wbuf, res, *outbuf, *outbytesleft,
-                                                          NULL, NULL);
-        free(wbuf);
-        if (res <= 0)
-        {
-            // call GetLastError
-            // ERROR_INSUFFICIENT_BUFFER: errno = E2BIG
-            // ERROR_NO_UNICODE_TRANSLATION: errno = EILSEQ
-            return -1;
-        }
-
-        *inbytesleft = res;
-        *outbytesleft -= res;
-	*outbuf += res;
-    }
-    return 0;
-}
-# endif
 #endif
