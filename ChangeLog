@@ -1,6 +1,8 @@
 2023-02-04 Erik Hofman <tech@adalin.org>
- * Increase the version number to 2.1.1
- * Add xmlGetEncoding which returns the decoding of the XML document.
+ * Increase the version number to 2.2.0
+ * Add the CMake LOCALIZATION option to enable string conversion between
+   the XML defined character encoding and the local encoding. Defaults to ON.
+ * Add xmlGetEncoding which returns the encoding of the XML document.
  * Fix a segmentation fault when trying to get attributes from the root node.
  * Fix xmlNodeCopy not returning the correct boundaries.
 
@@ -17,7 +19,7 @@
  * Add XML_BOOL_NONE as a return option when NONEVALUE is ON
  * Introduce XML_TRUE and XML_FALSE as boolean results.
  * Add xmlNodeCompareName and xmlAttributeCompareName.
- * Add the compile time option to treat comments as nodes (defaults to on).
+ * Add the compile time option to treat comments as nodes. Defaults to ON.
    This makes it possible to walk the node tree and also print comment sections.
    Comment nodes can be detected with xmlNodeTest(id, XML_COMMENT).
  * Rewrite the inner loop to be more robust, efficient and spec. conform.
