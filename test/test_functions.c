@@ -71,10 +71,11 @@ int main(int argc, char **argv)
     s = "happy";
     e = s + strlen(s);
     i = __zeroxml_strtob(s, e);
-    snprintf(buf, BUFLEN, "__zeroxml_strtob with '%s' (XML_BOOL_NONE)", s);
 #ifdef XML_NONEVALUE
+    snprintf(buf, BUFLEN, "__zeroxml_strtob with '%s' (XML_BOOL_NONE)", s);
     TESTINT(p, i, XML_BOOL_NONE);
 #else
+    snprintf(buf, BUFLEN, "__zeroxml_strtob with '%s' (XML_FALSE)", s);
     TESTINT(p, i, XML_FALSE);
 #endif
 
