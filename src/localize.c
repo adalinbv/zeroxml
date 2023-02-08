@@ -116,7 +116,6 @@ string_compare(iconv_t cd, const char *s1, const char *s2, int *s2len)
 #endif
 }
 
-#ifdef XML_LOCALIZATION
 /*
  * Convert a string from XML defined character encoding to local encoding.
  *
@@ -134,8 +133,8 @@ __zeroxml_iconv(iconv_t cd, const char *inbuf, size_t inbytesleft,
     char cvt = XML_FALSE;
     int rv = XML_NO_ERROR;
 
+#if defined(XML_LOCALIZATION) && (defined(HAVE_ICONV_H) || defined(WIN32))
     outbuf[0] = 0;
-#if defined(HAVE_ICONV_H) || defined(WIN32)
     if (cd != (iconv_t)-1)
     {
         char *ptr = (char*)inbuf;
@@ -177,30 +176,7 @@ __zeroxml_iconv(iconv_t cd, const char *inbuf, size_t inbytesleft,
     return rv;
 }
 
-#else
-/*
- * Convert a string from XML defined character encoding to local encoding.
- *
- * @param cd character encoding conversion descriptor
- * @param out
- * @param olen
- * @param in
- * @param ilen
- * @return
- */
-int
-__zeroxml_iconv(iconv_t cd, const char *inbuf, size_t inbytesleft,
-                            char *outbuf, size_t outbytesleft)
-{
-    memcpy(outbuf, inbuf, inbytesleft);
-    outbuf[inbytesleft] = 0;
-    return 0;
-}
-#endif /* XML_LOCALIZATION */
-
-
-#ifdef WIN32
-# if !defined(__MINGW32__) && !defined(__MINGW64__)
+#if defined(WIN32) && (!defined(__MINGW32__) && !defined(__MINGW64__))
 /*
  * A basic implementation of the iconv function for Windows in C:
  *
@@ -281,6 +257,5 @@ iconv(iconv_t cd, char **inbuf, size_t *inbytesleft,
     }
     return 0;
 }
-# endif
-#endif
+#endif /* defined(WIN32) && (!defined(__MINGW32__) && !defined(__MINGW64__)) */
 
