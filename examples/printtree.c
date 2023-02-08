@@ -174,6 +174,7 @@ void print_xml(xmlId *id, char *name, unsigned int len)
                         i = snprintf((char *)&name[pos], MAX_LARGE_BUF-pos,
                                      "%i", index);
                         name[pos+i] = ']';
+                        name[pos+i+1] = 0;
                         res += i+2;
                     }
                 }
