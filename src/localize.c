@@ -87,6 +87,7 @@
 int
 string_compare(iconv_t cd, const char *s1, const char *s2, int *s2len)
 {
+#if defined(HAVE_ICONV_H) || defined(WIN32)
     size_t s1len = strlen(s1);
     int rv = -1;
 
@@ -104,23 +105,27 @@ string_compare(iconv_t cd, const char *s1, const char *s2, int *s2len)
         if (nconv != (size_t)-1)
         {
             iconv(cd, NULL, NULL, &outbuf, &outbytesleft);
-            if ((rv = memcmp(s1, buffer, s1len)) != NULL) {
+            if ((rv = memcmp(s1, buffer, s1len)) == 0) {
                 *s2len = inbuf-s2;
             }
         }
     }
     return rv;
+#else
+    return STRNCMP(s1, s2, *slen);
+#endif
 }
 
+#ifdef XML_LOCALIZATION
 /*
  * Convert a string from XML defined character encoding to local encoding.
  *
  * @param cd character encoding conversion descriptor
- * @param out 
+ * @param out
  * @param olen
  * @param in
  * @param ilen
- * @return 
+ * @return
  */
 int
 __zeroxml_iconv(iconv_t cd, const char *inbuf, size_t inbytesleft,
@@ -171,6 +176,27 @@ __zeroxml_iconv(iconv_t cd, const char *inbuf, size_t inbytesleft,
     }
     return rv;
 }
+
+#else
+/*
+ * Convert a string from XML defined character encoding to local encoding.
+ *
+ * @param cd character encoding conversion descriptor
+ * @param out
+ * @param olen
+ * @param in
+ * @param ilen
+ * @return
+ */
+int
+__zeroxml_iconv(iconv_t cd, const char *inbuf, size_t inbytesleft,
+                            char *outbuf, size_t outbytesleft)
+{
+    memcpy(outbuf, inbuf, inbytesleft);
+    outbuf[inbytesleft] = 0;
+    return 0;
+}
+#endif /* XML_LOCALIZATION */
 
 
 #ifdef WIN32

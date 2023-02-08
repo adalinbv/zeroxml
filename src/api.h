@@ -139,51 +139,26 @@
 #define MEMCHR(a,b,c)		memchr((a),(b),(c))
 #define CASECMP(a,b)		(CASE(a)==CASE(b))
 #define STRNCASECMP(a,b,c)	strncasecmp((a),(b),(c))
+#define LSTRNCMP(a,b,c,d)	string_compare((a),(b),(c),(d))
+
+int string_compare(iconv_t, const char*, const char*, int*);
+int __zeroxml_iconv(iconv_t, const char*, size_t, char*, size_t);
 
 #ifndef XML_CASE_INSENSITIVE
 # define CASE(a)                (a)
 # define STRNCMP(a,b,c)		strncmp((a),(b),(c))
-
 #else /* XML_CASE_INSENSITIVE */
 # define CASE(a)                tolower(a)
 # define STRNCMP(a,b,c)		STRNCASECMP((a),(b),(c))
-
 #endif /* XML_CASE_INSENSITIVE */
 
 #ifdef XML_LOCALIZATION
-
 # if defined(WIN32) && (!defined(__MINGW32__) && !defined(__MINGW64__))
 #  define iconv_close(l)
 #  define iconv_open(l,e)        (e)
 size_t iconv(iconv_t, char**, size_t*, char**, size_t*);
 # endif
-
-int string_compare(iconv_t, const char*, const char*, int*);
-int __zeroxml_iconv(iconv_t, const char*, size_t, char*, size_t);
-
-# ifndef XML_CASE_INSENSITIVE
-#  define LCASE(a)		(a)
-#  define LSTRNCMP(a,b,c,d)	string_compare((a),(b),(c),(d))
-
-# else /* XML_CASE_INSENSITIVE */
-#  define LCASE(a)		localized_tolower(a)
-#  define LSTRNCMP(a,b,c,d)	localized_strncasecmp((a),(b),(c),(d))
-
-# endif /*XML_CASE_INSENSITIVE */
-
-#else /* XML_LOCALIZATION */
-# define LCASE(a)		CASE(a)
-# define LSTRNCMP(a,b,c,d)	STRNCMP((a),(b),(c))
-
 #endif /*XML_LOCALIZATION */
-
-#ifndef XML_CASE_INSENSITIVE
-# define CASE(a)		(a)
-# define STRNCMP(a,b,c)		strncmp((a),(b),(c))
-#else
-# define CASE(a)		tolower(a)
-# define STRNCMP(a,b,c)		strncasecmp((a),(b),(c))
-#endif
 
 #define PRINT(s, b, c) { \
   int l1 = (b), l2 = (c); \
