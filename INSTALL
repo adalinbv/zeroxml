@@ -1,0 +1,24 @@
+
+To install move into the package source directory and run:
+
+mkdir build; cd build; cmake ..
+
+and then run either 'make install' or 'make package'
+
+
+Available CMake Options:
+----------------------------------------------------------	default
+option UTILS:		Build and install utility programs 	   ON 
+option WERROR:		Treat compile warnings as errors 	  OFF
+option COMMENTNODE:	Treat XML comment sections as nodes(1) 	   ON
+option NODECACHE:	Use XML Node cache 			   ON
+option NONVALIDATING:	Trun off XML validation 		  OFF
+option NONEVALUE:	Allow NONE as a return value 		  OFF
+option LOCALIZATION:	Add support for localized strings 	   ON
+option CASEINSENSITIVE:	Case insensitive element comparisson 	  OFF
+option RMALLOC:		Enable memory debugging functions 	  OFF
+
+
+(1) When treating comment sections as nodes:
+This makes it possible to walk the node tree and also print comment sections.
+Comment nodes can be detected with xmlNodeTest(id, XML_COMMENT).
