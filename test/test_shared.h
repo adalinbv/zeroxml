@@ -17,11 +17,11 @@
       exit(-1); \
   } while(0);
 
-#define TESTINT(p, a, b, c) \
+#define TESTINT(p, a, b) \
   if (a == b) printf("Testing %-63s: succes\n", p); \
   else printf("Testing %-63s: failed\n\t%i should be %i.\n", p, (int)a, (int)b);
 
-#define TESTFLOAT(p, a, b, c) \
+#define TESTFLOAT(p, a, b) \
   if (a == b) printf("Testing %-63s: succes\n", p); \
   else printf("Testing %-63s: failed\n\t%.1f should be %0.1f.\n", p, a, b);
 
@@ -44,7 +44,7 @@
   else if (!fn(a, b, c)) printf("Testing %-63s: succes\n", p); \
   else printf("Testing %-63s: failed.\n\t'%s' differs from '%s'\n",p,b,c);
 
-#define TESTPTR(p, a, b, c) \
+#define TESTPTR(p, a, b) \
   if (a == b) printf("Testing %-63s: succes\n", p); \
   else printf("Testing %-63s: failed\n\t'%p' should be '%p'.\n", p, a, b);
 

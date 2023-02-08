@@ -6,7 +6,7 @@
 
  <output>
   <frequency-hz>48000</frequency-hz>
-  <interval-hz>20</interval-hz>
+  <interval-hz>20.5</interval-hz>
   <num-speakers>2</num-speakers>
 
   <tmp><!-- --></tmp>
