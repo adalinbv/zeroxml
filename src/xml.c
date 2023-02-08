@@ -143,8 +143,8 @@ xmlOpen(const char *filename)
                 char *mm;
 
 #ifdef HAVE_LOCALE_H
-                rid->locale = setlocale(LC_ALL, NULL);
-                setlocale(LC_ALL, "");
+                rid->locale = setlocale(LC_CTYPE, NULL);
+                setlocale(LC_CTYPE, "");
 #endif
 
                 fstat(fd, &statbuf);
@@ -196,11 +196,12 @@ xmlOpen(const char *filename)
                         do
                         {
 # if HAVE_LOCALE_H
-                            char *locale = setlocale(LC_ALL, NULL);
-                            char *ptr = strrchr(locale, '.');
-                            if (ptr) locale = ptr+1;
+                            const char *locale = setlocale(LC_CTYPE, NULL);
+                            const char *ptr = strrchr(locale, '.');
+                            if (!ptr) ptr = locale;
+                            else ++ptr;
 # endif
-                            rid->cd = iconv_open(locale, rid->encoding);
+                            rid->cd = iconv_open(ptr, rid->encoding);
                         }
                         while(0);
 #endif
@@ -231,8 +232,8 @@ xmlInitBuffer(const char *buffer, int blocklen)
             const char *start;
 
 #ifdef HAVE_LOCALE_H
-            rid->locale = setlocale(LC_ALL, NULL);
-            setlocale(LC_ALL, "");
+            rid->locale = setlocale(LC_CTYPE, NULL);
+            setlocale(LC_CTYPE, "");
 #endif
 
             encoding[0] = 0;
@@ -272,11 +273,12 @@ xmlInitBuffer(const char *buffer, int blocklen)
                 do
                 {
 # if HAVE_LOCALE_H
-                    char *locale = setlocale(LC_ALL, NULL);
-                    char *ptr = strrchr(locale, '.');
-                    if (ptr) locale = ptr+1;
+                    const char *locale = setlocale(LC_CTYPE, NULL);
+                    const char *ptr = strrchr(locale, '.');
+                    if (!ptr) ptr = locale;
+                    else ++ptr;
 # endif
-                    rid->cd = iconv_open(locale, rid->encoding);
+                    rid->cd = iconv_open(ptr, rid->encoding);
                 }
                 while(0);
 #endif
@@ -987,8 +989,9 @@ xmlGetDouble(const xmlId *id)
 
     if (xid->len)
     {
-        char *end = (char*)xid->start + xid->len;
-        rv = strtod(xid->start, &end);
+        const char *ptr = xid->start;
+        char *end = (char*)ptr + xid->len;
+        rv = strtod(ptr, &end);
     }
 
     return rv;
@@ -1005,7 +1008,7 @@ xmlNodeGetDouble(const xmlId *id, const char *path)
 
     if (xid->len)
     {
-        const char *str, *node;
+        const char *ptr, *node;
         const cacheId *nc;
         int len, slen;
 
@@ -1013,11 +1016,11 @@ xmlNodeGetDouble(const xmlId *id, const char *path)
         slen = strlen(path);
         node = (const char *)path;
         nc = cacheNodeGet(id);
-        str = __zeroxml_node_get_path(&nc, xid->start, &len, &node, &slen);
-        if (str)
+        ptr = __zeroxml_node_get_path(&nc, xid->start, &len, &node, &slen);
+        if (ptr)
         {
-            char *end = (char*)str+len;
-            rv = strtod(str, &end);
+            char *end = (char*)ptr+len;
+            rv = strtod(ptr, &end);
         }
         else if (slen == 0) {
             xmlErrorSet(xid, node, len);
