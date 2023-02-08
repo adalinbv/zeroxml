@@ -88,6 +88,7 @@
 #include <types.h>
 #include "api.h"
 
+static double __zeroxml_strtod(const char*, char**);
 static long __zeroxml_strtol(const char*, char**, int);
 static int __zeroxml_strtob(const char*, const char*);
 static void __zeroxml_prepare_data( const char**, int*, char);
@@ -991,7 +992,7 @@ xmlGetDouble(const xmlId *id)
     {
         const char *ptr = xid->start;
         char *end = (char*)ptr + xid->len;
-        rv = strtod(ptr, &end);
+        rv = __zeroxml_strtod(ptr, &end);
     }
 
     return rv;
@@ -1020,7 +1021,7 @@ xmlNodeGetDouble(const xmlId *id, const char *path)
         if (ptr)
         {
             char *end = (char*)ptr+len;
-            rv = strtod(ptr, &end);
+            rv = __zeroxml_strtod(ptr, &end);
         }
         else if (slen == 0) {
             xmlErrorSet(xid, node, len);
@@ -1097,8 +1098,8 @@ xmlAttributeGetDouble(const xmlId *id, const char *name)
         ptr = __zeroxml_get_attribute_data_ptr(xid, name, &len);
         if (ptr)
         {
-            char *eptr = (char*)ptr+len;
-            rv = strtod(ptr, &eptr);
+            char *end = (char*)ptr+len;
+            rv = __zeroxml_strtod(ptr, &end);
         }
     }
     return rv;
@@ -2416,6 +2417,7 @@ static long
 __zeroxml_strtol(const char *str, char **end, int base)
 {
     int len = *end - str;
+    long rv = __XML_NONE;
 
     if (len >= 2)
     {
@@ -2445,7 +2447,21 @@ __zeroxml_strtol(const char *str, char **end, int base)
             }
         }
     }
-    return strtol(str, end, base);
+    rv = strtol(str, end, base);
+    if (!rv && *end == str)  {
+        rv = __XML_NONE;
+    }
+    return rv;
+}
+
+static double
+__zeroxml_strtod(const char *str, char **end)
+{
+    double rv = strtod(str, end);
+    if (!rv && *end == str) {
+        rv = __XML_FPNONE;
+    }
+    return rv;
 }
 
 /*

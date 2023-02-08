@@ -4,6 +4,7 @@
 #endif
 
 #include <stdio.h>
+#include <math.h>
 
 #include "test_shared.h"
 #include "xml.c"
@@ -18,6 +19,7 @@ int main(int argc, char **argv)
     char *s, *e, *p = buf;
     const char *cs, *c, *b;
     int i, hl, nl;
+    double d;
     long l;
 
     s = "33";
@@ -115,6 +117,41 @@ int main(int argc, char **argv)
     l = __zeroxml_strtol(s, &e, 10);
     snprintf(buf, BUFLEN, "__zeroxml_strtol with binary '%s'", s);
     TESTINT(p, l, 256);
+
+    s = "happy" ;
+    e = s + strlen(s);
+    l = __zeroxml_strtol(s, &e, 10);
+#ifdef XML_NONEVALUE
+    snprintf(buf, BUFLEN, "__zeroxml_strtol with string '%s' (XML_NONE)", s);
+    TESTINT(p, l, XML_NONE);
+#else
+    snprintf(buf, BUFLEN, "__zeroxml_strtol with string '%s' (0)", s);
+    TESTINT(p, l, 0);
+#endif
+
+
+    s = "3.1415926536</";
+    e = s + strlen(s);
+    d = __zeroxml_strtod(s, &e);
+    snprintf(buf, BUFLEN, "__zeroxml_strtod with double '%s'", s);
+    TESTFLOAT(p, d, 3.1415926536);
+
+    s = "314e-17</";
+    e = s + strlen(s);
+    d = __zeroxml_strtod(s, &e);
+    snprintf(buf, BUFLEN, "__zeroxml_strtod with double '%s'", s);
+    TESTFLOAT(p, d, 314e-17);
+
+    s = "happy" ;
+    e = s + strlen(s);
+    d = __zeroxml_strtod(s, &e);
+#ifdef XML_NONEVALUE
+    snprintf(buf, BUFLEN, "__zeroxml_strtod with string '%s' (XML_FPNONE)", s);
+    TESTINT(p, isnan(d), isnan(d));
+#else
+    snprintf(buf, BUFLEN, "__zeroxml_strtod with string '%s' (0)", s);
+    TESTFLOAT(p, d, 0.0);
+#endif
 
 
     s = "<?xml?><"ctb">1</"ctb">";
