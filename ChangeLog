@@ -1,4 +1,8 @@
-2023-02-04 Erik Hofman <tech@adalin.org>
+2023-02-09 Erik Hofman <tech@adalin.org>
+ * Increase the version number to 2.2.1
+ * Windows localization fixes.
+
+2023-02-08 Erik Hofman <tech@adalin.org>
  * Increase the version number to 2.2.0
  * Add the CMake LOCALIZATION option to enable string conversion between
    the XML defined character encoding and the local encoding. Defaults to ON.
