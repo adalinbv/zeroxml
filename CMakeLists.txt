@@ -59,6 +59,9 @@ string(REGEX REPLACE ";" " " descriptionFile "${descriptionFile}")
 
 # split version string into components, note CMAKE_MATCH_0 is the entire regexp match
 string(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" CPACK_PACKAGE_VERSION ${ZEROXML_VERSION})
+set(XML_MAJOR_VERSION ${CMAKE_MATCH_1})
+set(XML_MINOR_VERSION ${CMAKE_MATCH_2})
+set(XML_MICRO_VERSION ${CMAKE_MATCH_3})
 set(CPACK_PACKAGE_VERSION_MAJOR ${CMAKE_MATCH_1})
 set(CPACK_PACKAGE_VERSION_MINOR ${CMAKE_MATCH_2})
 set(CPACK_PACKAGE_VERSION_PATCH ${CMAKE_MATCH_3})
@@ -226,7 +229,10 @@ set(XML_NONEVALUE ${NONEVALUE})
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in"
     "${CMAKE_CURRENT_BINARY_DIR}/include/config.h")
-
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/xml.h.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/include/xml.h"
+)
 set(ZEROXML_OBJS
     src/xml.c
     src/xml_cache.c
