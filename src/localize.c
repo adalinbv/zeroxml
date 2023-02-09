@@ -67,7 +67,9 @@
 # include <locale.h>
 #endif
 #include <wchar.h>
-#include <iconv.h>
+#ifdef HAVE_ICONV_H
+# include <iconv.h>
+#endif
 #include <errno.h>
 
 #include "xml.h"
@@ -176,7 +178,7 @@ __zeroxml_iconv(iconv_t cd, const char *inbuf, size_t inbytesleft,
     return rv;
 }
 
-#if defined(WIN32) && (!defined(__MINGW32__) && !defined(__MINGW64__))
+#ifdef WIN32
 /*
  * A basic implementation of the iconv function for Windows in C:
  *
@@ -191,8 +193,10 @@ __zeroxml_iconv(iconv_t cd, const char *inbuf, size_t inbytesleft,
  *
  * https://www.iana.org/assignments/character-sets/character-sets.xhtml
  */
-#define CP_UTF16        1200
-#define CP_UTF32        12000
+#define CP_UTF8		65001
+#define CP_UTF16_LE      1200
+#define CP_1252		 1252
+#define CP_UTF32_LE     12000
 #define CP_LATIN1       28591
 #define CP_ASCII        20127
 
@@ -202,16 +206,16 @@ charset_to_identifier(const char *charset)
     UINT identifier = AreFileApisANSI() ? CP_ACP : CP_OEMCP;
 
     if (strcasecmp(charset, "UTF-8") == 0) identifier = CP_UTF8;
-    else if (strcasecmp(charset, "UTF-16") == 0) identifier = CP_UTF16;
+    else if (strcasecmp(charset, "UTF-16") == 0) identifier = CP_UTF16_LE;
     else if (strcasecmp(charset, "ISO-8859-1") == 0) identifier = CP_LATIN1;
     else if (strcasecmp(charset, "ASCII") == 0) identifier = CP_ASCII;
     else if (strcasecmp(charset, "US-ASCII") == 0) identifier = CP_ASCII;
-    else if (strcasecmp(charset, "UTF-32") == 0) identifier = CP_UTF32;
+    else if (strcasecmp(charset, "UTF-32") == 0) identifier = CP_UTF32_LE;
 
     return identifier;
 }
 
-static size_t
+size_t
 iconv(iconv_t cd, char **inbuf, size_t *inbytesleft,
                   char **outbuf, size_t *outbytesleft)
 {
@@ -220,7 +224,7 @@ iconv(iconv_t cd, char **inbuf, size_t *inbytesleft,
     {
         UINT code_page = charset_to_identifier(cd);
         wchar_t *wbuf;
-        size_t res;
+	int res;
 
         res = MultiByteToWideChar(code_page, 0, *inbuf, *inbytesleft, NULL, 0);
         if (res <= 0)
@@ -240,7 +244,7 @@ iconv(iconv_t cd, char **inbuf, size_t *inbytesleft,
         }
 
         *inbuf += res;
-        res = WideCharToMultiByte(CP_UTF16, 0, wbuf, res,
+        res = WideCharToMultiByte(CP_1252, 0, wbuf, res,
                                   *outbuf, *outbytesleft, NULL, NULL);
         free(wbuf);
         if (res <= 0)
@@ -257,5 +261,5 @@ iconv(iconv_t cd, char **inbuf, size_t *inbytesleft,
     }
     return 0;
 }
-#endif /* defined(WIN32) && (!defined(__MINGW32__) && !defined(__MINGW64__)) */
+#endif /* def WIN32 */
 

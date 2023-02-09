@@ -112,13 +112,17 @@ include_directories("${CMAKE_SOURCE_DIR}/src"
   src 
 )
 
+if(NOT WIN32)
 check_include_file(iconv.h HAVE_ICONV_H)
+endif()
 check_include_file(strings.h HAVE_STRINGS_H)
 check_include_file(unistd.h HAVE_UNISTD_H)
 check_include_file(locale.h HAVE_LOCALE_H)
 check_include_file(langinfo.h HAVE_LANGINFO_H)
 
+if(NOT WIN32)
 find_package(Iconv)
+endif()
 
 add_definitions(-DHAVE_CONFIG_H=1)
 if(WERROR)

@@ -63,6 +63,7 @@
 #include "config.h"
 #endif
 
+#include <stdio.h>
 #include <xml.h>
 
 #ifdef NDEBUG
@@ -76,11 +77,9 @@
 #endif
 #ifdef USE_RMALLOC
 # define USE_LOGGING    1
-# include <stdio.h>
 # include <rmalloc.h>
 #else
 # define USE_LOGGING    0
-# include <stdio.h>
 # include <stdlib.h>
 # include <string.h>
 # if HAVE_STRINGS_H
@@ -89,6 +88,10 @@
 #   define strncasecmp _strnicmp
 #  endif
 # endif
+#endif
+
+#ifdef WIN32
+typedef const char* iconv_t;
 #endif
 
 #ifdef XML_NONEVALUE
@@ -153,7 +156,7 @@ int __zeroxml_iconv(iconv_t, const char*, size_t, char*, size_t);
 #endif /* XML_CASE_INSENSITIVE */
 
 #ifdef XML_LOCALIZATION
-# if defined(WIN32) && (!defined(__MINGW32__) && !defined(__MINGW64__))
+# ifdef WIN32
 #  define iconv_close(l)
 #  define iconv_open(l,e)        (e)
 size_t iconv(iconv_t, char**, size_t*, char**, size_t*);
@@ -183,11 +186,8 @@ size_t iconv(iconv_t, char**, size_t*, char**, size_t*);
 
 #ifdef WIN32
 # define WIN32_LEAN_AND_MEAN
+# define UNICODE
 # include <windows.h>
-
-# if !defined(__MINGW32__) && !defined(__MINGW64__)
-typedef const char* iconv_t;
-# endif
 
 typedef struct
 {
