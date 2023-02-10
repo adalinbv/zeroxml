@@ -296,7 +296,7 @@ endif(RMALLOC)
 install(FILES
         include/rmalloc.h
         include/xml_cache.h
-        include/xml.h
+        ${CMAKE_CURRENT_BINARY_DIR}/include/xml.h
         DESTINATION include
        )
 
