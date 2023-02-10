@@ -84,13 +84,15 @@
 # include <string.h>
 # if HAVE_STRINGS_H
 #  include <strings.h>
-#  if defined(WIN32)
-#   define strncasecmp _strnicmp
-#  endif
 # endif
 #endif
 
 #ifdef WIN32
+# ifndef __GNUC__
+#  define strtoll _strtoi64
+#  define strcasecmp _stricmp
+#  define strncasecmp _strnicmp
+# endif
 typedef const char* iconv_t;
 #endif
 
