@@ -5,6 +5,7 @@ include(CheckIncludeFile)
 include(CheckIncludeFiles)
 include(CheckLibraryExists)
 
+set(CMAKE_GNUtoMS ON)
 project(ZeroXml C)
 set(PACKAGE_NAME "ZeroXml")
 set(PACKAGE "zeroxml")
