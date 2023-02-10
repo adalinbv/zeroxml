@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Configuration>
+
+ <!-- comment -->
+
+ <output>
+  <frequency-hz>48000</frequency-hz>
+  <interval-hz>20.5</interval-hz>
+  <num-speakers>2</num-speakers>
+
+  <tmp><!-- --></tmp>
+  <test n="0" xtamp="erer" ëlémènt="bjôrn"/>
+  <test n="1"/>
+  <test n="2"/>
+
+  <boolean>0</boolean>
+  <boolean>-1</boolean>
+  <boolean>on</boolean>
+  <boolean>true</boolean>
+  <boolean>yes</boolean>
+
+  <binary>0b1011</binary>
+  <octal>070374</octal>
+  <octal>0o70374</octal>
+  <hexadecimal>0x7FA32</hexadecimal>
+
+  <menu><name>* Traffic, # taxiing to runway (.</name></menu>
+  <sample><test>  	* Traffic, # taxiing to runway (.    </test></sample>
+
+  <!--
+    - x is positive to the right
+    - y is positive upwards
+    - z is positive backwards
+   -->
+  <speaker n="0">
+   <channel>0</channel>
+   <volume-norm>1.0</volume-norm>
+   <desc><!-- empty --></desc>
+   <test><node>4</node></test>
+  </speaker>
+
+  <speaker n="1">
+   <channel>1</channel>
+   <volume-norm>1.0</volume-norm>
+   <test><node>3</node></test>
+   <desc>
+                                   <!--
+      empty                                            --></desc>
+  </speaker>
+
+  <script><![CDATA[
+      getprop(call(sprintf, size(arg));
+      c--; x >>= 33;
+      // --> comment ]>
+  ;
+
+
+]]></script>
+ </output>
+
+ <backend>
+  <name type="stereo">ALSA Hardware</name>
+  <Output>
+   <renderer>hw:0</renderer>
+   <channels>2</channels>
+   <!-- periods>16</periods -->
+   <frequency-hz>44100</frequency-hz>
+   <bits-per-sample>16</bits-per-sample>
+  </Output>
+  <Input>
+   <renderer>default</renderer>
+   <frequency-hz>44100</frequency-hz>
+  </Input>
+ </backend>
+ <nasal>
+  <YF23>
+   <script><![CDATA[
+    # If the ground-roll-heading-hold has been reset (<-999) set:
+    if(agl > 50) {};]]></script>
+  </YF23>
+ </nasal>
+
+ <audioframe pan="-0.2" emitters="64"/>
+
+ <mixer copyright="©" element="Mötley Crüe"/>
+
+</Configuration>
