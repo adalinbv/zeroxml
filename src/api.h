@@ -228,9 +228,6 @@ struct _root_id
 
 #if defined(HAVE_ICONV_H) || defined(WIN32)
     iconv_t cd;
-# ifdef HAVE_LOCALE_H
-    const char *locale;
-# endif
 #endif
 
 #ifndef XML_NONVALIDATING

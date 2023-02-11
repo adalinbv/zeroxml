@@ -144,8 +144,8 @@ xmlOpen(const char *filename)
                 char *mm;
 
 #ifdef HAVE_LOCALE_H
-                rid->locale = setlocale(LC_CTYPE, NULL);
-                setlocale(LC_CTYPE, "");
+                const char *locale;
+                locale = setlocale(LC_CTYPE, "");
 #endif
 
                 fstat(fd, &statbuf);
@@ -197,7 +197,6 @@ xmlOpen(const char *filename)
                         do
                         {
 # if HAVE_LOCALE_H
-                            const char *locale = setlocale(LC_CTYPE, NULL);
                             const char *ptr = strrchr(locale, '.');
                             if (!ptr) ptr = locale;
                             else ++ptr;
@@ -233,8 +232,8 @@ xmlInitBuffer(const char *buffer, int blocklen)
             const char *start;
 
 #ifdef HAVE_LOCALE_H
-            rid->locale = setlocale(LC_CTYPE, NULL);
-            setlocale(LC_CTYPE, "");
+            const char *locale;
+            locale = setlocale(LC_CTYPE, "");
 #endif
 
             encoding[0] = 0;
@@ -274,7 +273,6 @@ xmlInitBuffer(const char *buffer, int blocklen)
                 do
                 {
 # if HAVE_LOCALE_H
-                    const char *locale = setlocale(LC_CTYPE, NULL);
                     const char *ptr = strrchr(locale, '.');
                     if (!ptr) ptr = locale;
                     else ++ptr;
@@ -298,10 +296,6 @@ xmlClose(xmlId *id)
 
     if (rid && rid->root == rid)
     {
-#ifdef HAVE_LOCALE_H
-        setlocale(LC_ALL, rid->locale);
-#endif
-
         if (rid->fd == MMAP_FREE) {
            free(rid->mmap);
         }
