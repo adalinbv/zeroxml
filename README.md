@@ -1,4 +1,4 @@
-# ** `rgb(22, 75, 39))`Zero`rgb(88, 40, 2)`XML **
+# **`rgb(22, 75, 39))`Zero`rgb(88, 40, 2)`XML**
 This library is specially designed for reading xml configuration files
 and to be as low on memory management as possible. Modifying or writing
 xml files is not planned for the future. In most situations being able
