@@ -255,8 +255,8 @@ For a description of node paths see xmlNodeTest.
 @param path path to the XML node
 @return the number count of the nodename
 XML_API int XML_APIENTRY xmlNodeGetNum(const xmlId *xid, const char *path);
-XML```_API int XML_APIENTRY xmlNodeGetNumRaw(const xmlId *xid, const char *path);
-
+XML_API int XML_APIENTRY xmlNodeGetNumRaw(const xmlId *xid, const char *path);
+```
 
 ### Get the number of attributes for this node.
 ```
@@ -426,7 +426,7 @@ XML_API int XML_APIENTRY xmlNodeGetBool(const xmlId *xid, const char *path);
 
 Boolean values for true are (without quotes) 'on', 'yes', 'true' or
 any non-zero number. Boolean values for false is anything else.
-
+```
 @param xid XML-id
 @param name name of the attribute to acquire
 @return the contents of the node converted to an boolean value
@@ -434,96 +434,99 @@ any non-zero number. Boolean values for false is anything else.
 XML_API int XML_APIENTRY xmlAttributeGetBool(const xmlId *xid, const char *name);
 ```
 
-# Get the integer value from the current node/
-#
-# @param xid XML-id
-# @return the contents of the node converted to an integer value
+### Get the integer value from the current node/
+```
+@param xid XML-id
+@return the contents of the node converted to an integer value
 XML_API long int XML_APIENTRY xmlGetInt(const xmlId *xid);
 ```
 
-# Get an integer value from a specified XML path.
-#
-# For a description of node paths see xmlNodeTest.
-#
-# @param xid XML-id
-# @param path path to the XML node
-# @return the contents of the node converted to an integer value
+### Get an integer value from a specified XML path.
+
+For a description of node paths see xmlNodeTest.
+```
+@param xid XML-id
+@param path path to the XML node
+@return the contents of the node converted to an integer value
 XML_API long int XML_APIENTRY xmlNodeGetInt(const xmlId *xid, const char *path);
+```
 
-
-# Get the integer value from the named attribute.
-#
-# @param xid XML-id
-# @param name name of the attribute to acquire
-# @return the contents of the node converted to an integer value
+### Get the integer value from the named attribute.
+```
+@param xid XML-id
+@param name name of the attribute to acquire
+@return the contents of the node converted to an integer value
 XML_API long int XML_APIENTRY xmlAttributeGetInt(const xmlId *xid, const char *name);
+```
 
-
-# Get the double value from the curent node/
-#
-# @param xid XML-id
-# @return the contents of the node converted to a double value
+### Get the double value from the curent node/
+```
+@param xid XML-id
+@return the contents of the node converted to a double value
 XML_API double XML_APIENTRY xmlGetDouble(const xmlId *xid);
+```
 
-# Get a double value from a specified XML path/
-#
-# For a description of node paths see xmlNodeTest.
-#
-# @param xid XML-id
-# @param path path to the XML node
-# @return the contents of the node converted to a double value
+### Get a double value from a specified XML path/
+
+For a description of node paths see xmlNodeTest.
+```
+@param xid XML-id
+@param path path to the XML node
+@return the contents of the node converted to a double value
 XML_API double XML_APIENTRY xmlNodeGetDouble(const xmlId *xid, const char *path);
+```
 
-# Get the double value from the named attribute.
-#
-# @param xid XML-id
-# @param name name of the attribute to acquire
-# @return the contents of the node converted to an integer value
+### Get the double value from the named attribute.
+```
+@param xid XML-id
+@param name name of the attribute to acquire
+@return the contents of the node converted to an integer value
 XML_API double XML_APIENTRY xmlAttributeGetDouble(const xmlId *xid, const char *name);
+```
 
-
-# Test whether the named attribute does exist.
-#
-# @param xid XML-id
-# @param name name of the attribute to acquire
-# @return the contents of the node converted to an integer value
+### Test whether the named attribute does exist.
+```
+@param xid XML-id
+@param name name of the attribute to acquire
+@return the contents of the node converted to an integer value
 XML_API int XML_APIENTRY xmlAttributeExists(const xmlId *xid, const char *name);
+```
 
-
-# Get the error number of the last error and clear it.
-#
-# @param xid XML-id
-# @param clear clear the error state if non zero
-# @return the numer of the last error, 0 means no error detected.
+### Get the error number of the last error and clear it.
+```
+@param xid XML-id
+@param clear clear the error state if non zero
+@return the numer of the last error, 0 means no error detected.
 XML_API int XML_APIENTRY xmlErrorGetNo(const xmlId *xid, int clear);
+```
 
-
-# Get the line number of the last detected syntax error in the XML file.
-#
-# @param xid XML-id
-# @param clear clear the error state if non zero
-# @return the line number of the detected syntax error.
+### Get the line number of the last detected syntax error in the XML file.
+```
+@param xid XML-id
+@param clear clear the error state if non zero
+@return the line number of the detected syntax error.
 XML_API int XML_APIENTRY xmlErrorGetLineNo(const xmlId *xid, int clear);
+```
 
-
-# Get the column number of the last detected syntax error in the XML file.
-#
-# @param xid XML-id
-# @param clear clear the error state if non zero
-# @return the line number of the detected syntax error.
+### Get the column number of the last detected syntax error in the XML file.
+```
+@param xid XML-id
+@param clear clear the error state if non zero
+@return the line number of the detected syntax error.
 XML_API int XML_APIENTRY xmlErrorGetColumnNo(const xmlId *xid, int clear);
+```
 
-
-# Get a string that explains the last error.
-#
-# @param xid XML-id
-# @param clear clear the error state if non zero
-# @return a string that explains the last error.
+### Get a string that explains the last error.
+```
+@param xid XML-id
+@param clear clear the error state if non zero
+@return a string that explains the last error.
 XML_API const char* XML_APIENTRY xmlErrorGetString(const xmlId *xid, int clear);
+```
 
-
-# Get the encoding as specified by the XML document.
-#
-# @param xid XML-id
-# @return a string containing the encoding as specified by the XML document
+### Get the encoding as specified by the XML document.
+```
+@param xid XML-id
+@return a string containing the encoding as specified by the XML document
 XML_API const char* XML_APIENTRY xmlGetEncoding(const xmlId *xid);
+```
