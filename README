@@ -40,7 +40,7 @@ which limits the searching area resulting in improved searching speed.
    xmlFree(xnid);
 }
 
-Examples:
+## Examples:
 -----------------------------------------------------------------------------
 
 == Functions to walk the node tree and process them one by one.
@@ -82,7 +82,7 @@ Examples:
 # if (err) printf("Error #%i at line %u: '%s'\n", err, err_lineno, err_str);
 
 
-Overview of the available functions:
+## Overview of the available functions:
 -----------------------------------------------------------------------------
 
 # Open an XML file for processing.
