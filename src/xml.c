@@ -1650,7 +1650,6 @@ __zeroxml_node_get_path(const cacheId **nc, const char *start, int *len, const c
 # define DECR_LEN(a,b,c) break
 #endif
 #define SET_ERROR_AND_RETURN(a, b) { \
-  printf("# line: %i\n", __LINE__); \
   *name = (a); *len = (b); *rlen = 0; *nodenum = __LINE__; return NULL; \
 }
 
