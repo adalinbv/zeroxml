@@ -1,4 +1,4 @@
-# ** `rgb(22, 75, 39))` Zeroi `rgb(88, 40, 2)` XML **
+# **ZeroXML**
 This library is specially designed for reading xml configuration files
 and to be as low on memory management as possible. Modifying or writing
 xml files is not planned for the future. In most situations being able
@@ -45,42 +45,42 @@ which limits the searching area resulting in improved searching speed.
 -----------------------------------------------------------------------------
 
 == Functions to walk the node tree and process them one by one.
-# xmid = xmlMarkId(id);
-# num = xmlNodeGetNum(xmid, "*");
-# for (i=0; i<num; i++) {
-#    if (xmlNodeGetPos(id, xmid, "*", i) != 0) {
-#       char buf[1024];
-#       if ((s = xmlCopyString(xmid, buf, 1024)) != 0) {
-#          printf("%s\n", s);
-#       }
-#    }
-# }
-# xmlFree(xmid);
+> xmid = xmlMarkId(id);
+> num = xmlNodeGetNum(xmid, "*");
+> for (i=0; i<num; i++) {
+>    if (xmlNodeGetPos(id, xmid, "*", i) != 0) {
+>       char buf[1024];
+>       if ((s = xmlCopyString(xmid, buf, 1024)) != 0) {
+>          printf("%s\n", s);
+>       }
+>    }
+> }
+> xmlFree(xmid);
 
 
 == These functions work on the current node.
-# xnid = xmlNodeGet(id, "/path/to/last/node");
-# i = xmlGetInt(xnid);
-# xmlFree(xnid);
-#
-# xnid = xmlNodeGet(id, "/path/to/specified/node");
-# if (xmlCompareString(xnid, "value") == 0) printf("We have a match!\n");
-# xmlFree(xnid);
+> xnid = xmlNodeGet(id, "/path/to/last/node");
+> i = xmlGetInt(xnid);
+> xmlFree(xnid);
+>
+> xnid = xmlNodeGet(id, "/path/to/specified/node");
+> if (xmlCompareString(xnid, "value") == 0) printf("We have a match!\n");
+> xmlFree(xnid);
 
 
 == These functions work on a specified atribute
-# i = xmlAttributeGetInt(id, "n");
-#
-# s = xmlAttributeGetString(id, "type");
-# if (s) printf("node is of type '%s'\n", s);
-# free(s);
+> i = xmlAttributeGetInt(id, "n");
+>
+> s = xmlAttributeGetString(id, "type");
+> if (s) printf("node is of type '%s'\n", s);
+> free(s);
 
 
 == Error detection and reporting functions
-# char *err_str = xmlErrorGetString(id, 0);
-# size_t err_lineno = xmlErrorGetLineNo(id, 0);
-# int err = xmlErrorGetNo(id, 1); /* clear last error */
-# if (err) printf("Error #%i at line %u: '%s'\n", err, err_lineno, err_str);
+> char *err_str = xmlErrorGetString(id, 0);
+> size_t err_lineno = xmlErrorGetLineNo(id, 0);
+> int err = xmlErrorGetNo(id, 1); /* clear last error */
+> if (err) printf("Error #%i at line %u: '%s'\n", err, err_lineno, err_str);
 
 
 ## Overview of the available functions:
