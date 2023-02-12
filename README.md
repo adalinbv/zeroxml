@@ -14,7 +14,7 @@ name or when a request is made to copy a node into a new memory region.
 
 Using this library should be pretty simple for most tasks; just open a file,
 read every parameter one by one and close the id again.
-{
+`
    xmlId *xid;
 
    xid = xmlOpen("/tmp/file.xml");
@@ -22,14 +22,14 @@ read every parameter one by one and close the id again.
    ypos = xmlNodeGetDouble(xid, "/configuration/y-pos");
    zpos = xmlNodeGetDouble(xid, "/configuration/z-pos");
    xmlClose(xid);
-}
+`
 
 While it is certainly possible to access every node directly by calling the
 xmlNodeGet(Bool/Int/Double/String) functions, when more than one node need to be
 gathered from a parent node it is advised to get the id of the parent node
 and work from there since the XML-id holds the boundaries of the (parent)node
 which limits the searching area resulting in improved searching speed.
-{
+`
    xmlId *xnid;
    char *s;
 
@@ -39,113 +39,113 @@ which limits the searching area resulting in improved searching speed.
    if (s) author = s;
    free(s);
    xmlFree(xnid);
-}
+`
 
 ## Examples:
 -----------------------------------------------------------------------------
 
 == Functions to walk the node tree and process them one by one.
-> xmid = xmlMarkId(id);
-> num = xmlNodeGetNum(xmid, "*");
-> for (i=0; i<num; i++) {
->    if (xmlNodeGetPos(id, xmid, "*", i) != 0) {
->       char buf[1024];
->       if ((s = xmlCopyString(xmid, buf, 1024)) != 0) {
->          printf("%s\n", s);
->       }
->    }
-> }
-> xmlFree(xmid);
+`  xmid = xmlMarkId(id);
+  num = xmlNodeGetNum(xmid, "*");
+  for (i=0; i<num; i++) {
+     if (xmlNodeGetPos(id, xmid, "*", i) != 0) {
+        char buf[1024];
+        if ((s = xmlCopyString(xmid, buf, 1024)) != 0) {
+           printf("%s\n", s);
+        }
+     }
+  }
+  xmlFree(xmid);`
 
 
 == These functions work on the current node.
-> xnid = xmlNodeGet(id, "/path/to/last/node");
-> i = xmlGetInt(xnid);
-> xmlFree(xnid);
->
-> xnid = xmlNodeGet(id, "/path/to/specified/node");
-> if (xmlCompareString(xnid, "value") == 0) printf("We have a match!\n");
-> xmlFree(xnid);
+` xnid = xmlNodeGet(id, "/path/to/last/node");
+  i = xmlGetInt(xnid);
+  xmlFree(xnid);
+ 
+  xnid = xmlNodeGet(id, "/path/to/specified/node");
+  if (xmlCompareString(xnid, "value") == 0) printf("We have a match!\n");
+  xmlFree(xnid);`
 
 
 == These functions work on a specified atribute
-> i = xmlAttributeGetInt(id, "n");
->
-> s = xmlAttributeGetString(id, "type");
-> if (s) printf("node is of type '%s'\n", s);
-> free(s);
+` i = xmlAttributeGetInt(id, "n");
+ 
+  s = xmlAttributeGetString(id, "type");
+  if (s) printf("node is of type '%s'\n", s);
+  free(s);`
 
 
 == Error detection and reporting functions
-> char *err_str = xmlErrorGetString(id, 0);
-> size_t err_lineno = xmlErrorGetLineNo(id, 0);
-> int err = xmlErrorGetNo(id, 1); /* clear last error */
-> if (err) printf("Error #%i at line %u: '%s'\n", err, err_lineno, err_str);
+` char *err_str = xmlErrorGetString(id, 0);
+  size_t err_lineno = xmlErrorGetLineNo(id, 0);
+  int err = xmlErrorGetNo(id, 1); /* clear last error */
+  if (err) printf("Error #%i at line %u: '%s'\n", err, err_lineno, err_str);` 
 
 
 ## Overview of the available functions:
 -----------------------------------------------------------------------------
 
-# Open an XML file for processing.
-#
-# No data is being allocated for the file. All actions are in mmap-ed
-# file buffers.
-#
-# @param fname path to the file
-# @return XML-id which is used for further processing
-XML_API xmlId* XML_APIENTRY xmlOpen(const char *fname);
+> Open an XML file for processing.
+>
+> No data is being allocated for the file. All actions are in mmap-ed
+> file buffers.
+>
+> @param fname path to the file
+> @return XML-id which is used for further processing
+`XML_API xmlId* XML_APIENTRY xmlOpen(const char *fname);`
 
 
-# Process a section of XML code in a preallocated buffer.
-# The buffer may not be freed until xmlClose has been called.
-#
-# @param buffer pointer to the buffer
-# @param size size of the buffer
-# @return XML-id which is used for further processing
-XML_API xmlId* XML_APIENTRY xmlInitBuffer(const char *buffer, int size);
+> Process a section of XML code in a preallocated buffer.
+> The buffer may not be freed until xmlClose has been called.
+>
+> @param buffer pointer to the buffer
+> @param size size of the buffer
+> @return XML-id which is used for further processing
+`XML_API xmlId* XML_APIENTRY xmlInitBuffer(const char *buffer, int size);`
 
 
-# Close the XML file after which no further processing is possible.
-#
-# @param xid XML-id
-XML_API void XML_APIENTRY xmlClose(xmlId *xid);
+> Close the XML file after which no further processing is possible.
+>
+> @param xid XML-id
+`XML_API void XML_APIENTRY xmlClose(xmlId *xid);`
 
 
-# Test whether the node path exists.
-#
-# A node path may be a solitary node name or a node path separated by the
-# slash character '/' (in which case the code walks the XML tree).
-#
-# Node names adhere to the XML convention for valid node names, may be the
-# asterisk character '*' to indicate that any name is acceptable or may
-# contain a question mark '?' to indicate that any character is acceptable
-# for that particular location.
-# Node names may also specify which occurrence of a particular name to look
-# up by specifying the number, starting at zero, between straight brackets.
-# e.g. node[0] or "*[3]" to get the fourth node, regardless of the names.
-#
-# If node points to XML_COMMENT then the function will test whether the
-# current node is a comment node.
-#
-# @param xid XML-id
-# @param path path to the node containing the subsection
-# @return true if the XML-subsection-id exists, false otherwise.
-XML_API int XML_APIENTRY xmlNodeTest(const xmlId *xid, const char *path);
+> Test whether the node path exists.
+>
+> A node path may be a solitary node name or a node path separated by the
+> slash character '/' (in which case the code walks the XML tree).
+>
+> Node names adhere to the XML convention for valid node names, may be the
+> asterisk character '*' to indicate that any name is acceptable or may
+> contain a question mark '?' to indicate that any character is acceptable
+> for that particular location.
+> Node names may also specify which occurrence of a particular name to look
+> up by specifying the number, starting at zero, between straight brackets.
+> e.g. node[0] or "*[3]" to get the fourth node, regardless of the names.
+>
+> If node points to XML_COMMENT then the function will test whether the
+> current node is a comment node.
+>
+> @param xid XML-id
+> @param path path to the node containing the subsection
+> @return true if the XML-subsection-id exists, false otherwise.
+`XML_API int XML_APIENTRY xmlNodeTest(const xmlId *xid, const char *path);`
 
 
-# Locate a subsection of the XML tree for further processing.
-# The memory allocated for the XML-subsection-id has to be freed by the
-# calling process using xmlFree.
-#
-# This method adds processing speed since the required nodes will only be
-# searched in the subsection.
-#
-# For a description of node paths see xmlNodeTest.
-#
-# @param xid XML-id
-# @param path path to the node containing the subsection
-# @return XML-subsection-id for further processing
-XML_API xmlId* XML_APIENTRY xmlNodeGet(const xmlId *xid, const char *path);
+> Locate a subsection of the XML tree for further processing.
+> The memory allocated for the XML-subsection-id has to be freed by the
+> calling process using xmlFree.
+>
+> This method adds processing speed since the required nodes will only be
+> searched in the subsection.
+>
+> For a description of node paths see xmlNodeTest.
+>
+> @param xid XML-id
+> @param path path to the node containing the subsection
+> @return XML-subsection-id for further processing
+`XML_API xmlId* XML_APIENTRY xmlNodeGet(const xmlId *xid, const char *path);`
 
 
 # This is useful when it's required to process a section of the XML code
