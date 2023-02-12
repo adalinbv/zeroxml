@@ -47,7 +47,7 @@ which limits the searching area resulting in improved searching speed.
 ### Functions to walk the node tree and process them one by one.
 <pre><code>  xmid = xmlMarkId(id);
   num = xmlNodeGetNum(xmid, "*");
-  for (i=0; i<num; i++) {
+  for (i=0; i < num; i++) {
      if (xmlNodeGetPos(id, xmid, "*", i) != 0) {
         char buf[1024];
         if ((s = xmlCopyString(xmid, buf, 1024)) != 0) {
