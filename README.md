@@ -44,7 +44,7 @@ which limits the searching area resulting in improved searching speed.
 ## Examples:
 -----------------------------------------------------------------------------
 
-== Functions to walk the node tree and process them one by one.
+### Functions to walk the node tree and process them one by one.
 `  xmid = xmlMarkId(id);
   num = xmlNodeGetNum(xmid, "*");
   for (i=0; i<num; i++) {
@@ -58,7 +58,7 @@ which limits the searching area resulting in improved searching speed.
   xmlFree(xmid);`
 
 
-== These functions work on the current node.
+### These functions work on the current node.
 ` xnid = xmlNodeGet(id, "/path/to/last/node");
   i = xmlGetInt(xnid);
   xmlFree(xnid);
@@ -68,7 +68,7 @@ which limits the searching area resulting in improved searching speed.
   xmlFree(xnid);`
 
 
-== These functions work on a specified atribute
+### These functions work on a specified atribute
 ` i = xmlAttributeGetInt(id, "n");
  
   s = xmlAttributeGetString(id, "type");
@@ -76,7 +76,7 @@ which limits the searching area resulting in improved searching speed.
   free(s);`
 
 
-== Error detection and reporting functions
+### Error detection and reporting functions
 ` char *err_str = xmlErrorGetString(id, 0);
   size_t err_lineno = xmlErrorGetLineNo(id, 0);
   int err = xmlErrorGetNo(id, 1); /* clear last error */
