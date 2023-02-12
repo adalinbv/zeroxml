@@ -124,10 +124,6 @@ check_include_file(unistd.h HAVE_UNISTD_H)
 check_include_file(locale.h HAVE_LOCALE_H)
 check_include_file(langinfo.h HAVE_LANGINFO_H)
 
-if(NOT WIN32)
-find_package(Iconv)
-endif()
-
 add_definitions(-DHAVE_CONFIG_H=1)
 if(WERROR)
   add_definitions(-Werror)
