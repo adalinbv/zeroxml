@@ -134,7 +134,10 @@ void walk_xml(xmlId *id, char *name, unsigned int len)
                 }
                 walk_xml(xid, name, len+res);
             }
-            else printf("error\n");
+            else {
+                printf("Error for xmlNodeGetPos: %s\n",
+                        xmlErrorGetString(xid, XML_TRUE));
+            }
         }
     }
 }
