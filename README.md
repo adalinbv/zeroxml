@@ -131,14 +131,14 @@ with the appropriate flags.
 XML_API xmlId* XML_APIENTRY xmlInitBuffer(const char *buffer, int size);
 ```
 
-## Close the XML file after which no further processing is possible.
+### Close the XML file after which no further processing is possible.
 
 ```
 @param xid XML-id
 XML_API void XML_APIENTRY xmlClose(xmlId *xid);
 ```
 
-## Set one or more modes of operation for the interpreter.
+### Set one or more modes of operation for the interpreter.
 
 - **`XML_INDEX_STARTS_AT_ZERO`**: Node indexes start at zero (default)
 - **`XML_INDEX_STARTS_AT_ONE`**: Node indexes start at one (XPath default)
