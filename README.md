@@ -1,8 +1,8 @@
 # **ZeroXML**
-This library is specially designed for reading xml configuration files
+This library is specially designed for reading XML configuration files
 and to be as low on memory management as possible. Modifying or writing
-xml files is not planned for the future. In most situations being able
-to gather data by reading an xml file is more than enough and the read-only
+XML files is not planned for the future. In most situations being able
+to gather data by reading an XML file is more than enough and the read-only
 decision provides a number of advantages over a one-size fits all approach.
 For instance the memory footprint can be kept low and the library can be
 kept simple.
