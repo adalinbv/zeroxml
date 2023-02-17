@@ -2304,23 +2304,20 @@ __zeroxmlProcessCDATA(const char **start, int *len, char mode)
 const char*
 __zeroxml_process_declaration(const struct _root_id *rid, const char *start, int len, char *locale)
 {
-    const char *cur, *end;
+    const char *cur = start;
     const char *rv = start;
 
-    cur = start;
-    if (len < 7 || *cur++ != '<') { /*"<?xml?>" */
+    if (len-- < 7 || *cur++ != '<') { /*"<?xml?>" */
         return start;
     }
-    len--;
-    end = cur;
 
     // Note: http://www.w3.org/TR/REC-xml/#sec-guessing
     if (*cur++ == '?')
     {
         const char *element = "?>";
-        len--;
-        end = __zeroxml_memncasestr(rid, cur, len, element);
-        if (end)
+        const char *end;
+
+        if ((end = __zeroxml_memncasestr(rid, cur, --len, element)) != NULL)
         {
             const char *new;
 
@@ -2620,25 +2617,27 @@ static const char*
 __zeroxml_memncasestr(const struct _root_id *rid, const char *haystack, int haystacklen, const char *needle)
 {
     const char *rv = NULL;
+    const char *end;
     int needlelen;
 
     assert(needle);
 
     needlelen = strlen(needle);
-    if (needlelen > 0 && haystacklen > 0)
+    end = haystack + haystacklen;
+    if (--needlelen > 0 && haystacklen > 0)
     {
-        needlelen--;
-        haystacklen--;
         int first = CASE(rid, *needle++);
         do
         {
-            while (haystacklen && CASE(rid,*haystack++) != first) haystacklen--;
-            if (haystacklen < needlelen) return NULL;
+            while (haystack < end && (CASE(rid, *haystack) != first)) {
+                haystack++;
+            }
+            if (++haystack >= end) return NULL;
         }
         while (STRNCMP(rid, haystack, needle, needlelen) != 0);
         rv = --haystack;
     }
-   return rv;
+    return rv;
 }
 
 /*
