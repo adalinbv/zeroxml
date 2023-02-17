@@ -175,7 +175,7 @@ Node names may also specify which occurrence of a particular name to look
 up by specifying the number, starting at zero, between straight brackets.
 e.g. node[0] or "\*[3]" to get the fourth node, regardless of the names.
 
-If node points to `XML_COMMENT` then the function will test whether the
+If path points to `XML_COMMENT` then the function will test whether the
 current node is a comment node.
 ```
 @param xid XML-id
