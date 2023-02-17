@@ -1,3 +1,8 @@
+2023002017 Erik Hofman <tech@adalin.org>
+ * Increase the version number to 2.3.0
+ * Make most of the compile time options a runtime selectable option.
+ * Add xmlOpenFlags, xmlInitBufferFlags and xmlSetFlags functions.
+
 2023-02-09 Erik Hofman <tech@adalin.org>
  * Increase the version number to 2.2.1
  * Windows localization fixes.
