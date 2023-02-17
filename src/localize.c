@@ -129,46 +129,52 @@ string_compare(iconv_t cd, const char *s1, const char *s2, int *s2len)
  * @return
  */
 int
-__zeroxml_iconv(iconv_t cd, const char *inbuf, size_t inbytesleft,
-                            char *outbuf, size_t outbytesleft)
+__zeroxml_iconv(const struct _root_id *rid,
+                const char *inbuf, size_t inbytesleft,
+                char *outbuf, size_t outbytesleft)
 {
+    iconv_t cd = rid->cd;
     char cvt = XML_FALSE;
     int rv = XML_NO_ERROR;
 
-#if defined(XML_LOCALIZATION) && (defined(HAVE_ICONV_H) || defined(WIN32))
-    outbuf[0] = 0;
-    if (cd != (iconv_t)-1)
+#if (defined(HAVE_ICONV_H) || defined(WIN32))
+    if (LOCALIZATION(rid))
     {
-        char *ptr = (char*)inbuf;
-        size_t nconv;
-        iconv(cd, NULL, NULL, NULL, NULL);
-        nconv = iconv(cd, &ptr, &inbytesleft, &outbuf, &outbytesleft);
-        if (nconv != (size_t)-1)
+        outbuf[0] = 0;
+        if (cd != (iconv_t)-1)
         {
-            iconv(cd, NULL, NULL, &outbuf, &outbytesleft);
-            outbuf[0] = 0;
-            cvt = XML_TRUE;
-        }
-        else
-        {
-            outbuf[outbytesleft] = 0;
-            switch (errno)
+            char *ptr = (char*)inbuf;
+            size_t nconv;
+            iconv(cd, NULL, NULL, NULL, NULL);
+            nconv = iconv(cd, &ptr, &inbytesleft, &outbuf, &outbytesleft);
+            if (nconv != (size_t)-1)
             {
-            case EILSEQ:
-                rv = XML_INVALID_MULTIBYTE_SEQUENCE;
-                break;
-            case EINVAL:
-                rv = XML_INVALID_MULTIBYTE_SEQUENCE;
-                break;
-            case E2BIG:
-                rv = XML_TRUNCATE_RESULT;
-                break;
-            default:
-                break;
+                iconv(cd, NULL, NULL, &outbuf, &outbytesleft);
+                outbuf[0] = 0;
+                cvt = XML_TRUE;
+            }
+            else
+            {
+                outbuf[outbytesleft] = 0;
+                switch (errno)
+                {
+                case EILSEQ:
+                    rv = XML_INVALID_MULTIBYTE_SEQUENCE;
+                    break;
+                case EINVAL:
+                    rv = XML_INVALID_MULTIBYTE_SEQUENCE;
+                    break;
+                case E2BIG:
+                    rv = XML_TRUNCATE_RESULT;
+                    break;
+                default:
+                    break;
+                }
             }
         }
-    }
+    } /* LOCALIZED(rid) */
 #endif
+
     if (cvt == XML_FALSE)
     {
         if (outbytesleft > inbytesleft) outbytesleft = inbytesleft;

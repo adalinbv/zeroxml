@@ -64,6 +64,10 @@
 #endif
 
 #include <stdio.h>
+#if HAVE_LOCALE_H
+# include <locale.h>
+#endif
+
 #include <xml.h>
 
 #ifdef NDEBUG
@@ -94,16 +98,14 @@
 #  define strncasecmp _strnicmp
 # endif
 typedef const char* iconv_t;
-#endif
 
-#ifdef XML_NONEVALUE
-# define __XML_BOOL_NONE	XML_BOOL_NONE
-# define __XML_FPNONE		XML_FPNONE
-# define __XML_NONE		XML_NONE
+/* map 'filename' and return a pointer to it. */
+static void *simple_mmap(int, int, SIMPLE_UNMMAP *);
+static void simple_unmmap(void*, int, SIMPLE_UNMMAP *);
+
 #else
-# define __XML_BOOL_NONE	0
-# define __XML_FPNONE		0.0
-# define __XML_NONE		0
+# define simple_mmap(a, b, c)   mmap(0, (b), PROT_READ, MAP_PRIVATE, (a), 0L)
+# define simple_unmmap(a, b, c) munmap((a), (b))
 #endif
 
 #ifndef XML_NONVALIDATING
@@ -142,41 +144,44 @@ typedef const char* iconv_t;
 
 #define MEMCMP(a,b,c)		memcmp((a),(b),(c))
 #define MEMCHR(a,b,c)		memchr((a),(b),(c))
-#define CASECMP(a,b)		(CASE(a)==CASE(b))
-#define STRNCASECMP(a,b,c)	strncasecmp((a),(b),(c))
+#define CASECMP(rid,a,b)	((CASE(rid,a)) == (CASE(rid,b)))
 #define LSTRNCMP(a,b,c,d)	string_compare((a),(b),(c),(d))
 
 int string_compare(iconv_t, const char*, const char*, int*);
-int __zeroxml_iconv(iconv_t, const char*, size_t, char*, size_t);
+int __zeroxml_iconv(const struct _root_id*, const char*, size_t, char*, size_t);
 
-#ifndef XML_CASE_INSENSITIVE
-# define CASE(a)                (a)
-# define STRNCMP(a,b,c)		strncmp((a),(b),(c))
-#else /* XML_CASE_INSENSITIVE */
-# define CASE(a)                tolower(a)
-# define STRNCMP(a,b,c)		STRNCASECMP((a),(b),(c))
-#endif /* XML_CASE_INSENSITIVE */
+#if HAVE_LOCALE_H
+# define CASE(rid,a) (rid)->lcase ? (rid)->lcase((a),(rid)->locale) : (a)
+#else
+# define CASE(rid,a) (rid)->lcase ? (rid)->lcase(a) : (a)
+#endif
+#define STRNCMP(rid,a,b,c) (rid)->strncmp((a),(b),(c))
 
-#ifdef XML_LOCALIZATION
-# ifdef WIN32
-#  define iconv_close(l)
-#  define iconv_open(l,e)        (e)
-size_t iconv(iconv_t, char**, size_t*, char**, size_t*);
-# endif
-#endif /*XML_LOCALIZATION */
+enum _xml_flags
+{
+    __XML_INDEX_STARTS_AT_ZERO = 0x01,
+    __XML_RETURN_NONE_VALUE    = 0x02,
+    __XML_CASE_SENSITIVE       = 0x04,
+    __XML_COMMENT_AS_NODE      = 0x08,
+    __XML_VALIDATING           = 0x10,
+    __XML_CACHED_NODES         = 0x20,
+    __XML_LOCALIZATION         = 0x40,
 
-#define PRINT(s, b, c) { \
-  int l1 = (b), l2 = (c); \
-  if (s) { \
-    int q, len = l2; \
-    if (l1 < l2) len = l1; \
-    if (len < 50000) { \
-        printf("(%i) '", len); \
-        for (q=0; q<len; q++) printf("%c", (s)[q]); \
-        printf("'\n"); \
-    } else printf("Length (%i) seems too large at line %i\n",len, __LINE__); \
-  } else printf("NULL pointer at line %i\n", __LINE__); \
-}
+    __XML_DEFAULT_MODE         = (-1) /* all true */
+};
+
+#define INDEX_STARTS_AT_ZERO(a)	((a)->root->flags & __XML_INDEX_STARTS_AT_ZERO)
+#define RETURN_NONE_VALUE(a)	((a)->root->flags & __XML_RETURN_NONE_VALUE)
+#define CASE_SENSITIVE(a)	((a)->root->flags & __XML_CASE_SENSITIVE)
+#define COMMENT_AS_NODE(a)	((a)->root->flags & __XML_COMMENT_AS_NODE)
+#define VALIDATING(a)		((a)->root->flags & __XML_VALIDATING)
+#define CACHED_NODES(a)		((a)->root->flags & __XML_CACHED_NODES)
+#define LOCALIZATION(a)		((a)->root->flags & __XML_LOCALIZATION)
+
+#define __XML_BOOL_NONE        RETURN_NONE_VALUE(xid) ? XML_BOOL_NONE : 0
+#define __XML_FPNONE           RETURN_NONE_VALUE(xid) ? XML_FPNONE : 0.0
+#define __XML_NONE             RETURN_NONE_VALUE(xid) ? XML_NONE : 0
+
 
 #define MAX_ENCODING	32
 #define MMAP_FREE	-2
@@ -190,6 +195,10 @@ size_t iconv(iconv_t, char**, size_t*, char**, size_t*);
 # define WIN32_LEAN_AND_MEAN
 # define UNICODE
 # include <windows.h>
+
+# define iconv_close(l)
+# define iconv_open(l,e)        (e)
+size_t iconv(iconv_t, char**, size_t*, char**, size_t*);
 
 typedef struct
 {
@@ -217,12 +226,11 @@ struct _root_id
     const char *name;
     const char *start;
     off_t len;
-#ifdef XML_USE_NODECACHE
     const cacheId *node;
-#endif
 
     /* _root_id specifics */
     int fd;
+    enum _xml_flags flags;
     char *mmap;
     char encoding[MAX_ENCODING+1];
 
@@ -230,13 +238,19 @@ struct _root_id
     iconv_t cd;
 #endif
 
-#ifndef XML_NONVALIDATING
     struct _zeroxml_error *info;
-#endif
 
 #ifdef WIN32
     SIMPLE_UNMMAP un;
 #endif
+
+#if HAVE_LOCALE_H
+    locale_t locale;
+    int (*lcase)(int, locale_t);
+#else
+    int (*lcase)(int);
+#endif
+    int (*strncmp)(const char*, const char*, size_t);
 };
 
 struct _xml_id
@@ -245,12 +259,23 @@ struct _xml_id
     const char *name;
     const char *start;
     off_t len;
-#ifdef XML_USE_NODECACHE
     const cacheId *node;
-#endif
 
     /* _xml_id specifics */
     off_t name_len;
 };
+
+#define PRINT(s, b, c) { \
+  int l1 = (b), l2 = (c); \
+  if (s) { \
+    int q, len = l2; \
+    if (l1 < l2) len = l1; \
+    if (len < 50000) { \
+        printf("(%i) '", len); \
+        for (q=0; q<len; q++) printf("%c", (s)[q]); \
+        printf("'\n"); \
+    } else printf("Length (%i) seems too large at line %i\n",len, __LINE__); \
+  } else printf("NULL pointer at line %i\n", __LINE__); \
+}
 
 #endif /* __XML_API_H */

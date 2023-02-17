@@ -6,18 +6,12 @@ include(CheckIncludeFiles)
 include(CheckLibraryExists)
 
 set(CMAKE_GNUtoMS ON)
-project(ZeroXml C)
+project(ZeroXml C CXX)
 set(PACKAGE_NAME "ZeroXml")
 set(PACKAGE "zeroxml")
 
 option(UTILS  "Build and install utility programs"            ON)
 option(WERROR "Treat compile warnings as errors"              OFF)
-option(COMMENTNODE "Treat XML comment sections as nodes"      ON)
-option(NODECACHE "Use XML Node cache"                         ON)
-option(NONVALIDATING "Trun off XML validation"                OFF)
-option(NONEVALUE "Allow NONE as a return value"               OFF)
-option(LOCALIZATION "Add support for localized strings"       ON)
-option(CASEINSENSITIVE "Case insensitive element comparisson" OFF)
 option(RMALLOC "Enable memory debugging functions"            OFF)
 
 if(RMALLOC)
@@ -216,13 +210,6 @@ endif(MSVC)
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "C flags: ${CMAKE_C_FLAGS}")
 
-set(XML_COMMENTNODE ${COMMENTNODE})
-set(XML_USE_NODECACHE ${NODECACHE})
-set(XML_NONVALIDATING ${NONVALIDATING})
-set(XML_CASE_INSENSITIVE ${CASEINSENSITIVE})
-set(XML_LOCALIZATION ${LOCALIZATION})
-set(XML_NONEVALUE ${NONEVALUE})
-
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in"
     "${CMAKE_CURRENT_BINARY_DIR}/include/config.h")
@@ -292,7 +279,6 @@ endif(RMALLOC)
 
 install(FILES
         include/rmalloc.h
-        include/xml_cache.h
         ${CMAKE_CURRENT_BINARY_DIR}/include/xml.h
         DESTINATION include
        )

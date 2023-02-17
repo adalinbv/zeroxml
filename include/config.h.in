@@ -31,24 +31,6 @@
 #undef USE_RMALLOC
 #cmakedefine USE_RMALLOC @USE_RMALLOC@
 
-#undef XML_LOCALIZATION
-#cmakedefine XML_LOCALIZATION @XML_LOCALIZATION@
-
-#undef XML_NONEVALUE
-#cmakedefine XML_NONEVALUE @XML_NONEVALUE@
-
-/* Define this to treat comments as nodes */
-#undef XML_COMMENTNODE
-#cmakedefine XML_COMMENTNODE @XML_COMMENTNODE@
-
-/* Define this to disable validating code. */
-#undef XML_NONVALIDATING
-#cmakedefine XML_NONVALIDATING @XML_NONVALIDATING@
-
-/* Define to include the node cache. */
-#undef XML_USE_NODECACHE
-#cmakedefine XML_USE_NODECACHE @XML_USE_NODECACHE@
-
 #if 0
 /* Handled by compiler flags */
 /* Define to include enable memory debugging. */

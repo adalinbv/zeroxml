@@ -121,6 +121,32 @@ enum
     XML_MAX_ERROR
 };
 
+enum xmlFlags
+{
+    XML_INDEX_STARTS_AT_ZERO = 0x0001,
+    XML_INDEX_STARTS_AT_ONE  = 0x0002,
+
+    XML_RETURN_NONE_VALUE    = 0x0004,
+    XML_RETURN_ZERO          = 0x0008,
+
+    XML_CASE_INSENSITIVE     = 0x0010,
+    XML_CASE_SENSITIVE       = 0x0020,
+
+    XML_IGNORE_COMMENT       = 0x0040,
+    XML_COMMENT_AS_NODE      = 0x0080,
+
+    XML_NONVALIDATING        = 0x0100,
+    XML_VALIDATING           = 0x0200,
+
+    XML_SCAN_NODES           = 0x0400,
+    XML_CACHE_NODES          = 0x0800,
+
+    XML_US_ASCII             = 0x1000,
+    XML_LOCALIZATION         = 0x2000,
+
+    XML_DEFAULT_FLAGS        = -1
+};
+
 typedef struct _root_id xmlId;
 
 /**
@@ -129,20 +155,34 @@ typedef struct _root_id xmlId;
  * No data is being allocated for the file. All actions are in mmap-ed
  * file buffers.
  *
+ * For the XML_COMMENT_AS_NODE/XML_IGNORE_COMMENT and
+ * XML_SCAN_NODES/XML_CACHE_NODES modes it is required to set them when
+ * creating the XML-id. Therefore the xmlOpenFlags function should be used
+ * with the appropriate flags.
+ *
  * @param fname path to the file 
+ * @param flags one or more modes of operation for the interpreter
  * @return XML-id which is used for further processing
  */
 XML_API xmlId* XML_APIENTRY xmlOpen(const char *fname);
+XML_API xmlId* XML_APIENTRY xmlOpenFlags(const char *fname, enum xmlFlags flags);
 
 /**
  * Process a section of XML code in a preallocated buffer.
  * The buffer may not be freed until xmlClose has been called.
  *
+ * For the XML_COMMENT_AS_NODE/XML_IGNORE_COMMENT and
+ * XML_SCAN_NODES/XML_CACHE_NODES modes it is required to set them when
+ * creating the XML-id. Therefore the xmlInitBufferFlags function should be used
+ * with the appropriate flags.
+ *
  * @param buffer pointer to the buffer
  * @param size size of the buffer
+ * @param flags one or more modes of operation for the interpreter
  * @return XML-id which is used for further processing
  */
 XML_API xmlId* XML_APIENTRY xmlInitBuffer(const char *buffer, int size);
+XML_API xmlId* XML_APIENTRY xmlInitBufferFlags(const char *buffer, int size, enum xmlFlags flags);
 
 /**
  * Close the XML file after which no further processing is possible.
@@ -150,6 +190,13 @@ XML_API xmlId* XML_APIENTRY xmlInitBuffer(const char *buffer, int size);
  * @param xid XML-id
  */
 XML_API void XML_APIENTRY xmlClose(xmlId *xid);
+
+/**
+ * Set one or more modes of operation for the interpreter.
+ *
+ * @param flags a bit wise flag containing one or more mode options
+ */
+XML_API void XML_APIENTRY xmlSetFlags(const xmlId *xid, enum xmlFlags flags);
 
 
 /**
@@ -163,8 +210,8 @@ XML_API void XML_APIENTRY xmlClose(xmlId *xid);
  * contain a question mark '?' to indicate that any character is acceptable
  * for that particular location.
  * Node names may also specify which occurrence of a particular name to look
- * up by specifying the number, starting at zero, between straight brackets.
- * e.g. node[0] or "*[3]" to get the fourth node, regardless of the names.
+ * for by specifying the number, starting at one, between straight brackets.
+ * e.g. node[1] or "*[3]" to get the fourth node, regardless of the names.
  *
  * If node points to XML_COMMENT then the function will test whether the
  * current node is a comment node.

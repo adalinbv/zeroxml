@@ -18,10 +18,6 @@
 
 #include "xml.h"
 
-#if defined(__GNUC__)
-# include <execinfo.h>
-void segfault_handler(int);
-#endif
 int fuzz(const char*, size_t);
 
 #define MAX_SMALL_BUF	 256
@@ -32,17 +28,13 @@ int main(int argc, char **argv)
     const char *fname = SOURCE_DIR"/test/sample.xml";
     int fd, rv = 0;
 
-#if defined(__GNUC__)
-    signal(SIGSEGV, segfault_handler);
-#endif
-
     fd = open(fname, O_RDONLY);
     if (fd)
     {
         struct stat sbuf;
         if (fstat(fd, &sbuf) == 0)
         {
-            char *buf = malloc(sbuf.st_size);
+            char *buf = (char*)malloc(sbuf.st_size);
             if (buf && (read(fd, buf, sbuf.st_size) == sbuf.st_size))
             {
                 rv = fuzz(buf, sbuf.st_size);
@@ -69,7 +61,7 @@ char name[MAX_LARGE_BUF+1] = "/";
 void walk_xml(xmlId *id, char *name, unsigned int len)
 {
     xmlId *xid = xmlMarkId(id);
-    unsigned int num, i;
+    int num, i;
 
     num = xmlNodeGetNum(xid, "*");
     for (i=0; i<xmlAttributeGetNum(xid); ++i)
@@ -103,7 +95,7 @@ void walk_xml(xmlId *id, char *name, unsigned int len)
     }
     else
     {
-        unsigned int i;
+        int i;
 
         name[len++] = '/';
         for (i=0; i<num; i++)
@@ -140,30 +132,17 @@ void walk_xml(xmlId *id, char *name, unsigned int len)
             }
         }
     }
+    xmlFree(xid);
 }
-
-#if defined(__GNUC__)
-void segfault_handler(int signo)
-{
-    fprintf(stderr, "Error: caught signal %d:\n", signo);
-
-    size_t size;
-    enum Constexpr { MAX_SIZE = 1024 };
-    void *array[MAX_SIZE];
-    size = backtrace(array, MAX_SIZE);
-    backtrace_symbols_fd(array, size, STDOUT_FILENO);
-
-    abort();
-}
-#endif
 
 int fuzz(const char *buf, size_t size)
 {
     xmlId *root_id;
     char *fuzzbuf;
-    int i, j, k, l;
+    int j, k, l;
+    int rv = 0;
 
-    if ((fuzzbuf = malloc(size)) == NULL)
+    if ((fuzzbuf = (char*)malloc(size)) == NULL)
     {
         printf("Not enough memory.\n");
         return -1;
@@ -180,7 +159,7 @@ int fuzz(const char *buf, size_t size)
             for(k=0; k<l; ++k)
             {
                 off_t offs = rand() % size;
-                fuzzbuf[offs] = 1 + rand() % 254;
+                fuzzbuf[offs] = rand() % 256;
             }
 
             root_id = xmlInitBuffer(fuzzbuf, size);
@@ -209,4 +188,6 @@ int fuzz(const char *buf, size_t size)
         }
     }
     free(fuzzbuf);
+
+    return rv;
 }

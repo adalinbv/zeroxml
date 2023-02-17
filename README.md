@@ -14,7 +14,7 @@ name or when a request is made to copy a node into a new memory region.
 
 Using this library should be pretty simple for most tasks; just open a file,
 read every parameter one by one and close the id again.
-`
+```
    xmlId *xid;
 
    xid = xmlOpen("/tmp/file.xml");
@@ -22,14 +22,14 @@ read every parameter one by one and close the id again.
    ypos = xmlNodeGetDouble(xid, "/configuration/y-pos");
    zpos = xmlNodeGetDouble(xid, "/configuration/z-pos");
    xmlClose(xid);
-`
+```
 
 While it is certainly possible to access every node directly by calling the
 xmlNodeGet(Bool/Int/Double/String) functions, when more than one node need to be
 gathered from a parent node it is advised to get the id of the parent node
 and work from there since the XML-id holds the boundaries of the (parent)node
 which limits the searching area resulting in improved searching speed.
-`
+```
    xmlId *xnid;
    char *s;
 
@@ -39,12 +39,14 @@ which limits the searching area resulting in improved searching speed.
    if (s) author = s;
    free(s);
    xmlFree(xnid);
-`
+```
 
 ## Examples:
------------------------------------------------------------------------------
 
-### Functions to walk the node tree and process them one by one.
+---
+
+#### Functions to walk the node tree and process them one by one.
+
 ```
   xmid = xmlMarkId(id);
   num = xmlNodeGetNum(xmid, "*");
@@ -60,7 +62,8 @@ which limits the searching area resulting in improved searching speed.
 ```
 
 
-### These functions work on the current node.
+#### These functions work on the current node.
+
 ```
   xnid = xmlNodeGet(id, "/path/to/last/node");
   i = xmlGetInt(xnid);
@@ -72,7 +75,8 @@ which limits the searching area resulting in improved searching speed.
  ```
 
 
-### These functions work on a specified atribute
+#### These functions work on a specified atribute
+
 ```
   i = xmlAttributeGetInt(id, "n");
  
@@ -82,7 +86,8 @@ which limits the searching area resulting in improved searching speed.
 ```
 
 
-### Error detection and reporting functions
+#### Error detection and reporting functions
+
 ```
   char *err_str = xmlErrorGetString(id, 0);
   size_t err_lineno = xmlErrorGetLineNo(id, 0);
@@ -92,20 +97,34 @@ which limits the searching area resulting in improved searching speed.
 
 
 ## Overview of the available functions:
------------------------------------------------------------------------------
 
-### Open an XML file for processing.
-No data is being allocated for the file. All actions are in mmap-ed
-file buffers.
- ```
+---
+
+#### Open an XML file for processing.
+
+No data is being allocated for the file. All actions are in mmap-ed file buffers.
+
+For the `XML_COMMENT_AS_NODE`/`XML_IGNORE_COMMENT` and
+`XML_SCAN_NODES`/`XML_CACHE_NODES` modes it is required to set them when
+creating the XML-id. Therefore the xmlOpenFlags function should be used
+with the appropriate flags.
+```
 @param fname path to the file
+@param flags one or more modes of operation for the interpreter
 @return XML-id which is used for further processing
 XML_API xmlId* XML_APIENTRY xmlOpen(const char *fname);
+XML_API xmlId* XML_APIENTRY xmlOpenFlags(const char *fname, enum xmlFlags flags);
 ```
 
-### Process a section of XML code in a preallocated buffer.
+#### Process a section of XML code in a preallocated buffer.
+
 The buffer may not be freed until xmlClose has been called.
- ```
+
+For the `XML_COMMENT_AS_NODE`/`XML_IGNORE_COMMENT` and
+`XML_SCAN_NODES`/`XML_CACHE_NODES` modes it is required to set them when
+creating the XML-id. Therefore the xmlInitBufferFlags function should be used
+with the appropriate flags.
+```
 @param buffer pointer to the buffer
 @param size size of the buffer
 @return XML-id which is used for further processing*
@@ -113,12 +132,38 @@ XML_API xmlId* XML_APIENTRY xmlInitBuffer(const char *buffer, int size);
 ```
 
 ## Close the XML file after which no further processing is possible.
+
 ```
 @param xid XML-id
 XML_API void XML_APIENTRY xmlClose(xmlId *xid);
 ```
 
-### Test whether the node path exists.
+## Set one or more modes of operation for the interpreter.
+
+- **`XML_INDEX_STARTS_AT_ZERO`**: Node indexes start at zero (default)
+- **`XML_INDEX_STARTS_AT_ONE`**: Node indexes start at one (XPath default)
+- **`XML_RETURN_ZERO`**: Return zero if a node does not exist (default)
+- **`XML_RETURN_NONE_VALUE`**: Return a special NONE value if a node does not exist.
+- **`XML_CASE_SENSITIVE`**: Do case sensitive name comparisson (default)
+- **`XML_CASE_INSENSITIVE`**: Do case insensitive name comparisson.
+- **`XML_COMMENT_AS_NODE`**: Treat comments as nodes (default)
+- **`XML_IGNORE_COMMENT`**: Igonore comment sections.
+- **`XML_VALIDATING`**: Report errors in the XML document (default)
+- **`XML_NONVALIDATING`**: Ignore errors in the XML document.
+- **`XML_CACHE_NODES`**: Store nodes in a cache for faster processing (default)
+- **`XML_SCAN_NODES`**: Do not use memroy for XML document processing.
+- **`XML_LOCALIZATION`**: Translate node names to the local encoding (default)
+- **`XML_US_ASCII`**: Ignore character encodings.
+
+In case of conflicting flags the default takes precenence.
+
+```
+@param flags a bit wise flag containing one or more mode options
+XML_API void XML_APIENTRY xmlSetFlags(const xmlId *xid, enum xmlFlags flags);
+```
+
+#### Test whether the node path exists.
+
 A node path may be a solitary node name or a node path separated by the
 slash character '/' (in which case the code walks the XML tree).
 
@@ -130,7 +175,7 @@ Node names may also specify which occurrence of a particular name to look
 up by specifying the number, starting at zero, between straight brackets.
 e.g. node[0] or "\*[3]" to get the fourth node, regardless of the names.
 
-If node points to XML_COMMENT then the function will test whether the
+If node points to `XML_COMMENT` then the function will test whether the
 current node is a comment node.
 ```
 @param xid XML-id
@@ -139,7 +184,8 @@ current node is a comment node.
 XML_API int XML_APIENTRY xmlNodeTest(const xmlId *xid, const char *path);
 ```
 
-### Locate a subsection of the XML tree for further processing.
+#### Locate a subsection of the XML tree for further processing.
+
 The memory allocated for the XML-subsection-id has to be freed by the
 calling process using xmlFree.
  
@@ -154,7 +200,8 @@ For a description of node paths see xmlNodeTest.
 XML_API xmlId* XML_APIENTRY xmlNodeGet(const xmlId *xid, const char *path);
 ```
 
-### Copy a subsection of the XML tree for further processing.
+#### Copy a subsection of the XML tree for further processing.
+
 This is useful when it's required to process a section of the XML code
 after the file has been closed. The drawback is the added memory
 requirements.
@@ -170,7 +217,8 @@ calling process using xmlClose.
 XML_API xmlId* XML_APIENTRY xmlNodeCopy(const xmlId *xid, const char *path);
 ```
 
-### Return the name of this node.
+#### Return the name of this node.
+
 The returned string has to be freed by the calling process using xmlFree.
 ```
 @param xid XML-id
@@ -178,7 +226,8 @@ The returned string has to be freed by the calling process using xmlFree.
 XML_API char* XML_APIENTRY xmlNodeGetName(const xmlId *xid);
 ```
 
-### Copy the name of this node in a pre-allocated buffer.
+#### Copy the name of this node in a pre-allocated buffer.
+
 ```
 @param xid XML-id
 @param buffer the buffer to copy the string to
@@ -187,7 +236,8 @@ XML_API char* XML_APIENTRY xmlNodeGetName(const xmlId *xid);
 XML_API int XML_APIENTRY xmlNodeCopyName(const xmlId *xid, char *buffer, int buflen);
 ```
 
-### Compare the name of a node to a string.
+#### Compare the name of a node to a string.
+
   Comparing is done in a case insensitive way.
 ```
 @param xid XML-id
@@ -198,7 +248,8 @@ XML_API int XML_APIENTRY xmlNodeCopyName(const xmlId *xid, char *buffer, int buf
 XML_API int XML_APIENTRY xmlNodeCompareName(const xmlId *xid, const char *str);
 ```
 
-### Return the name of the nth attribute.
+#### Return the name of the nth attribute.
+
 ```
 @param xid XML-id
 @param n position of the attribute in the attribute list. starts at 0.
@@ -206,7 +257,8 @@ XML_API int XML_APIENTRY xmlNodeCompareName(const xmlId *xid, const char *str);
 XML_API char* XML_APIENTRY xmlAttributeGetName(const xmlId *xid, int n);
 ```
 
-### Copy the name of the nth attribute in a pre-allocated buffer.
+#### Copy the name of the nth attribute in a pre-allocated buffer.
+
 ```
 @param xid XML-id
 @param buffer the buffer to copy the string to
@@ -216,7 +268,8 @@ XML_API char* XML_APIENTRY xmlAttributeGetName(const xmlId *xid, int n);
 XML_API int XML_APIENTRY xmlAttributeCopyName(const xmlId *xid, char *buffer, int buflen, int n);
 ```
 
-### Compare the name of the nth attribute to a string.
+#### Compare the name of the nth attribute to a string.
+
 Comparing is done in a case insensitive way.
 ```
 @param xid XML-id
@@ -228,7 +281,8 @@ Comparing is done in a case insensitive way.
 XML_API int XML_APIENTRY xmlAttributeCompareName(const xmlId *xid, int n, const char *str);
 ```
 
-### Create a marker XML-id that starts out with the same settings as the reference XML-id.
+#### Create a marker XML-id that starts out with the same settings as the reference XML-id.
+
 The returned XML-id has to be freed by the calling process using xmlFree.
 
 Marker id's are required when xmlNodeGetNum() and xmlNodeGetPos() are used
@@ -241,13 +295,15 @@ The returned XML-id is limited to the boundaries of the requested XML tag.
 XML_API xmlId* XML_APIENTRY xmlMarkId(const xmlId *xid);
 ```
 
-### Free an XML-id.
+#### Free an XML-id.
+
 ```
 @param p a pointer to the memory location to be freed.
 XML_API void XML_APIENTRY xmlFree(void *p);
 ```
 
-### Get the number of nodes with the same name from a specified XML path.
+#### Get the number of nodes with the same name from a specified XML path.
+
 
 For a description of node paths see xmlNodeTest.
 ```
@@ -258,14 +314,16 @@ XML_API int XML_APIENTRY xmlNodeGetNum(const xmlId *xid, const char *path);
 XML_API int XML_APIENTRY xmlNodeGetNumRaw(const xmlId *xid, const char *path);
 ```
 
-### Get the number of attributes for this node.
+#### Get the number of attributes for this node.
+
 ```
 @param xid XML-id
 @return the number count of the node
 XML_API int XML_APIENTRY xmlAttributeGetNum(const xmlId *xid);
 ```
 
-### Get the nth occurrence of node in the parent node.
+#### Get the nth occurrence of node in the parent node.
+
 The return value should never be altered or freed by the caller.
 ```
 @param pid XML-id of the parent node of this node
@@ -277,7 +335,8 @@ XML_API xmlId* XML_APIENTRY xmlNodeGetPos(const xmlId *pid, xmlId *xid, const ch
 XML_API xmlId* XML_APIENTRY xmlNodeGetPosRaw(const xmlId *pid, xmlId *xid, const char *node, int num);
 ```
 
-### Copy the nth occurrence of node in the parent node.
+#### Copy the nth occurrence of node in the parent node.
+
 The return value should be freed by the caller using xmlFree.
 ```
 @param pid XML-id of the parent node of this node
@@ -289,13 +348,14 @@ The return value should be freed by the caller using xmlFree.
 XML_API xmlId* XML_APIENTRY xmlNodeCopyPos(const xmlId *pid, xmlId *xid, const char *node, int num);
 ```
 
-### Get a string of characters from the current node.
+#### Get a string of characters from the current node.
+
 The returned string has to be freed by the calling process using xmlFree.
 
 xmlGetStringRaw returns the unformatted string including leading and trailing
-spaces and includes comments and the ![CDATA[]] sequence in the result.
+spaces and includes comments and the `![CDATA[]]` sequence in the result.
 
-xmlGetString does not include comments and the ![CDATA[]] sequence in the
+xmlGetString does not include comments and the `![CDATA[]]` sequence in the
 result and omits leading and trailing spaces.
 ```
 @param xid XML-id
@@ -304,7 +364,8 @@ XML_API char* XML_APIENTRY xmlGetString(const xmlId *xid);
 XML_API char* XML_APIENTRY xmlGetStringRaw(const xmlId *xid);
 ```
 
-### Get a string of characters from the current node.
+#### Get a string of characters from the current node.
+
 This function has the advantage of not allocating its own return buffer,
 keeping the memory management to an absolute minimum but the disadvantage
 is that it's unreliable in multithread environments.
@@ -316,7 +377,8 @@ is that it's unreliable in multithread environments.
 XML_API int XML_APIENTRY xmlCopyString(const xmlId *xid, char *buffer, int buflen);
 ```
 
-### Compare the value of this node to a reference string.
+#### Compare the value of this node to a reference string.
+
 Comparing is done in a case insensitive way.
 ```
 @param xid XML-id
@@ -327,7 +389,8 @@ than str
 XML_API int XML_APIENTRY xmlCompareString(const xmlId *xid, const char *str);
 ```
 
-### Get a string of characters from a specified XML path.
+#### Get a string of characters from a specified XML path.
+
 The returned string has to be freed by the calling process using xmlFree.
 
 For a description of node paths see xmlNodeTest.
@@ -338,23 +401,24 @@ For a description of node paths see xmlNodeTest.
 XML_API char* XML_APIENTRY xmlNodeGetString(const xmlId *xid, const char *path);
 ```
 
-### Get a string of characters from a specified XML path.
+#### Get a string of characters from a specified XML path.
 
 This function has the advantage of not allocating its own return buffer,
 keeping the memory management to an absolute minimum but the disadvantage
 is that it's unreliable in multithread environments.
 
 For a description of node paths see xmlNodeTest.
-
+```
 @param xid XML-id
 @param path path to the XML node
 @param buffer the buffer to copy the string to
 @param buflen length of the destination buffer
 @return the length of the string
 XML_API int XML_APIENTRY xmlNodeCopyString(const xmlId *xid, const char *path, char *buffer, int buflen);
+```
 
+#### Compare the value of a node to the value of a node at a specified XML path.
 
-### Compare the value of a node to the value of a node at a specified XML path.
 Comparing is done in a case insensitive way.
 
 For a description of node paths see xmlNodeTest.
@@ -368,7 +432,8 @@ than str
 XML_API int XML_APIENTRY xmlNodeCompareString(const xmlId *xid, const char *path, const char *str);
 ```
 
-### Get a string of characters from a named attribute.
+#### Get a string of characters from a named attribute.
+
 The returned string has to be freed by the calling process using xmlFree.
 ```
 @param xid XML-id
@@ -377,7 +442,8 @@ The returned string has to be freed by the calling process using xmlFree.
 XML_API char* XML_APIENTRY xmlAttributeGetString(const xmlId *xid, const char *name);
 ```
 
-### Get a string of characters from a named attribute.
+#### Get a string of characters from a named attribute.
+
 This function has the advantage of not allocating its own return buffer,
 keeping the memory management to an absolute minimum but the disadvantage
 is that it's unreliable in multithread environments.
@@ -390,7 +456,8 @@ param name name of the attribute to acquire.
 XML_API int XML_APIENTRY xmlAttributeCopyString(const xmlId *xid, const char *name, char *buffer, int buflen);
 ```
 
-### Compare the value of an attribute to a reference string.
+#### Compare the value of an attribute to a reference string.
+
 Comparing is done in a case insensitive way.
 ```
 @param xid XML-id
@@ -402,14 +469,15 @@ than str
 XML_API int XML_APIENTRY xmlAttributeCompareString(const xmlId *xid, const char *name, const char *str);
 ```
 
-### Get the boolean value from the current node/
+#### Get the boolean value from the current node/
+
 ```
 @param xid XML-id
 @return the contents of the node converted to an boolean value
 XML_API int XML_APIENTRY xmlGetBool(const xmlId *xid);
 ```
 
-### Get an boolean value from a specified XML path.
+#### Get an boolean value from a specified XML path.
 
 For a description of node paths see xmlNodeTest.
 
@@ -422,7 +490,7 @@ any non-zero number. Boolean values for false is anything else.
 XML_API int XML_APIENTRY xmlNodeGetBool(const xmlId *xid, const char *path);
 ```
 
-### Get the boolean value from the named attribute.
+#### Get the boolean value from the named attribute.
 
 Boolean values for true are (without quotes) 'on', 'yes', 'true' or
 any non-zero number. Boolean values for false is anything else.
@@ -434,14 +502,14 @@ any non-zero number. Boolean values for false is anything else.
 XML_API int XML_APIENTRY xmlAttributeGetBool(const xmlId *xid, const char *name);
 ```
 
-### Get the integer value from the current node/
+#### Get the integer value from the current node/
 ```
 @param xid XML-id
 @return the contents of the node converted to an integer value
 XML_API long int XML_APIENTRY xmlGetInt(const xmlId *xid);
 ```
 
-### Get an integer value from a specified XML path.
+#### Get an integer value from a specified XML path.
 
 For a description of node paths see xmlNodeTest.
 ```
@@ -451,7 +519,7 @@ For a description of node paths see xmlNodeTest.
 XML_API long int XML_APIENTRY xmlNodeGetInt(const xmlId *xid, const char *path);
 ```
 
-### Get the integer value from the named attribute.
+#### Get the integer value from the named attribute.
 ```
 @param xid XML-id
 @param name name of the attribute to acquire
@@ -459,14 +527,14 @@ XML_API long int XML_APIENTRY xmlNodeGetInt(const xmlId *xid, const char *path);
 XML_API long int XML_APIENTRY xmlAttributeGetInt(const xmlId *xid, const char *name);
 ```
 
-### Get the double value from the curent node/
+#### Get the double value from the curent node/
 ```
 @param xid XML-id
 @return the contents of the node converted to a double value
 XML_API double XML_APIENTRY xmlGetDouble(const xmlId *xid);
 ```
 
-### Get a double value from a specified XML path/
+#### Get a double value from a specified XML path/
 
 For a description of node paths see xmlNodeTest.
 ```
@@ -476,7 +544,7 @@ For a description of node paths see xmlNodeTest.
 XML_API double XML_APIENTRY xmlNodeGetDouble(const xmlId *xid, const char *path);
 ```
 
-### Get the double value from the named attribute.
+#### Get the double value from the named attribute.
 ```
 @param xid XML-id
 @param name name of the attribute to acquire
@@ -484,7 +552,7 @@ XML_API double XML_APIENTRY xmlNodeGetDouble(const xmlId *xid, const char *path)
 XML_API double XML_APIENTRY xmlAttributeGetDouble(const xmlId *xid, const char *name);
 ```
 
-### Test whether the named attribute does exist.
+#### Test whether the named attribute does exist.
 ```
 @param xid XML-id
 @param name name of the attribute to acquire
@@ -492,7 +560,7 @@ XML_API double XML_APIENTRY xmlAttributeGetDouble(const xmlId *xid, const char *
 XML_API int XML_APIENTRY xmlAttributeExists(const xmlId *xid, const char *name);
 ```
 
-### Get the error number of the last error and clear it.
+#### Get the error number of the last error and clear it.
 ```
 @param xid XML-id
 @param clear clear the error state if non zero
@@ -500,7 +568,7 @@ XML_API int XML_APIENTRY xmlAttributeExists(const xmlId *xid, const char *name);
 XML_API int XML_APIENTRY xmlErrorGetNo(const xmlId *xid, int clear);
 ```
 
-### Get the line number of the last detected syntax error in the XML file.
+#### Get the line number of the last detected syntax error in the XML file.
 ```
 @param xid XML-id
 @param clear clear the error state if non zero
@@ -508,7 +576,7 @@ XML_API int XML_APIENTRY xmlErrorGetNo(const xmlId *xid, int clear);
 XML_API int XML_APIENTRY xmlErrorGetLineNo(const xmlId *xid, int clear);
 ```
 
-### Get the column number of the last detected syntax error in the XML file.
+#### Get the column number of the last detected syntax error in the XML file.
 ```
 @param xid XML-id
 @param clear clear the error state if non zero
@@ -516,7 +584,7 @@ XML_API int XML_APIENTRY xmlErrorGetLineNo(const xmlId *xid, int clear);
 XML_API int XML_APIENTRY xmlErrorGetColumnNo(const xmlId *xid, int clear);
 ```
 
-### Get a string that explains the last error.
+#### Get a string that explains the last error.
 ```
 @param xid XML-id
 @param clear clear the error state if non zero
@@ -524,7 +592,7 @@ XML_API int XML_APIENTRY xmlErrorGetColumnNo(const xmlId *xid, int clear);
 XML_API const char* XML_APIENTRY xmlErrorGetString(const xmlId *xid, int clear);
 ```
 
-### Get the encoding as specified by the XML document.
+#### Get the encoding as specified by the XML document.
 ```
 @param xid XML-id
 @return a string containing the encoding as specified by the XML document

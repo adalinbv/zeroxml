@@ -66,37 +66,6 @@
 #include "xml.h"
 #include "api.h"
 
-#ifndef XML_USE_NODECACHE
-
-const cacheId*
-cacheInit() {
-    return NULL;
-}
-
-void
-cacheInitLevel(const cacheId *nc) {
-}
-
-void
-cacheFree(const cacheId *nc) {
-}
-
-const cacheId*
-cacheNodeGet(const xmlId *id) {
-    return NULL;
-}
-
-const cacheId*
-cacheNodeNew(const cacheId *nc) {
-    return NULL;
-}
-
-void
-cacheDataSet(const cacheId *n, const char *name, int namelen, const char *data, int datalen) {
-}
-
-#else
-
 /* number of pointers to allocate for every block increase */
 # define NODE_BLOCKSIZE		16
 
@@ -116,27 +85,29 @@ struct _xml_node
 };
 
 const cacheId*
-cacheInit() {
-    return calloc(1, sizeof(struct _xml_node));
+cacheInit(const struct _root_id *rid)
+{
+    return CACHED_NODES(rid) ? calloc(1, sizeof(struct _xml_node))
+                             : NULL;
 }
 
 void
 cacheInitLevel(const cacheId *nc)
 {
     struct _xml_node *cache = (struct _xml_node *)nc;
+    if (cache)
+    {
+        assert(cache->node == 0);
 
-    assert(cache != 0);
-    assert(cache->node == 0);
-
-    cache->node = calloc(NODE_BLOCKSIZE, sizeof(struct _xml_node *));
-    cache->max_nodes = NODE_BLOCKSIZE;
+        cache->node = calloc(NODE_BLOCKSIZE, sizeof(struct _xml_node *));
+        cache->max_nodes = NODE_BLOCKSIZE;
+    }
 }
 
 void
 cacheFree(const cacheId *nc)
 {
     struct _xml_node *cache = (struct _xml_node *)nc;
-
     if (cache)
     {
         if (cache->no_nodes)
@@ -147,9 +118,8 @@ cacheFree(const cacheId *nc)
             while(i < cache->no_nodes) {
                 cacheFree((cacheId*)node[i++]);
             }
-
-            free(node);
         }
+        free(cache->node);
         free(cache);
     }
 }
@@ -157,16 +127,18 @@ cacheFree(const cacheId *nc)
 const cacheId*
 cacheNodeGet(const xmlId *id)
 {
-    const struct _xml_id *xid = (const struct _xml_id *)id;
+    const struct _root_id *rid = (const struct _root_id *)id;
     const cacheId *cache = NULL;
 
-    assert(xid != 0);
+    assert(rid != 0);
 
-    if (xid->name) { // not a root node?
-        cache = xid->node;
-    } else {
-        struct _root_id *rid = (struct _root_id *)xid;
+    if (rid->root == rid) {
         cache = rid->node;
+    }
+    else
+    {
+        struct _xml_id *xid = (struct _xml_id *)id;
+        cache = xid->node;
     }
 
     return cache;
@@ -177,50 +149,51 @@ cacheNodeNew(const cacheId *nc)
 {
     struct _xml_node *cache = (struct _xml_node *)nc;
     struct _xml_node *rv = NULL;
-    int i = 0;
 
-    assert(nc != 0);
-
-    i = cache->no_nodes;
-    if (i == cache->max_nodes)
+    if (cache)
     {
-        int size, max_nodes;
-        void *p;
+        int i = cache->no_nodes;
+        if (i == cache->max_nodes)
+        {
+            int size, max_nodes;
+            void *p;
 
-        max_nodes = cache->max_nodes + NODE_BLOCKSIZE;
-        size = max_nodes * sizeof(struct _xml_node*);
-        if ((p = realloc(cache->node, size)) == NULL) {
-            return rv;
+            max_nodes = cache->max_nodes + NODE_BLOCKSIZE;
+            size = max_nodes * sizeof(struct _xml_node*);
+            if ((p = realloc(cache->node, size)) == NULL) {
+                return rv;
+            }
+
+            cache->node = p;
+            cache->max_nodes = max_nodes;
         }
 
-        cache->node = p;
-        cache->max_nodes = max_nodes;
+        if ((rv = calloc(1, sizeof(struct _xml_node))) != NULL)
+        {
+            rv->parent = cache;
+            cache->no_nodes++;
+        }
+        cache->node[i] = rv;
     }
-
-    if ((rv = calloc(1, sizeof(struct _xml_node))) != NULL)
-    {
-        rv->parent = cache;
-        cache->no_nodes++;
-    }
-    cache->node[i] = rv;
 
     return rv;
 }
 
 void
-cacheDataSet(const cacheId *n, const char *name, int namelen, const char *data, int datalen)
+cacheDataSet(const cacheId *nc, const char *name, int namelen, const char *data, int datalen)
 {
-    struct _xml_node *node = (struct _xml_node *)n;
+    struct _xml_node *cache = (struct _xml_node *)nc;
+    if (cache)
+    {
+        assert(name != 0);
+        assert(namelen != 0);
+        assert(data != 0);
 
-    assert(node != 0);
-    assert(name != 0);
-    assert(namelen != 0);
-    assert(data != 0);
-
-    node->name = name;
-    node->name_len = namelen;
-    node->data = data;
-    node->data_len = datalen;
+        cache->name = name;
+        cache->name_len = namelen;
+        cache->data = data;
+        cache->data_len = datalen;
+    }
 }
 
 void
@@ -333,4 +306,3 @@ __zeroxml_get_node_from_cache(const cacheId **nc, const char **buf, int *len,
     return rv;
 }
 
-#endif
