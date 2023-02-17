@@ -139,7 +139,6 @@ xmlOpenFlags(const char *filename, enum xmlFlags flags)
 #ifdef HAVE_LOCALE_H
                 const char *locale;
                 locale = setlocale(LC_CTYPE, "");
-                rid->locale = newlocale(LC_CTYPE_MASK, locale, 0);
 #endif
                 rid->root = rid;
                 xmlSetFlags(rid, flags);
@@ -188,6 +187,9 @@ xmlOpenFlags(const char *filename, enum xmlFlags flags)
                         rid->mmap = mm;
                         rid->start = start;
                         rid->len = blocklen;
+#ifdef HAVE_LOCALE_H
+                        rid->locale = newlocale(LC_CTYPE_MASK, locale, 0);
+#endif
 #if defined(HAVE_ICONV_H) || defined(WIN32)
                         do
                         {
@@ -235,7 +237,6 @@ xmlInitBufferFlags(const char *buffer, int blocklen, enum xmlFlags flags)
 #ifdef HAVE_LOCALE_H
             const char *locale;
             locale = setlocale(LC_CTYPE, "");
-            rid->locale = newlocale(LC_CTYPE_MASK, locale, 0);
 #endif
             rid->root = rid;
             xmlSetFlags(rid, flags);
@@ -273,6 +274,9 @@ xmlInitBufferFlags(const char *buffer, int blocklen, enum xmlFlags flags)
                 rid->mmap = (char*)buffer;
                 rid->start = start;
                 rid->len = blocklen;
+#ifdef HAVE_LOCALE_H
+                rid->locale = newlocale(LC_CTYPE_MASK, locale, 0);
+#endif
 #if defined(HAVE_ICONV_H) || defined(WIN32)
                 do
                 {
@@ -297,7 +301,6 @@ xmlClose(xmlId *id)
 {
     struct _root_id *rid = (struct _root_id *)id;
 
-
     if (rid && rid->root == rid)
     {
         if (rid->fd == MMAP_FREE) {
@@ -317,6 +320,10 @@ xmlClose(xmlId *id)
             iconv_close(rid->cd);
         }
 #endif
+
+        if (rid->locale) {
+            freelocale(rid->locale);
+        }
 
         free(rid);
         id = 0;

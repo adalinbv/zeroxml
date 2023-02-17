@@ -187,4 +187,5 @@ void print_xml(xmlId *id, char *name, unsigned int len)
             else printf("error\n");
         }
     }
+    xmlFree(xid);
 }
