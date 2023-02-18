@@ -137,8 +137,8 @@ xmlOpenFlags(const char *filename, enum xmlFlags flags)
                 char *mm;
 
 #ifdef HAVE_LOCALE_H
-                const char *locale;
-                locale = setlocale(LC_CTYPE, "");
+                char *locale;
+                locale = strdup(setlocale(LC_CTYPE, ""));
 #endif
                 rid->root = rid;
                 xmlSetFlags(rid, XML_DEFAULT_FLAGS);
@@ -192,18 +192,18 @@ xmlOpenFlags(const char *filename, enum xmlFlags flags)
                         rid->len = blocklen;
 #ifdef HAVE_LOCALE_H
                         rid->locale = newlocale(LC_CTYPE_MASK, locale, 0);
-#endif
-#if defined(HAVE_ICONV_H) || defined(WIN32)
+
+# if defined(HAVE_ICONV_H) || defined(WIN32)
                         do
                         {
-# if HAVE_LOCALE_H
                             const char *ptr = strrchr(locale, '.');
                             if (!ptr) ptr = locale;
                             else ++ptr;
-# endif
                             rid->cd = iconv_open(ptr, rid->encoding);
+                            free(locale);
                         }
                         while(0);
+# endif
 #endif
                     }
                 }
@@ -238,8 +238,8 @@ xmlInitBufferFlags(const char *buffer, int blocklen, enum xmlFlags flags)
             const char *start;
 
 #ifdef HAVE_LOCALE_H
-            const char *locale;
-            locale = setlocale(LC_CTYPE, "");
+            char *locale;
+            locale = strdup(setlocale(LC_CTYPE, ""));
 #endif
             rid->root = rid;
             xmlSetFlags(rid, XML_DEFAULT_FLAGS);
@@ -282,18 +282,17 @@ xmlInitBufferFlags(const char *buffer, int blocklen, enum xmlFlags flags)
                 rid->len = blocklen;
 #ifdef HAVE_LOCALE_H
                 rid->locale = newlocale(LC_CTYPE_MASK, locale, 0);
-#endif
-#if defined(HAVE_ICONV_H) || defined(WIN32)
+# if defined(HAVE_ICONV_H) || defined(WIN32)
                 do
                 {
-# if HAVE_LOCALE_H
                     const char *ptr = strrchr(locale, '.');
                     if (!ptr) ptr = locale;
                     else ++ptr;
-# endif
                     rid->cd = iconv_open(ptr, rid->encoding);
+                    free(locale);
                 }
                 while(0);
+# endif
 #endif
             }
         }
