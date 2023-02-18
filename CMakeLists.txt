@@ -1,5 +1,13 @@
-cmake_minimum_required(VERSION 3.11.0)
-set(CMAKE_VERBOSE_MAKEFILE TRUE)
+cmake_minimum_required(VERSION 3.10)
+if(POLICY CMP0072)
+  cmake_policy(SET CMP0072 NEW)
+endif()
+
+if(POLICY CMP0093)
+  cmake_policy(SET CMP0093 NEW)
+endif()
+
+#set(CMAKE_VERBOSE_MAKEFILE TRUE)
 
 include(CheckIncludeFile)
 include(CheckIncludeFiles)
@@ -103,6 +111,8 @@ include(CPack)
 # We have some custom .cmake scripts not in the official distribution.
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
 
+include(CPack_Defaults)
+
 # Add definitions, compiler switches, etc.
 include_directories("${CMAKE_SOURCE_DIR}/src"
   "${CMAKE_BINARY_DIR}/include"
@@ -128,7 +138,6 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif()
 
-set(C_FLAGS "${CMAKE_C_FLAGS}")
 
 if(MSVC)
     set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -D_DEBUG")
@@ -157,13 +166,13 @@ else(MSVC)
     add_definitions(-Wall -s)
     if(NOT MINGW)
       if (GCC)
-        set(C_FLAGS "${C_FLAGS} -Wl,--hash-style=both")
+        string(APPEND CMAKE_C_FLAGS " -Wl,--hash-style=both")
       endif(GCC)
       if (GCC OR CLANG)
-        set(C_FLAGS "${C_FLAGS} -fPIC -Wpointer-arith -Wparentheses")
+        string(APPEND CMAKE_C_FLAGS " -fPIC -Wpointer-arith -Wparentheses")
       endif(GCC OR CLANG)
     else(NOT MINGW)
-       set(C_FLAGS "${C_FLAGS} -static-libgcc")
+       string(APPEND CMAKE_C_FLAGS " -static-libgcc")
        set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -Wl,--out-implib,${LIBZEROXML}.lib")
        foreach(flag_var
                 CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
@@ -179,29 +188,29 @@ else(MSVC)
     set(RELEASE_FLAGS "-O3 -DRELEASE=1")
 
     # Note: CMAKE_C_FLAGS_RELWITHDEBINFO adds profiler flags
-     set(CMAKE_C_FLAGS_RELWITHDEBINFO "${C_FLAGS} -g ${RELEASE_FLAGS} -DNDEBUG" CACHE STRING
+     set(CMAKE_C_FLAGS_RELWITHDEBINFO "-g ${RELEASE_FLAGS} -DNDEBUG" CACHE STRING
          "Flags used by the compiler during Release with Debug Info builds."
          FORCE)
-     set(CMAKE_C_FLAGS_MINSIZEREL "${C_FLAGS} -O2 -s -fomit-frame-pointer -DNDEBUG -DRELEASE=1" CACHE STRING
+     set(CMAKE_C_FLAGS_MINSIZEREL "-O2 -s -fomit-frame-pointer -DNDEBUG -DRELEASE=1" CACHE STRING
          "Flags used by the compiler during release minsize builds."
          FORCE)
-     set(CMAKE_C_FLAGS_RELEASE "${C_FLAGS} ${RELEASE_FLAGS} -fomit-frame-pointer -DNDEBUG"
+     set(CMAKE_C_FLAGS_RELEASE "${RELEASE_FLAGS} -fomit-frame-pointer -DNDEBUG"
              CACHE STRING "Flags used by the compiler during release builds"
             FORCE)
-     set(CMAKE_C_FLAGS_DEBUG "${C_FLAGS} -g3 -D_DEBUG" CACHE STRING
+     set(CMAKE_C_FLAGS_DEBUG "-g3 -D_DEBUG" CACHE STRING
          "Flags used by the compiler during debug builds."
          FORCE)
 
-     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${C_FLAGS} -g ${RELEASE_FLAGS} -DNDEBUG" CACHE STRING
+     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g ${RELEASE_FLAGS} -DNDEBUG" CACHE STRING
          "Flags used by the compiler during Release with Debug Info builds."
          FORCE)
-     set(CMAKE_CXX_FLAGS_MINSIZEREL "${C_FLAGS} -O2 -s -fomit-frame-pointer -DNDEBUG" CACHE STRING
+     set(CMAKE_CXX_FLAGS_MINSIZEREL "-O2 -s -fomit-frame-pointer -DNDEBUG" CACHE STRING
          "Flags used by the compiler during release minsize builds."
          FORCE)
-     set(CMAKE_CXX_FLAGS_RELEASE "${C_FLAGS} ${RELEASE_FLAGS}"
+     set(CMAKE_CXX_FLAGS_RELEASE "${RELEASE_FLAGS}"
              CACHE STRING "Flags used by the compiler during release builds"
             FORCE)
-     set(CMAKE_CXX_FLAGS_DEBUG "${C_FLAGS} -g3 -D_DEBUG" CACHE STRING
+     set(CMAKE_CXX_FLAGS_DEBUG "-g3 -D_DEBUG" CACHE STRING
          "Flags used by the compiler during debug builds."
          FORCE)
 
