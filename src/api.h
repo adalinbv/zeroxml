@@ -126,19 +126,19 @@ static void simple_unmmap(void*, int, SIMPLE_UNMMAP *);
                         __zeroxml_filename, __func__, __LINE__, c); \
     }
 
-#  define xmlErrorSet(a, b, c) do { \
+#  define SET_ERROR(a, b, c) do { \
      __zeroxml_set_error(a, b, c); PRINT_INFO(a, (char*)b, c); \
    } while(0)
 
 # else /* NDEBUG */
-#  define xmlErrorSet(a, b, c) __zeroxml_set_error(a, b, c);
+#  define SET_ERROR(a, b, c) __zeroxml_set_error(a, b, c);
 #  define PRINT_INFO(a, b, c)
 
 # endif /* NDEBUG */
 
 #else /* XML_NONVALIDATING */
 # define PRINT_INFO(a, b, c)
-# define xmlErrorSet(a, b, c)
+# define SET_ERROR(a, b, c)
 
 #endif /*XML_NONVALIDATING */
 

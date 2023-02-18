@@ -288,18 +288,12 @@ __zeroxml_get_node_from_cache(const cacheId **nc, const char **buf, int *len,
                            *len = node->data_len;
                            *element = node->name;
                            *elementlen = node->name_len;
+                           if (num != -1) {
+                               break;
+                           }
                       }
                       found++;
                  }
-            }
-
-            if (found != num && num != -1)
-            {
-                rv = NULL;
-                *elementlen = 0;
-                *element = *buf;
-                *len = XML_NO_ERROR; /* element not found, no real error */
-                return rv;
             }
         }
     }
@@ -307,9 +301,9 @@ __zeroxml_get_node_from_cache(const cacheId **nc, const char **buf, int *len,
     if (!rv)
     {
        *element = *buf;
-       *elementlen = 0;
-       *len = XML_INVALID_NODE_NAME;
-       found = 0;
+       *elementlen = XML_NO_ERROR;
+       *len = XML_NODE_NOT_FOUND;
+       return rv;
     }
     *nodenum = found;
 
