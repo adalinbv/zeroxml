@@ -141,7 +141,10 @@ xmlOpenFlags(const char *filename, enum xmlFlags flags)
                 locale = setlocale(LC_CTYPE, "");
 #endif
                 rid->root = rid;
-                xmlSetFlags(rid, flags);
+                xmlSetFlags(rid, XML_DEFAULT_FLAGS);
+                if (flags != XML_DEFAULT_FLAGS) {
+                    xmlSetFlags(rid, flags);
+                }
 
                 fstat(fd, &statbuf);
                 mm = simple_mmap(fd, (int)statbuf.st_size, &rid->un);
@@ -239,7 +242,10 @@ xmlInitBufferFlags(const char *buffer, int blocklen, enum xmlFlags flags)
             locale = setlocale(LC_CTYPE, "");
 #endif
             rid->root = rid;
-            xmlSetFlags(rid, flags);
+            xmlSetFlags(rid, XML_DEFAULT_FLAGS);
+            if (flags != XML_DEFAULT_FLAGS) {
+                xmlSetFlags(rid, flags);
+            }
 
             encoding[0] = 0;
             start = __zeroxml_process_declaration(rid, buffer, blocklen,
@@ -481,7 +487,7 @@ xmlNodeCopy(const xmlId *id, const char *path)
         char *ptr;
         if ((ptr = xmlGetString(xid)) != NULL)
         {
-            rv = xmlInitBuffer(ptr, strlen(ptr));
+            rv = xmlInitBufferFlags(ptr, strlen(ptr), xid->root->flags);
             rv->fd = MMAP_FREE; /* let xmlClose free ptr */
         }
         xmlFree(xid);
@@ -739,7 +745,8 @@ xmlNodeCopyPos(const xmlId *pid, xmlId *id, const char *element, int num)
     {
         if ((ptr = xmlGetString(nid)) != NULL)
         {
-            rv = xmlInitBuffer(ptr, strlen(ptr));
+            struct _xml_id *xfid = (struct _xml_id *)nid;
+            rv = xmlInitBufferFlags(ptr, strlen(ptr), xfid->root->flags);
             rv->fd = MMAP_FREE; /* let xmlClose free ptr */
         }
     }
@@ -2624,25 +2631,26 @@ static const char*
 __zeroxml_memncasestr(const struct _root_id *rid, const char *haystack, int haystacklen, const char *needle)
 {
     const char *rv = NULL;
-    const char *end;
     int needlelen;
 
     assert(needle);
 
     needlelen = strlen(needle);
-    end = haystack + haystacklen;
     if (--needlelen > 0 && haystacklen > 0)
     {
+        const char *cur = haystack;
+        const char *end = cur + haystacklen;
+
         int first = CASE(rid, *needle++);
         do
         {
-            while (haystack < end && (CASE(rid, *haystack) != first)) {
-                haystack++;
+            while (cur < end && (CASE(rid, cur[0]) != first)) {
+                cur++;
             }
-            if (++haystack >= end) return NULL;
+            if (++cur >= end) return NULL;
         }
-        while (STRNCMP(rid, haystack, needle, needlelen) != 0);
-        rv = --haystack;
+        while (STRNCMP(rid, cur, needle, needlelen) != 0);
+        rv = --cur;
     }
     return rv;
 }
