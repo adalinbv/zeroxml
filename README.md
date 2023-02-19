@@ -140,8 +140,8 @@ XML_API void XML_APIENTRY xmlClose(xmlId *xid);
 
 ### Set one or more modes of operation for the interpreter.
 
-- **`XML_INDEX_STARTS_AT_ONE`**: Node indexes start at zero (default)
-- **`XML_INDEX_STARTS_AT_ZERO`**: Node indexes start at one.
+- **`XML_INDEX_STARTS_AT_ONE`**: Node indexes start at one (default)
+- **`XML_INDEX_STARTS_AT_ZERO`**: Node indexes start at zero.
 - **`XML_RETURN_ZERO`**: Return zero if a node does not exist (default)
 - **`XML_RETURN_NONE_VALUE`**: Return a special NONE value if a node does not exist.
 - **`XML_CASE_SENSITIVE`**: Do case sensitive name comparisson (default)
