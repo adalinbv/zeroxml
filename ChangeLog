@@ -1,9 +1,10 @@
-2023-02-18 Erik Hofman <tech@adalin.org>
+2023-02-19 Erik Hofman <tech@adalin.org>
  * Increase the version number to 2.3.1
  * Rename XML_INVALID_NODE_NAME to XML_NODE_NOT_FOUND and report it when
    appropriate. It's up to de calling process to handle it or ignore it.
  * Always set the default flags before setting the custom flags.
  * Copy the current flags when calling xmlNodeCopy or xmlNodeCopyPos.
+ * Follow the XPath spec and make node indexes for pathnames start at one.
  * Fix an issue where the return value of setlocale may get freed before use.
 
 2023-02-17 Erik Hofman <tech@adalin.org>
