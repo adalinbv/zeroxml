@@ -140,8 +140,8 @@ XML_API void XML_APIENTRY xmlClose(xmlId *xid);
 
 ### Set one or more modes of operation for the interpreter.
 
-- **`XML_INDEX_STARTS_AT_ZERO`**: Node indexes start at zero (default)
-- **`XML_INDEX_STARTS_AT_ONE`**: Node indexes start at one (XPath spec)
+- **`XML_INDEX_STARTS_AT_ONE`**: Node indexes start at zero (default)
+- **`XML_INDEX_STARTS_AT_ZERO`**: Node indexes start at one.
 - **`XML_RETURN_ZERO`**: Return zero if a node does not exist (default)
 - **`XML_RETURN_NONE_VALUE`**: Return a special NONE value if a node does not exist.
 - **`XML_CASE_SENSITIVE`**: Do case sensitive name comparisson (default)
@@ -172,8 +172,8 @@ asterisk character '\*' to indicate that any name is acceptable or may
 contain a question mark '?' to indicate that any character is acceptable
 for that particular location.
 Node names may also specify which occurrence of a particular name to look
-up by specifying the number, starting at 0 or 1, between straight brackets.
-e.g. node[0] or "\*[3]" to get the fourth node, regardless of the names.
+up by specifying the number, starting at 1, between straight brackets.
+e.g. node[1] or "\*[4]" to get the fourth node, regardless of the names.
 
 If path points to `XML_COMMENT` then the function will test whether the
 current node is a comment node.
@@ -252,7 +252,7 @@ XML_API int XML_APIENTRY xmlNodeCompareName(const xmlId *xid, const char *str);
 
 ```
 @param xid XML-id
-@param n position of the attribute in the attribute list. starts at 0 or 1.
+@param n position of the attribute in the attribute list. starts at 0.
 @return a newly allocated string containing the name of the attribute.
 XML_API char* XML_APIENTRY xmlAttributeGetName(const xmlId *xid, int n);
 ```
@@ -263,7 +263,7 @@ XML_API char* XML_APIENTRY xmlAttributeGetName(const xmlId *xid, int n);
 @param xid XML-id
 @param buffer the buffer to copy the string to
 @param buflen length of the destination buffer
-@param n position of the attribute in the attribute list. starts at 0 or 1.
+@param n position of the attribute in the attribute list. starts at 0.
 @return the length of the attribute name
 XML_API int XML_APIENTRY xmlAttributeCopyName(const xmlId *xid, char *buffer, int buflen, int n);
 ```
@@ -273,7 +273,7 @@ XML_API int XML_APIENTRY xmlAttributeCopyName(const xmlId *xid, char *buffer, in
 Comparing is done in a case insensitive way.
 ```
 @param xid XML-id
-@param n position of the attribute in the attribute list. starts at 0 or 1.
+@param n position of the attribute in the attribute list. starts at 0.
 @param str the string to compare to
 @return an integer less than, equal to, or greater than zero if the value
   of the node is found, respectively, to be less than, to match, or be greater
@@ -329,7 +329,7 @@ The return value should never be altered or freed by the caller.
 @param pid XML-id of the parent node of this node
 @param xid XML-id
 @param node name of the node to search for
-@param num specify which occurrence to return. starts at 0 or 1.
+@param num specify which occurrence to return. starts at 0.
 @return XML-subsection-id for further processing or NULL if unsuccessful
 XML_API xmlId* XML_APIENTRY xmlNodeGetPos(const xmlId *pid, xmlId *xid, const char *node, int num);
 XML_API xmlId* XML_APIENTRY xmlNodeGetPosRaw(const xmlId *pid, xmlId *xid, const char *node, int num);
@@ -343,7 +343,7 @@ The return value should be freed by the caller using xmlFree.
 @param xid XML-id which will get unusbale after the call, use the returned
            id as the new XML-id
 @param node name of the node to search for
-@param num specify which occurrence to return. starts at 0 or 1.
+@param num specify which occurrence to return. starts at 0.
 @return XML-subsection-id for further processing or NULL if unsuccessful
 XML_API xmlId* XML_APIENTRY xmlNodeCopyPos(const xmlId *pid, xmlId *xid, const char *node, int num);
 ```

@@ -341,10 +341,10 @@ xmlSetFlags(const xmlId *id, enum xmlFlags flags)
     struct _xml_id *xid = (struct _xml_id *)id;
     struct _root_id *rid = xid->root;
 
-    if (flags & XML_INDEX_STARTS_AT_ZERO) {
-        rid->flags |= __XML_INDEX_STARTS_AT_ZERO;
+    if (flags & XML_INDEX_STARTS_AT_ONE) {
+        rid->flags |= __XML_INDEX_STARTS_AT_ONE;
     } else if (flags & XML_INDEX_STARTS_AT_ONE) {
-        rid->flags &= ~__XML_INDEX_STARTS_AT_ZERO;
+        rid->flags &= ~__XML_INDEX_STARTS_AT_ONE;
     }
 
     if (flags & XML_RETURN_ZERO) {
@@ -1640,7 +1640,7 @@ __zeroxml_node_get_path(const struct _xml_id *xid, const cacheId **nc, const cha
             nodelen = p++ - node;
             e = (char*)p + nodelen;
             num = __zeroxml_strtol(p, &e, 10, 0);
-            if (!INDEX_STARTS_AT_ZERO(xid)) --num;
+            if (INDEX_STARTS_AT_ONE(xid)) --num;
             if (*e++ != ']' || num < 0) {
                 return rv;
             }
@@ -2102,7 +2102,6 @@ __zeroxml_get_node_pos(const xmlId *pid, xmlId *id, const char *name, int nodenu
     assert(xid != 0);
     assert(name != 0);
 
-    if (!INDEX_STARTS_AT_ZERO(xid)) --nodenum;
     if (nodenum < 0) return rv;
 
     len = xpid->len;

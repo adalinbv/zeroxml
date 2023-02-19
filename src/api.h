@@ -159,7 +159,7 @@ int __zeroxml_iconv(const struct _root_id*, const char*, size_t, char*, size_t);
 
 enum _xml_flags
 {
-    __XML_INDEX_STARTS_AT_ZERO = 0x01,
+    __XML_INDEX_STARTS_AT_ONE  = 0x01,
     __XML_RETURN_NONE_VALUE    = 0x02,
     __XML_CASE_SENSITIVE       = 0x04,
     __XML_COMMENT_AS_NODE      = 0x08,
@@ -170,7 +170,7 @@ enum _xml_flags
     __XML_DEFAULT_MODE         = (-1) /* all true */
 };
 
-#define INDEX_STARTS_AT_ZERO(a)	((a)->root->flags & __XML_INDEX_STARTS_AT_ZERO)
+#define INDEX_STARTS_AT_ONE(a)	((a)->root->flags & __XML_INDEX_STARTS_AT_ONE)
 #define RETURN_NONE_VALUE(a)	((a)->root->flags & __XML_RETURN_NONE_VALUE)
 #define CASE_SENSITIVE(a)	((a)->root->flags & __XML_CASE_SENSITIVE)
 #define COMMENT_AS_NODE(a)	((a)->root->flags & __XML_COMMENT_AS_NODE)

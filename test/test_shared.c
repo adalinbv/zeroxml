@@ -51,28 +51,28 @@ int test(xmlId *rid)
     i = xmlNodeGetNum(nid, "boolean");
     TESTINT(p, i, 5);
 
-    p = "xmlNodeGetBool for "OUTPUTNODE"/boolean: (0)";
-    i = xmlNodeGetBool(rid, OUTPUTNODE"/boolean");
+    p = "xmlNodeGetBool for "OUTPUTNODE"/boolean[1]: (0)";
+    i = xmlNodeGetBool(rid, OUTPUTNODE"/boolean[1]");
     TESTINT(p, i, 0);
 
-    p = "xmlNodeGetBool for "OUTPUTNODE"/boolean[1] (XML_TRUE)";
-    i = xmlNodeGetBool(nid, "boolean[1]");
-    TESTINT(p, i, XML_TRUE);
-
-    p = "xmlNodeGetBool for "OUTPUTNODE"/boolean[2] (on)";
+    p = "xmlNodeGetBool for "OUTPUTNODE"/boolean[2] (XML_TRUE)";
     i = xmlNodeGetBool(nid, "boolean[2]");
     TESTINT(p, i, XML_TRUE);
 
-    p = "xmlNodeGetBool for "OUTPUTNODE"/boolean[3] (true)";
+    p = "xmlNodeGetBool for "OUTPUTNODE"/boolean[3] (on)";
     i = xmlNodeGetBool(nid, "boolean[3]");
     TESTINT(p, i, XML_TRUE);
 
-    p = "xmlNodeGetBool for "OUTPUTNODE"/boolean[4] (yes)";
+    p = "xmlNodeGetBool for "OUTPUTNODE"/boolean[4] (true)";
     i = xmlNodeGetBool(nid, "boolean[4]");
     TESTINT(p, i, XML_TRUE);
 
-    p = "xmlNodeGetInt for "OUTPUTNODE"/boolean[1] (-1)";
-    i = xmlNodeGetInt(nid, "boolean[1]");
+    p = "xmlNodeGetBool for "OUTPUTNODE"/boolean[5] (yes)";
+    i = xmlNodeGetBool(nid, "boolean[5]");
+    TESTINT(p, i, XML_TRUE);
+
+    p = "xmlNodeGetInt for "OUTPUTNODE"/boolean[2] (-1)";
+    i = xmlNodeGetInt(nid, "boolean[2]");
     TESTINT(p, i, -1);
 
     p = "xmlNodeGetInt for "OUTPUTNODE"/binary (0b1011)";
@@ -80,11 +80,11 @@ int test(xmlId *rid)
     TESTINT(p, i, 11);
 
     p = "xmlNodeGetInt for "OUTPUTNODE"/octal (070374)";
-    i = xmlNodeGetInt(nid, "octal[0]");
+    i = xmlNodeGetInt(nid, "octal[1]");
     TESTINT(p, i, 28924);
 
     p = "xmlNodeGetInt for "OUTPUTNODE"/octal (0o70374)";
-    i = xmlNodeGetInt(nid, "octal[1]");
+    i = xmlNodeGetInt(nid, "octal[2]");
     TESTINT(p, i, 28924);
 
     p = "xmlNodeGetInt for "OUTPUTNODE"/hexadecimal (0x7FA32)";
@@ -96,8 +96,8 @@ int test(xmlId *rid)
     TESTFLOAT(p, f, 20.5);
     xmlFree(nid);
 
-    p = "xmlNodeGetString for /*/*[1]/test";
-    s = xmlNodeGetString(rid , "/*/*[1]/test");
+    p = "xmlNodeGetString for /*/*[2]/test";
+    s = xmlNodeGetString(rid , "/*/*[2]/test");
     TESTPTR(p, s, NULL);
     xmlFree(s);
 
@@ -147,14 +147,14 @@ int test(xmlId *rid)
     TESTSTR(p, strcoll, s, buf);
     xmlFree(nid);
 
-    p = "xmlGetBool for "OUTPUTNODE"/boolean[2] (on)";
-    nid = xmlNodeGet(rid, OUTPUTNODE"/boolean[2]");
+    p = "xmlGetBool for "OUTPUTNODE"/boolean[3] (on)";
+    nid = xmlNodeGet(rid, OUTPUTNODE"/boolean[3]");
     i = xmlGetBool(nid);
     TESTINT(p, i, XML_TRUE);
     xmlFree(nid);
 
-    p = "xmlGetInt for "OUTPUTNODE"/boolean[1] (-1)";
-    nid = xmlNodeGet(rid, OUTPUTNODE"/boolean[1]");
+    p = "xmlGetInt for "OUTPUTNODE"/boolean[2] (-1)";
+    nid = xmlNodeGet(rid, OUTPUTNODE"/boolean[2]");
     i = xmlGetInt(nid);
     TESTINT(p, i, -1);
     xmlFree(nid);
