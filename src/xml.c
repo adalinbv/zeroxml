@@ -191,8 +191,9 @@ xmlOpenFlags(const char *filename, enum xmlFlags flags)
                         rid->start = start;
                         rid->len = blocklen;
 #ifdef HAVE_LOCALE_H
+# ifndef WIN32
                         rid->locale = newlocale(LC_CTYPE_MASK, locale, 0);
-
+# endif
 # if defined(HAVE_ICONV_H) || defined(WIN32)
                         do
                         {
@@ -281,7 +282,9 @@ xmlInitBufferFlags(const char *buffer, int blocklen, enum xmlFlags flags)
                 rid->start = start;
                 rid->len = blocklen;
 #ifdef HAVE_LOCALE_H
+# ifndef WIN32
                 rid->locale = newlocale(LC_CTYPE_MASK, locale, 0);
+# endif
 # if defined(HAVE_ICONV_H) || defined(WIN32)
                 do
                 {
@@ -325,11 +328,11 @@ xmlClose(xmlId *id)
             iconv_close(rid->cd);
         }
 #endif
-
+#ifndef WIN32
         if (rid->locale) {
             freelocale(rid->locale);
         }
-
+#endif
         free(rid);
         id = 0;
     }
@@ -363,7 +366,11 @@ xmlSetFlags(const xmlId *id, enum xmlFlags flags)
     {
         rid->flags |= __XML_CASE_SENSITIVE;
         rid->strncmp = strncasecmp;
+#ifdef WIN32
+	rid->lcase = tolower;
+#else
         rid->lcase = tolower_l;
+#endif
     }
 
     if (flags & XML_COMMENT_AS_NODE) {

@@ -16,5 +16,9 @@ CREATE_TEST(test_buffer)
 CREATE_TEST(test_errors)
 CREATE_TEST(test_functions)
 
-CREATE_TEST_CPP(test_fuzzing -rdynamic)
+if(WIN32)
+    CREATE_TEST_CPP(test_fuzzing "")
+else(WIN32)
+    CREATE_TEST_CPP(test_fuzzing -rdynamic)
+endif(WIN32)
 

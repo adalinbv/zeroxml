@@ -92,16 +92,32 @@
 #endif
 
 #ifdef WIN32
+# define WIN32_LEAN_AND_MEAN
+# define UNICODE
+# include <windows.h>
+
 # ifndef __GNUC__
 #  define strtoll _strtoi64
 #  define strcasecmp _stricmp
 #  define strncasecmp _strnicmp
 # endif
+
+typedef _locale_t locale_t;
 typedef const char* iconv_t;
 
+# define iconv_close(l)
+# define iconv_open(l,e)        (e)
+size_t iconv(iconv_t, char**, size_t*, char**, size_t*);
+
+typedef struct
+{
+    HANDLE m;
+    void *p;
+} SIMPLE_UNMMAP;
+
 /* map 'filename' and return a pointer to it. */
-static void *simple_mmap(int, int, SIMPLE_UNMMAP *);
-static void simple_unmmap(void*, int, SIMPLE_UNMMAP *);
+void *simple_mmap(int, int, SIMPLE_UNMMAP *);
+void simple_unmmap(void*, int, SIMPLE_UNMMAP *);
 
 #else
 # define simple_mmap(a, b, c)   mmap(0, (b), PROT_READ, MAP_PRIVATE, (a), 0L)
@@ -150,7 +166,7 @@ static void simple_unmmap(void*, int, SIMPLE_UNMMAP *);
 int string_compare(iconv_t, const char*, const char*, int*);
 int __zeroxml_iconv(const struct _root_id*, const char*, size_t, char*, size_t);
 
-#if HAVE_LOCALE_H
+#if defined(HAVE_LOCALE_H) && !defined(WIN32)
 # define CASE(rid,a) (rid)->lcase ? (rid)->lcase((a),(rid)->locale) : (a)
 #else
 # define CASE(rid,a) (rid)->lcase ? (rid)->lcase(a) : (a)
@@ -191,22 +207,6 @@ enum _xml_flags
 
 #include <xml_cache.h>
 
-#ifdef WIN32
-# define WIN32_LEAN_AND_MEAN
-# define UNICODE
-# include <windows.h>
-
-# define iconv_close(l)
-# define iconv_open(l,e)        (e)
-size_t iconv(iconv_t, char**, size_t*, char**, size_t*);
-
-typedef struct
-{
-    HANDLE m;
-    void *p;
-} SIMPLE_UNMMAP;
-#endif
-
 #ifndef XML_NONVALIDATING
 struct _zeroxml_error
 {
@@ -244,7 +244,7 @@ struct _root_id
     SIMPLE_UNMMAP un;
 #endif
 
-#if HAVE_LOCALE_H
+#if defined(HAVE_LOCALE_H) && !defined(WIN32)
     locale_t locale;
     int (*lcase)(int, locale_t);
 #else
