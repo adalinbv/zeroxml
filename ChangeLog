@@ -1,3 +1,6 @@
+2023-02-23 Erik Hofman <tech@adalin.org>
+ * Windows and MSVC fixes.
+
 2023-02-19 Erik Hofman <tech@adalin.org>
  * Increase the version number to 2.3.1
  * Rename XML_INVALID_NODE_NAME to XML_NODE_NOT_FOUND and report it when

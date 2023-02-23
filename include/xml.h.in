@@ -92,7 +92,7 @@ extern "C" {
 # include <float.h>
 # pragma warning( disable : 4056 )
 # define XML_FPINFINITE         (DBL_MAX+DBL_MAX)
-# define XML_FPNONE             (AAX_FPINFINITE-AAX_FPINFINITE)
+# define XML_FPNONE             (XML_FPINFINITE-XML_FPINFINITE)
 #else
 # define XML_FPNONE             (0.0/0.0)
 # define XML_FPINFINITE         (1.0/0.0)
