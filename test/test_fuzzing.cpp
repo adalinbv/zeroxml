@@ -18,6 +18,13 @@
 
 #include "xml.h"
 
+#ifdef WIN32
+# include <io.h>
+#define open	_open
+#define close	_close
+#define read	_read
+#endif
+
 int fuzz(const char*, size_t);
 
 #define MAX_SMALL_BUF	 256
