@@ -199,12 +199,14 @@ __zeroxml_iconv(const struct _root_id *rid,
  *
  * https://www.iana.org/assignments/character-sets/character-sets.xhtml
  */
-#define CP_UTF8		65001
-#define CP_UTF16_LE      1200
+#define CP_GBK		  936
+#define CP_UTF16LE	 1200 /* default Windows Unicode codepage identifier */
 #define CP_1252		 1252
-#define CP_UTF32_LE     12000
+#define CP_UTF32LE	12000
 #define CP_LATIN1       28591
 #define CP_ASCII        20127
+#define CP_GB2312	20936
+#define CP_UTF8		65001
 
 static UINT
 charset_to_identifier(const char *charset)
@@ -212,11 +214,13 @@ charset_to_identifier(const char *charset)
     UINT identifier = AreFileApisANSI() ? CP_ACP : CP_OEMCP;
 
     if (strcasecmp(charset, "UTF-8") == 0) identifier = CP_UTF8;
-    else if (strcasecmp(charset, "UTF-16") == 0) identifier = CP_UTF16_LE;
+    else if (strcasecmp(charset, "UTF-16") == 0) identifier = CP_UTF16LE;
     else if (strcasecmp(charset, "ISO-8859-1") == 0) identifier = CP_LATIN1;
     else if (strcasecmp(charset, "ASCII") == 0) identifier = CP_ASCII;
     else if (strcasecmp(charset, "US-ASCII") == 0) identifier = CP_ASCII;
-    else if (strcasecmp(charset, "UTF-32") == 0) identifier = CP_UTF32_LE;
+    else if (strcasecmp(charset, "UTF-32") == 0) identifier = CP_UTF32LE;
+    else  if (strcasecmp(charset, "GBK") == 0) identifier = CP_GBK;
+    else  if (strcasecmp(charset, "GB-2312") == 0) identifier = CP_GB2312;
 
     return identifier;
 }
@@ -250,7 +254,7 @@ iconv(iconv_t cd, char **inbuf, size_t *inbytesleft,
         }
 
         *inbuf += res;
-        res = WideCharToMultiByte(CP_1252, 0, wbuf, res,
+        res = WideCharToMultiByte(CP_UTF16LE, 0, wbuf, res,
                                   *outbuf, *outbytesleft, NULL, NULL);
         free(wbuf);
         if (res <= 0)
