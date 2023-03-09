@@ -254,7 +254,7 @@ iconv(iconv_t cd, char **inbuf, size_t *inbytesleft,
         }
 
         *inbuf += res;
-        res = WideCharToMultiByte(CP_UTF16LE, 0, wbuf, res,
+        res = WideCharToMultiByte(GetACP(), 0, wbuf, res,
                                   *outbuf, *outbytesleft, NULL, NULL);
         free(wbuf);
         if (res <= 0)
