@@ -230,6 +230,7 @@ set(ZEROXML_OBJS
     src/xml.c
     src/xml_cache.c
     src/localize.c
+    src/easyxml.cpp
    )
 
 # Build a library
@@ -288,6 +289,7 @@ endif(RMALLOC)
 
 install(FILES
         include/rmalloc.h
+        include/easyxml.hxx
         ${CMAKE_CURRENT_BINARY_DIR}/include/xml.h
         DESTINATION include
        )
