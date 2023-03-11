@@ -153,7 +153,9 @@ xmlOpenFlags(const char *filename, enum xmlFlags flags)
                     int blocklen = statbuf.st_size;
                     char *encoding = (char*)&rid->encoding;
                     const char *start;
-
+#if defined(HAVE_LOCALE_H) && !defined(WIN32)
+                    rid->locale = newlocale(LC_CTYPE_MASK, locale, 0);
+#endif
                     encoding[0] = 0;
                     start = __zeroxml_process_declaration(rid, mm, blocklen,
                                                           encoding);
@@ -196,9 +198,6 @@ xmlOpenFlags(const char *filename, enum xmlFlags flags)
                         rid->start = start;
                         rid->len = blocklen;
 #ifdef HAVE_LOCALE_H
-# ifndef WIN32
-                        rid->locale = newlocale(LC_CTYPE_MASK, locale, 0);
-# endif
 # if defined(HAVE_ICONV_H) || defined(WIN32)
                         do
                         {
@@ -253,6 +252,10 @@ xmlInitBufferFlags(const char *buffer, int blocklen, enum xmlFlags flags)
                 xmlSetFlags(rid, flags);
             }
 
+#if defined(HAVE_LOCALE_H) && !defined(WIN32)
+            rid->locale = newlocale(LC_CTYPE_MASK, locale, 0);
+#endif
+
             encoding[0] = 0;
             start = __zeroxml_process_declaration(rid, buffer, blocklen,
                                                   encoding);
@@ -292,9 +295,6 @@ xmlInitBufferFlags(const char *buffer, int blocklen, enum xmlFlags flags)
                 rid->start = start;
                 rid->len = blocklen;
 #ifdef HAVE_LOCALE_H
-# ifndef WIN32
-                rid->locale = newlocale(LC_CTYPE_MASK, locale, 0);
-# endif
 # if defined(HAVE_ICONV_H) || defined(WIN32)
                 do
                 {
