@@ -147,7 +147,7 @@ void simple_unmmap(void*, int, SIMPLE_UNMMAP *);
    } while(0)
 
 # else /* NDEBUG */
-#  define SET_ERROR(a, b, c) __zeroxml_set_error(a, b, c);
+#  define SET_ERROR(a, b, c) __zeroxml_set_error(a, 0, b, c);
 #  define PRINT_INFO(a, b, c)
 
 # endif /* NDEBUG */
