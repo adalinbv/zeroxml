@@ -188,17 +188,24 @@ processXML(xmlId *rid, XMLVisitor &visitor)
 XML_API void XML_APIENTRY
 readXML (std::istream &input, XMLVisitor &visitor, const std::string &path)
 {
+    // get length of file
+    input.seekg (0, input.end);
+    size_t fsize = input.tellg();
+    input.seekg (0, input.beg);
+
     // Set exceptions to be thrown on failure
-//input.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    input.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
     std::string buf;
     try {
 
         char tmp[16384];
-        while (!input.eof()) {
+        while (fsize) {
 
-            input.read(tmp, 16384);
+            size_t len = (fsize < 16384) ? fsize : 16384;
+            input.read(tmp, len);
             buf.append(tmp, input.gcount());
+            fsize -= len;
         }
 
     } catch (const std::system_error& ex) {
