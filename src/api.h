@@ -143,7 +143,7 @@ void simple_unmmap(void*, int, SIMPLE_UNMMAP *);
     }
 
 #  define SET_ERROR(a, b, c) do { \
-     __zeroxml_set_error(a, b, c); PRINT_INFO(a, (char*)b, c); \
+     __zeroxml_set_error(a, 0, b, c); PRINT_INFO(a, (char*)b, c); \
    } while(0)
 
 # else /* NDEBUG */
@@ -210,8 +210,11 @@ enum _xml_flags
 #ifndef XML_NONVALIDATING
 struct _zeroxml_error
 {
+    const char *start;
     const char *pos;
-    size_t err_no;
+    int column;
+    int line;
+    int err_no;
 };
 #endif
 

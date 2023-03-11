@@ -99,7 +99,7 @@ static const char *__zeroxml_node_get_path(const struct _xml_id*, const cacheId*
 static const char *__zeroxml_get_node(const struct _xml_id*, const cacheId*, const char**, int*,  const char**, int*, int*, char);
 static xmlId *__zeroxml_get_node_pos(const xmlId*, xmlId*, const char*, int, char);
 static const char *__zeroxml_get_attribute_data_ptr(const struct _xml_id*, const char *, int*);
-static void __zeroxml_set_error(const struct _xml_id*, const char *, int);
+static void __zeroxml_set_error(const struct _xml_id*, const char*, const char*, int);
 
 static const char *comment = XML_COMMENT;
 static struct _zeroxml_error __zeroxml_info = { NULL, 0 };
@@ -174,13 +174,18 @@ xmlOpenFlags(const char *filename, enum xmlFlags flags)
                                                  &n, &nlen, &num, RAW);
                         if (!ret)
                         {
+                            __zeroxml_set_error((struct _xml_id*)rid, start, new, len);
+
 //                          PRINT_INFO(rid, n, len);
                             simple_unmmap(mm, len, &rid->un);
                             close(fd);
 
                             cacheFree(rid->node);
+                            free(rid->info);
                             free(rid);
                             rid = 0;
+
+                            free(locale);
                         }
                     }
 
@@ -268,10 +273,15 @@ xmlInitBufferFlags(const char *buffer, int blocklen, enum xmlFlags flags)
                                          &num, RAW);
                 if (!ret)
                 {
+                    __zeroxml_set_error((struct _xml_id*)rid, start, new, len);
+
 //                  PRINT_INFO(rid, n, len);
                     cacheFree(rid->node);
+                    free(rid->info);
                     free(rid);
                     rid = 0;
+
+                    free(locale);
                 }
             }
 
@@ -1377,6 +1387,9 @@ xmlErrorGetLineNo(const xmlId *id, int clear)
             }
         }
     }
+    else if (!id) {
+        rv = __zeroxml_info.line;
+    }
 
     return rv;
 }
@@ -1417,6 +1430,9 @@ xmlErrorGetColumnNo(const xmlId *id, int clear)
                 err->err_no = __zeroxml_info.err_no = 0;
             }
         }
+    }
+    else if (!id) {
+        rv = __zeroxml_info.column;
     }
 
     return rv;
@@ -2445,30 +2461,41 @@ __zeroxml_prepare_data(const struct _root_id *rid, const char **start, int *bloc
 }
 
 void
-__zeroxml_set_error(const struct _xml_id *id, const char *pos, int err_no)
+__zeroxml_set_error(const struct _xml_id *id, const char *start, const char *pos, int err_no)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    struct _root_id *rid;
 
-    assert(xid != 0);
-
-    rid = xid->root;
-
-    if (rid->info == 0) {
-        rid->info = malloc(sizeof(struct _zeroxml_error));
-    }
-
-    if (rid->info)
+    if (xid)
     {
-        struct _zeroxml_error *err = rid->info;
-        err->pos = __zeroxml_info.pos = (const char *)pos;
-        err->err_no = __zeroxml_info.err_no = err_no;
+        struct _root_id *rid = xid->root;
+        const char *ps = start;
+        const char *pe = pos;
+        const char *new;
+
+        __zeroxml_info.line = 1;
+        while (ps<pe)
+        {
+            new = MEMCHR(ps, '\n', pe-ps);
+            if (new) __zeroxml_info.line++;
+            else break;
+            ps = new+1;
+        }
+        __zeroxml_info.column = pe-ps;
+
+        if (rid->info == 0) {
+            rid->info = malloc(sizeof(struct _zeroxml_error));
+        }
+
+        if (rid->info)
+        {
+            struct _zeroxml_error *err = rid->info;
+            err->pos = __zeroxml_info.pos = (const char *)pos;
+            err->err_no = __zeroxml_info.err_no = err_no;
+        }
     }
-    else
-    {
-        __zeroxml_info.pos = (const char *)pos;
-        __zeroxml_info.err_no = err_no;
-    }
+    __zeroxml_info.err_no = err_no;
+    __zeroxml_info.start = start;
+    __zeroxml_info.pos = pos;
 }
 
 /*

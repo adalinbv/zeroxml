@@ -176,7 +176,9 @@ int main(int argc, char **argv)
         rid = xmlOpen(argv[1]);
         if (xmlErrorGetNo(rid, 0) != XML_NO_ERROR)
         {
-             printf("%s\n", xmlErrorGetString(rid, 1));
+             printf("%s\n", xmlErrorGetString(rid, 0));
+             printf("  at line: %i, column: %i\n",
+                       xmlErrorGetLineNo(rid, 0), xmlErrorGetColumnNo(rid, 1));
         }
         else if (rid)
         {
