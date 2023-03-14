@@ -105,6 +105,7 @@ static const char *comment = XML_COMMENT;
 static struct _zeroxml_error __zeroxml_info = { NULL, 0 };
 static const char *__zeroxml_error_str[XML_MAX_ERROR];
 #ifndef NDEBUG
+static void __zeroxml_set_error_debug(const struct _xml_id*, const char*, const char*, int, const char*, size_t);
 static char __zeroxml_strerror[BUF_LEN+1];
 static char __zeroxml_filename[FILENAME_LEN+1];
 #endif
@@ -177,8 +178,7 @@ xmlOpenFlags(const char *filename, enum xmlFlags flags)
                         if (!ret)
                         {
                             __zeroxml_set_error((struct _xml_id*)rid, start, new, len);
-
-//                          PRINT_INFO(rid, n, len);
+//                          SET_ERROR((struct _xml_id*)rid, rid->start = start, new, len);
                             simple_unmmap(mm, len, &rid->un);
                             close(fd);
 
@@ -277,8 +277,7 @@ xmlInitBufferFlags(const char *buffer, int blocklen, enum xmlFlags flags)
                 if (!ret)
                 {
                     __zeroxml_set_error((struct _xml_id*)rid, start, new, len);
-
-//                  PRINT_INFO(rid, n, len);
+//                  SET_ERROR((struct _xml_id*)rid, rid->start = start, new, len);
                     cacheFree(rid->node);
                     free(rid->info);
                     free(rid);
@@ -482,11 +481,11 @@ xmlNodeGet(const xmlId *id, const char *path)
             xsid->node = nnc;
         }
         else {
-            SET_ERROR(xid, 0, XML_OUT_OF_MEMORY);
+            SET_ERROR(xid, 0, 0, XML_OUT_OF_MEMORY);
         }
     }
     else if (slen == 0) {
-        SET_ERROR(xid, node, len);
+        SET_ERROR(xid, node, node, len);
     }
 
     return (void *)xsid;
@@ -526,10 +525,10 @@ xmlNodeGetName(const xmlId *id)
     if ((rv = malloc(6*len+1)) != NULL)
     {
         int res = __zeroxml_iconv(rid, xid->name, len, rv, 6*len);
-        if (res) SET_ERROR(xid, 0, res);
+        if (res) SET_ERROR(xid, 0, 0, res);
     }
     else {
-        SET_ERROR(xid, 0, XML_OUT_OF_MEMORY);
+        SET_ERROR(xid, 0, 0, XML_OUT_OF_MEMORY);
     }
 
     return rv;
@@ -549,11 +548,11 @@ xmlNodeCopyName(const xmlId *id, char *buf, int buflen)
     if (slen >= buflen)
     {
         slen = buflen-1;
-        SET_ERROR(xid, 0, XML_TRUNCATE_RESULT);
+        SET_ERROR(xid, 0, 0, XML_TRUNCATE_RESULT);
     }
 
     res = __zeroxml_iconv(rid, xid->name, slen, buf, buflen);
-    if (res) SET_ERROR(xid, 0, res);
+    if (res) SET_ERROR(xid, 0, 0, res);
 
     return slen;
 }
@@ -613,11 +612,11 @@ xmlAttributeCopyName(const xmlId *id, char *buf, int buflen, int pos)
                 if (slen >= buflen)
                 {
                     slen = buflen-1;
-                    SET_ERROR(xid, 0, XML_TRUNCATE_RESULT);
+                    SET_ERROR(xid, 0, 0, XML_TRUNCATE_RESULT);
                 }
 
                 res = __zeroxml_iconv(rid, ps, slen, buf, buflen);
-                if (res) SET_ERROR(xid, 0, res);
+                if (res) SET_ERROR(xid, 0, 0, res);
                 break;
             }
 
@@ -646,10 +645,10 @@ xmlAttributeGetName(const xmlId *id, int pos)
     if ((rv = malloc(6*len+1)) != NULL)
     {
         int res = __zeroxml_iconv(rid, buf, len, rv, 6*len);
-        if (res) SET_ERROR(xid, 0, res);
+        if (res) SET_ERROR(xid, 0, 0, res);
     }
     else {
-        SET_ERROR(xid, 0, XML_OUT_OF_MEMORY);
+        SET_ERROR(xid, 0, 0, XML_OUT_OF_MEMORY);
     }
 
     return rv;
@@ -808,10 +807,10 @@ xmlCopyString(const xmlId *id, char *buf, int buflen)
             if (len >= buflen)
             {
                 len = buflen-1;
-                SET_ERROR(xid, 0, XML_TRUNCATE_RESULT);
+                SET_ERROR(xid, 0, 0, XML_TRUNCATE_RESULT);
             }
             res = __zeroxml_iconv(rid, ps, len, buf, buflen);
-            if (res) SET_ERROR(xid, 0, res);
+            if (res) SET_ERROR(xid, 0, 0, res);
         }
         rv = len;
     }
@@ -872,14 +871,14 @@ xmlNodeGetString(const xmlId *id, const char *path)
             if ((rv = malloc(6*len+1)) != NULL)
             {
                 int res = __zeroxml_iconv(rid, ps, len, rv, 6*len);
-                if (res) SET_ERROR(xid, 0, res);
+                if (res) SET_ERROR(xid, 0, 0, res);
             }
             else {
-                SET_ERROR(xid, 0, XML_OUT_OF_MEMORY);
+                SET_ERROR(xid, 0, 0, XML_OUT_OF_MEMORY);
             }
         }
         else if (slen == 0) {
-            SET_ERROR(xid, node, len);
+            SET_ERROR(xid, node, node, len);
         }
     }
 
@@ -916,16 +915,16 @@ xmlNodeCopyString(const xmlId *id, const char *path, char *buf, int buflen)
                 if (len >= buflen)
                 {
                     len = buflen-1;
-                    SET_ERROR(xid, 0, XML_TRUNCATE_RESULT);
+                    SET_ERROR(xid, 0, 0, XML_TRUNCATE_RESULT);
                 }
 
                 res = __zeroxml_iconv(rid, ptr, len, buf, buflen);
-                if (res) SET_ERROR(xid, 0, res);
+                if (res) SET_ERROR(xid, 0, 0, res);
             }
             rv = len;
         }
         else if (slen == 0) {
-            SET_ERROR(xid, node, len);
+            SET_ERROR(xid, node, node, len);
         }
     }
 
@@ -962,7 +961,7 @@ xmlNodeCompareString(const xmlId *id, const char *path, const char *s)
             rv = LSTRNCMP(cd, s, ps, &len);
         }
         else if (slen == 0) {
-            SET_ERROR(xid, node, len);
+            SET_ERROR(xid, node, node, len);
         }
     }
 
@@ -1014,7 +1013,7 @@ xmlNodeGetBool(const xmlId *id, const char *path)
             rv = __zeroxml_strtob(rid, str, end, __XML_BOOL_NONE);
         }
         else if (slen == 0) {
-            SET_ERROR(xid, node, len);
+            SET_ERROR(xid, node, node, len);
         }
     }
 
@@ -1064,7 +1063,7 @@ xmlNodeGetInt(const xmlId *id, const char *path)
             rv = __zeroxml_strtol(str, &end, 10, __XML_NONE);
         }
         else if (slen == 0) {
-            SET_ERROR(xid, node, len);
+            SET_ERROR(xid, node, node, len);
         }
     }
 
@@ -1115,7 +1114,7 @@ xmlNodeGetDouble(const xmlId *id, const char *path)
             rv = __zeroxml_strtod(ptr, &end, __XML_FPNONE);
         }
         else if (slen == 0) {
-            SET_ERROR(xid, node, len);
+            SET_ERROR(xid, node, node, len);
         }
     }
 
@@ -1147,7 +1146,7 @@ xmlMarkId(const xmlId *id)
         }
     }
     else {
-        SET_ERROR((struct _xml_id*)id, 0, XML_OUT_OF_MEMORY);
+        SET_ERROR((struct _xml_id*)id, 0, 0, XML_OUT_OF_MEMORY);
     }
 
     return (void *)xmid;
@@ -1255,10 +1254,10 @@ xmlAttributeGetString(const xmlId *id, const char *name)
             if ((rv = malloc(6*len+1)) != NULL)
             {
                 int res = __zeroxml_iconv(rid, ptr, len, rv, 6*len);
-                if (res) SET_ERROR(xid, 0, res);
+                if (res) SET_ERROR(xid, 0, 0, res);
             }
             else {
-                SET_ERROR(xid, 0, XML_OUT_OF_MEMORY);
+                SET_ERROR(xid, 0, 0, XML_OUT_OF_MEMORY);
             }
         }
     }
@@ -1289,11 +1288,11 @@ xmlAttributeCopyString(const xmlId *id, const char *name,
             if (restlen >= buflen)
             {
                 restlen = buflen-1;
-                SET_ERROR(xid, ptr, XML_TRUNCATE_RESULT);
+                SET_ERROR(xid, ptr, ptr, XML_TRUNCATE_RESULT);
             }
 
             res = __zeroxml_iconv(rid, ptr, restlen, buf, buflen);
-            if (res) SET_ERROR(xid, 0, res);
+            if (res) SET_ERROR(xid, 0, 0, res);
             rv = restlen;
         }
     }
@@ -1471,6 +1470,8 @@ xmlErrorGetString(const xmlId *id, int clear)
        rv = (char*)__zeroxml_error_str[__zeroxml_info.err_no];
     }
 
+    PRINT_INFO((struct _xml_id *)id, __zeroxml_info.start, __zeroxml_info.err_no);
+
     return rv;
 }
 
@@ -1552,7 +1553,7 @@ __zeroxml_get_attribute_data_ptr(const struct _xml_id *id, const char *name, int
                     quote = *(++ps);
                     if (quote != '"' && quote != '\'')
                     {
-                        SET_ERROR(xid, ps, XML_ATTRIB_NO_OPENING_QUOTE);
+                        SET_ERROR(xid, xid->name, ps, XML_ATTRIB_NO_OPENING_QUOTE);
                         return NULL;
                     }
 
@@ -1561,7 +1562,7 @@ __zeroxml_get_attribute_data_ptr(const struct _xml_id *id, const char *name, int
                     while ((ps<pe) && (*ps != quote)) ps++;
                     if (*ps != quote)
                     {
-                        SET_ERROR(xid, ps, XML_ATTRIB_NO_CLOSING_QUOTE);
+                        SET_ERROR(xid, xid->name, ps, XML_ATTRIB_NO_CLOSING_QUOTE);
                         return NULL;
                     }
 
@@ -1742,13 +1743,21 @@ __zeroxml_node_get_path(const struct _xml_id *xid, const cacheId **nc, const cha
 #else
 # define DECR_LEN(a,b,c) break
 #endif
-#define SET_ERROR_AND_RETURN(a, b) { \
-  *name = (a); *len = (b); *rlen = 0; *nodenum = __LINE__; return NULL; \
-}
+#ifndef NDEBUG
+# define SET_ERROR_AND_RETURN(a, b) { \
+   *name = (a); *len = (b); *rlen = 0; *nodenum = __LINE__; return NULL; \
+   printf("\n#line: %i\n", __LINE__); \
+ }
+#else
+# define SET_ERROR_AND_RETURN(a, b) { \
+   *name = (a); *len = (b); *rlen = 0; *nodenum = __LINE__; return NULL; \
+ }
+#endif
 
  const char*
 __zeroxml_get_node(const struct _xml_id *xid, const cacheId *nc, const char **buf, int *len, const char **name, int *rlen, int *nodenum, char mode)
 {
+static int level = -1;
 #ifndef NDEBUG
     const char *end = *buf + *len;
 #endif
@@ -1786,6 +1795,7 @@ __zeroxml_get_node(const struct _xml_id *xid, const cacheId *nc, const char **bu
     cur = start;
 
     cacheInitLevel(nc);
+level++;
 
     /* search for an opening tag */
     rptr = start;
@@ -1856,6 +1866,7 @@ __zeroxml_get_node(const struct _xml_id *xid, const cacheId *nc, const char **bu
             /* Get the element name and a pointer right after it */
             assert(cur+restlen == end);
             rptr = __zeroxml_memncasecmp(rid, &cur, &restlen, &element, &elementlen);
+//for(int i=0; i<level; ++i) { printf(" "); } PRINT(element, elementlen, elementlen);
 
             assert(restlen >= 0);
             if (!restlen) break;
@@ -2150,7 +2161,7 @@ __zeroxml_get_node_pos(const xmlId *pid, xmlId *id, const char *name, int nodenu
         rv = (xmlId*)xid;
     }
     else if (slen == 0) {
-        SET_ERROR(xpid, name, len);
+        SET_ERROR(xpid, name, name, len);
     }
 
     return rv;
@@ -2190,7 +2201,7 @@ __zeroxml_node_get_num(const xmlId *id, const char *path, char mode)
             slen = end-node;
             ptr = __zeroxml_node_get_path(xid, &nc, xid->start, &len, &node, &slen);
             if (ptr == NULL && slen == 0) {
-                SET_ERROR(xid, node, len);
+                SET_ERROR(xid, node, node, len);
             }
         }
         else
@@ -2215,7 +2226,7 @@ __zeroxml_node_get_num(const xmlId *id, const char *path, char mode)
 
             if (new == NULL && len != 0)
             {
-                SET_ERROR(xid, node, len);
+                SET_ERROR(xid, node, node, len);
                 rv = 0;
             }
         }
@@ -2254,10 +2265,10 @@ __zeroxml_get_string(const xmlId *id, char mode)
             if ((rv = malloc(6*len+1)) != NULL)
             {
                 int res = __zeroxml_iconv(rid, ps, len, rv, 6*len);
-                if (res) SET_ERROR(xid, 0, res);
+                if (res) SET_ERROR(xid, 0, 0, res);
             }
             else {
-                SET_ERROR(xid, 0, XML_OUT_OF_MEMORY);
+                SET_ERROR(xid, 0, 0, XML_OUT_OF_MEMORY);
             }
         }
     }
@@ -2497,6 +2508,16 @@ __zeroxml_set_error(const struct _xml_id *id, const char *start, const char *pos
     __zeroxml_info.start = start;
     __zeroxml_info.pos = pos;
 }
+
+#ifndef NDEBUG
+void
+__zeroxml_set_error_debug(const struct _xml_id *id, const char *start, const char *pos, int err_no, const char *func, size_t line)
+{
+    __zeroxml_info.func = func;
+    __zeroxml_info.line_no = line;
+    __zeroxml_set_error(id, start, pos, err_no);
+}
+#endif
 
 /*
  * Convert a non NULL-terminated string to a long integer.
