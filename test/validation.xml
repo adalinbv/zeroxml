@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!-- comment -->
-
  <a/>
  <b> data </b>
  <c> <!-- comment --> data </c>
@@ -31,7 +30,8 @@
  </tu>
 
  <v>
-  <v/>
+  <w>
+   <w>/w</w>
+  </w>
  </v>
-
- <!-- more comment -->
+<!-- more comment -->
