@@ -1470,7 +1470,10 @@ xmlErrorGetString(const xmlId *id, int clear)
        rv = (char*)__zeroxml_error_str[__zeroxml_info.err_no];
     }
 
-    PRINT_INFO((struct _xml_id *)id, __zeroxml_info.start, __zeroxml_info.err_no);
+#ifndef NDEBUG
+    printf("\tdetected in %s at line %i\n",
+            __zeroxml_info.func, __zeroxml_info.line_no);
+#endif
 
     return rv;
 }
@@ -1745,11 +1748,13 @@ __zeroxml_node_get_path(const struct _xml_id *xid, const cacheId **nc, const cha
 #endif
 #ifndef NDEBUG
 # define SET_ERROR_AND_RETURN(a, b) { \
+   if (!__zeroxml_info.func) { __zeroxml_info.func = __func__; __zeroxml_info.line_no = __LINE__; } \
    *name = (a); *len = (b); *rlen = 0; *nodenum = __LINE__; return NULL; \
    printf("\n#line: %i\n", __LINE__); \
  }
 #else
 # define SET_ERROR_AND_RETURN(a, b) { \
+   if (!__zeroxml_info.func) { __zeroxml_info.func = __func__; __zeroxml_info.line_no = __LINE__; } \
    *name = (a); *len = (b); *rlen = 0; *nodenum = __LINE__; return NULL; \
  }
 #endif
@@ -1757,7 +1762,6 @@ __zeroxml_node_get_path(const struct _xml_id *xid, const cacheId **nc, const cha
  const char*
 __zeroxml_get_node(const struct _xml_id *xid, const cacheId *nc, const char **buf, int *len, const char **name, int *rlen, int *nodenum, char mode)
 {
-static int level = -1;
 #ifndef NDEBUG
     const char *end = *buf + *len;
 #endif
@@ -1795,7 +1799,6 @@ static int level = -1;
     cur = start;
 
     cacheInitLevel(nc);
-level++;
 
     /* search for an opening tag */
     rptr = start;
@@ -1866,7 +1869,6 @@ level++;
             /* Get the element name and a pointer right after it */
             assert(cur+restlen == end);
             rptr = __zeroxml_memncasecmp(rid, &cur, &restlen, &element, &elementlen);
-//for(int i=0; i<level; ++i) { printf(" "); } PRINT(element, elementlen, elementlen);
 
             assert(restlen >= 0);
             if (!restlen) break;
@@ -1888,17 +1890,17 @@ level++;
                     }
                     else start_tag = 0;
                     restlen--;
-                    cur = new;
+                    cur = new--;
                     assert(cur+restlen == end);
                 }
                 assert(cur+restlen == end);
 
-                /* Create a new sub-branch or leaf node for the current branch */
+                /* Create a new sub-branch/leaf node for the current branch */
                 nnc = cacheNodeNew(nc);
 
                 if (restlen < 2) break;
 
-                if (new[0] == '/') /* e.g. <test n="1"/> */
+                if (new[0] == '/' && new[1] == '>') /* e.g. <test n="1"/> */
                 {
                     cacheDataSet(nnc, element, elementlen, rptr, 0);
 
@@ -1990,9 +1992,8 @@ level++;
             const char *pe = new+restlen;
             const char *ps = new+elementlen+1;
             while ((ps<pe) && isspace(*ps)) ps++;
-
             if (*ps != '>') {
-                SET_ERROR_AND_RETURN(new+1, XML_ELEMENT_NO_CLOSING_TAG);
+                break;
             }
 
             if (!rptr)

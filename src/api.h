@@ -215,10 +215,8 @@ struct _zeroxml_error
     int column;
     int line;
     int err_no;
-#ifndef NDEBUG
-    const char *func;
     int line_no;
-#endif
+    const char *func;
 };
 #endif
 
