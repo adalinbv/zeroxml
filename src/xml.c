@@ -2342,6 +2342,84 @@ __zeroxmlProcessCDATA(const char **start, int *len, char mode)
 }
 
 /*
+ * Handle the files bte order mark.
+ *
+ * The byte order mark (BOM) is a particular usage of the special Unicode
+ * character, U+FEFF BYTE ORDER MARK, whose appearance as a magic number at
+ * the start of a text stream can signal several things to a program reading
+ * the text:
+ * - The byte order, or endianness, in the cases of 16-bit and 32-bit encodings.
+ * - The fact that the text stream's encoding is Unicode.
+ * - Which Unicode character encoding is used.
+ *
+ * The library only supports single character encoding.
+ *
+ * @param start a pointer to the start of the XML document
+ * @param len the lenght of the XML document
+ * @return a pointer to the memory location right after the declaration
+ */
+static const char*
+__zeroxml_process_byte_order_mark(const struct _root_id *rid, const char *start, int len, char *locale)
+{
+    const char *rv = start;
+
+    if (len > 4)
+    {
+        const unsigned char *cur = (unsigned char*)start;
+        const char *encoding = NULL;
+
+        if (cur[0] == 0xEF && cur[1] == 0xBB && cur[2] == 0xBF)
+        {
+            encoding = "UTF-8";
+            rv = start+3;
+        }
+        else if (cur[0] == 0xFE && cur[1] == 0xFF && cur[2] != 0)
+        {
+            encoding = "UTF-16BE";
+            rv = start+2;
+        }
+        else if (cur[0] == 0xFF && cur[1] == 0xFE && cur[2] != 0)
+        {
+            encoding = "UTF-16LE";
+            rv = start+2;
+        }
+        else if (!cur[0] && !cur[1] && cur[2] == 0xFE && cur[3] == 0xFF)
+        {
+            encoding = "UTF-32BE";
+            rv = start+4;
+        }
+        else if (cur[0] == 0xFF && cur[1] == 0xFE && !cur[2] && !cur[3])
+        {
+            encoding = "UTF-32LE";
+            rv = start+4;
+        }
+        else if (cur[0] == 0x0E && cur[1] == 0xFE && cur[2] == 0xFF)
+        {
+            encoding = "SCSU";
+            rv = start+3;
+        }
+        else if (cur[0] == 0xFB && cur[1] == 0xEE && cur[2] == 0x28)
+        {
+            encoding = "BOCU-1";
+            rv = start+3;
+        }
+        else if (cur[0] == 0x84 && cur[1] == 0x32 &&
+                 cur[2] == 0x95 && cur[3] == 0x33)
+        {
+            encoding = "GB18030";
+            rv = start+4;
+        }
+
+        len = strlen(encoding)+1;
+        if (encoding && len < MAX_ENCODING) {
+            memcpy(locale, encoding, len);
+        }
+    }
+
+    return rv;
+}
+
+/*
  * Handle the XML Declaration.
  *
  * The XML declaration is a processing instruction that identifies the
@@ -2359,7 +2437,15 @@ __zeroxml_process_declaration(const struct _root_id *rid, const char *start, int
     const char *cur = start;
     const char *rv = start;
 
-    if (len-- < 7 || *cur++ != '<') { /*"<?xml?>" */
+    if (len-- < 7) { /*"<?xml?>" */
+        return start;
+    }
+
+    if (*cur != '<') {
+       cur = __zeroxml_process_byte_order_mark(rid, start, len, locale);
+    }
+
+    if (*cur++ != '<') {
         return start;
     }
 

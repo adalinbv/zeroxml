@@ -2,6 +2,7 @@
  * Windows and MSVC fixes.
  * Fix a case where <values><value/></values> confused the interpreter.
  * Fix a case where <value><value></value></value> confused the interpreter.
+ * Handle file byte order marks properly.
 
 2023-02-19 Erik Hofman <tech@adalin.org>
  * Increase the version number to 2.3.1
