@@ -1762,6 +1762,7 @@ __zeroxml_node_get_path(const struct _xml_id *xid, const cacheId **nc, const cha
  const char*
 __zeroxml_get_node(const struct _xml_id *xid, const cacheId *nc, const char **buf, int *len, const char **name, int *rlen, int *nodenum, char mode)
 {
+static int level = 0;
 #ifndef NDEBUG
     const char *end = *buf + *len;
 #endif
@@ -1784,6 +1785,7 @@ __zeroxml_get_node(const struct _xml_id *xid, const cacheId *nc, const char **bu
     assert(rlen != 0);
     assert(nodenum != 0);
 
+++level;
     start = *buf;
     if (open_len == 0 || *name == 0) {
         SET_ERROR_AND_RETURN(start, XML_NO_ERROR);
@@ -1822,7 +1824,7 @@ __zeroxml_get_node(const struct _xml_id *xid, const cacheId *nc, const char **bu
 
             /* different name?: end of a subsection */
             /* protected from buffer overflow by DECR_LEN above */
-            if (STRNCMP(rid, cur, element, elementlen))
+            if (!elementlen || STRNCMP(rid, cur, element, elementlen))
             {
                 *len = new-start-2; /* strlen("</") */
                 return rv;
@@ -1890,7 +1892,7 @@ __zeroxml_get_node(const struct _xml_id *xid, const cacheId *nc, const char **bu
                     }
                     else start_tag = 0;
                     restlen--;
-                    cur = new--;
+                    cur = new;
                     assert(cur+restlen == end);
                 }
                 assert(cur+restlen == end);
@@ -2044,6 +2046,7 @@ __zeroxml_get_node(const struct _xml_id *xid, const cacheId *nc, const char **bu
                     assert(cur+restlen == end);
                 }
                 found++;
+                elementlen = 0;
                 continue;
             }
         }
@@ -2107,6 +2110,7 @@ __zeroxml_get_nodeExit:
         *rlen = open_len;
         *name = open_element;
         *nodenum = found;
+--level;
     }
     return rv;
 }
