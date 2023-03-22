@@ -79,7 +79,7 @@ int print_comment(xmlId *xid)
     }
     else
     {
-        printf("<!-- %s --", s);
+        printf("<%s", s);
         free(s);
     }
     return rv;

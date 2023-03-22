@@ -1,4 +1,5 @@
-2023-03-18 Erik Hofman <tech@adalin.org>
+2023-03-22 Erik Hofman <tech@adalin.org>
+ * Increase the version number to 2.3.4
  * Windows and MSVC fixes.
  * Fix a case where <values><value/></values> confused the interpreter.
  * Fix a case where <value><value></value></value> confused the interpreter.
