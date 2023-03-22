@@ -105,25 +105,42 @@ extern "C" {
 
 enum xmlFlags
 {
+    /* Use the XPath specification: node[1] is the first node.                */
     XML_INDEX_STARTS_AT_ONE  = 0x0001,
+    /* node[0] is the firs node.                                              */
     XML_INDEX_STARTS_AT_ZERO = 0x0002,
 
+    /* return XML_BOOL_NONE, XML_FPNONE or XML_NONE if a node is not found.   */
     XML_RETURN_NONE_VALUE    = 0x0004,
+    /* return false, 0.0 or 0 if a node is not found.                         */
     XML_RETURN_ZERO          = 0x0008,
 
+    /* Use case insensitive name comparison.                                  */
     XML_CASE_INSENSITIVE     = 0x0010,
+    /* Use case sensitive name comparison.                                    */
     XML_CASE_SENSITIVE       = 0x0020,
 
+    /* Comments will not show up in the node tree.                            */
     XML_IGNORE_COMMENT       = 0x0040,
+    /* Comments, CDATA, DOCTYPE and processing instructions are treated as    */
+    /* regular nodes. Use xmlNodeTest(node, XML_COMMENT) to test for those.   */
     XML_COMMENT_AS_NODE      = 0x0080,
 
+    /* Skip time consuming validity tests for the XML documents if they are   */
+    /* known to be always valid.                                              */
     XML_NONVALIDATING        = 0x0100,
+    /* Verify whether an document is valid when processing it's data.         */
     XML_VALIDATING           = 0x0200,
 
+    /* Do not allocate memory for document processing purposes.               */
     XML_SCAN_NODES           = 0x0400,
+    /* Build a node cache when processing the document for faster processing. */
     XML_CACHE_NODES          = 0x0800,
 
+    /* Do not do codepage conversion when processing the data.                */
     XML_US_ASCII             = 0x1000,
+    /* Convert names and strings to the local codepage before returning it to */
+    /* the calling process. Do locaized string comparison.                    */
     XML_LOCALIZATION         = 0x2000,
 
     XML_DEFAULT_FLAGS        = -1
