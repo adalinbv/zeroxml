@@ -1863,6 +1863,7 @@ static int level = 0;
             DECR_LEN(restlen, new, cur);
             cur = new;
             assert(cur+restlen == end);
+            elementlen = 0;
             continue;
         }
 
@@ -1927,6 +1928,7 @@ static int level = 0;
                         }
                     }
                     found++;
+                    elementlen = 0;
                     continue;
                 }
 
@@ -1948,6 +1950,7 @@ static int level = 0;
                 assert(cur+restlen == end);
 
                 if (restlen >= 2 && *(cur-2) == '/') { /* e.g. <test n="1"/> */
+                    elementlen = 0;
                     continue;
                 }
             }
@@ -2005,6 +2008,7 @@ static int level = 0;
                 cur = new;
                 assert(cur+restlen == end);
 
+                elementlen = 0;
                 continue;
             }
             /* protected from buffer overflow by DECR_LEN above */
