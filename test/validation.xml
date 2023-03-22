@@ -1,4 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="http://12.7.0.0.1/style.xsl"?>
+
+<!DOCTYPE foo [
+
+<!--define the internal DTD-->
+  <!ELEMENT foo (#PCDATA)>
+  <!ENTITY % draft "INCLUDE">
+  <!ENTITY % final "IGNORE">
+  <![%draft;[
+    <!ELEMENT book (title,author,summary)>
+  ]]>
+  <![%final;[
+    <!ELEMENT book (comments*,title,author,summary)>
+  ]]>
+  <!ELEMENT comments (#PCDATA)>
+  <!ELEMENT title (#PCDATA)>
+  <!ELEMENT author (#PCDATA)>
+  <!ELEMENT summary (#PCDATA)>
+
+<!--close the DOCTYPE declaration-->
+]>
+
+<fdm_config name="c172" version="2.0" release="BETA"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="http://jsbsim.sourceforge.net/JSBSim.xsd">
+</fdm_config>
 
 <!-- comment -->
  <a/>
@@ -33,6 +59,9 @@
   <w>
    <w>
     <w>/w/</w>
+   </w>
+   <w>
+    <w/>
    </w>
   </w>
  </v>

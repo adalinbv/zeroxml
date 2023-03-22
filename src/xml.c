@@ -383,9 +383,9 @@ xmlSetFlags(const xmlId *id, enum xmlFlags flags)
     }
 
     if (flags & XML_COMMENT_AS_NODE) {
-        rid->flags |= XML_COMMENT_AS_NODE;
+        rid->flags |= __XML_COMMENT_AS_NODE;
     } else if (flags & XML_IGNORE_COMMENT) {
-        rid->flags &= ~XML_COMMENT_AS_NODE;
+        rid->flags &= ~__XML_COMMENT_AS_NODE;
     }
 
     if (flags & XML_VALIDATING) {
@@ -1843,7 +1843,11 @@ static int level = 0;
         cur = new;
         assert(cur+restlen == end);
 
-        if (cur[0] == '!') /* comment: "<!---->" or CDATA: "<![CDATA[]]>" */
+        /*
+         * processing instructions: "<?target ?>", comment: "<!---->",
+         * CDATA: "<![CDATA[]]>" or DOCTYPE: "<!DOCTYPE element []>"
+         */
+        if (cur[0] == '!' || cur[0] == '?')
         {
             const char *start = cur;
             int blocklen = restlen;
@@ -2335,6 +2339,47 @@ __zeroxmlProcessCDATA(const char **start, int *len, char mode)
         if (new)
         {
            if (mode == RAW) new += 3;
+           *len = new - *start;
+        }
+    }
+
+    /* DOCTYPE: "<!DOCTYPE element []>" */
+    else if (restlen >= 15 && (MEMCMP(cur, "!DOCTYPE ", 9) == 0))
+    {
+        cur += 9;
+        restlen -= 9;
+        if (mode == STRIPPED) *start = cur;
+        *len = 0;
+
+        do
+        {
+            new = __zeroxml_memmem(cur, restlen, "]>", 2);
+            if (new && *(new-1) != ']')
+            {
+               if (mode == RAW) new += 2;
+               *len = new - *start;
+               break;
+            }
+
+            new += 2;
+            restlen -= (new-cur);
+            cur = new;
+        }
+        while(restlen);
+    }
+
+    /* Processing Instructions: "<?target ?>" */
+    else if (restlen >= 6 && cur[0] == '?')
+    {
+        cur += 6;
+        restlen -= 6;
+        if (mode == STRIPPED) *start = cur;
+        *len = 0;
+
+        new = __zeroxml_memmem(cur, restlen, "?>", 2);
+        if (new)
+        {
+           if (mode == RAW) new += 2;
            *len = new - *start;
         }
     }
