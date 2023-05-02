@@ -2457,9 +2457,12 @@ __zeroxml_process_byte_order_mark(const struct _root_id *rid, const char *start,
             rv = start+4;
         }
 
-        len = strlen(encoding)+1;
-        if (encoding && len < MAX_ENCODING) {
-            memcpy(locale, encoding, len);
+        if (encoding)
+        {
+            len = strlen(encoding)+1;
+            if (encoding && len < MAX_ENCODING) {
+                memcpy(locale, encoding, len);
+            }
         }
     }
 
