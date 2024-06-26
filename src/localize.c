@@ -87,7 +87,7 @@
  */
 #define BUFSIZE		1024
 int
-string_compare(iconv_t cd, const char *s1, const char *s2, int *s2len)
+string_compare(const iconv_t cd, const char *s1, const char *s2, int *s2len)
 {
 #if defined(HAVE_ICONV_H) || defined(WIN32)
     size_t s1len = strlen(s1);

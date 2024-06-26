@@ -172,7 +172,6 @@ else(MSVC)
         string(APPEND CMAKE_C_FLAGS " -fPIC -Wpointer-arith -Wparentheses")
       endif(GCC OR CLANG)
     else(NOT MINGW)
-       string(APPEND CMAKE_C_FLAGS " -static-libgcc")
        set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -Wl,--out-implib,${LIBZEROXML}.lib")
        foreach(flag_var
                 CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
