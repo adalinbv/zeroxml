@@ -62,20 +62,15 @@ string(REGEX REPLACE ";" " " descriptionFile "${descriptionFile}")
 
 # split version string into components, note CMAKE_MATCH_0 is the entire regexp match
 string(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" CPACK_PACKAGE_VERSION ${ZEROXML_VERSION})
-set(XML_MAJOR_VERSION ${CMAKE_MATCH_1})
-set(XML_MINOR_VERSION ${CMAKE_MATCH_2})
-set(XML_MICRO_VERSION ${CMAKE_MATCH_3})
 set(CPACK_PACKAGE_VERSION_MAJOR ${CMAKE_MATCH_1})
-set(CPACK_PACKAGE_VERSION_MINOR ${CMAKE_MATCH_2})
-set(CPACK_PACKAGE_VERSION_PATCH ${CMAKE_MATCH_3})
 
 set(CPACK_PACKAGE_NAME "${PACKAGE}")
-set(CPACK_PACKAGE_file_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}.el6.${CPACK_PACKAGE_ARCHITECTURE}")
+set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}.el6.${CPACK_PACKAGE_ARCHITECTURE}")
 set(CPACK_PACKAGE_VENDOR "Adalin B.V.")
 set(CPACK_PACKAGE_CONTACT "tech@adalin.org")
 set(CPACK_PACKAGE_DESCRIPTION "A lightweight, cross platform XML configuration file reading library")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${descriptionFile})
-set(CPACK_PACKAGE_DESCRIPTION_file "${PROJECT_SOURCE_DIR}/description")
+set(CPACK_PACKAGE_DESCRIPTION_FILE "${PROJECT_SOURCE_DIR}/description")
 set(CPACK_RESOURCE_file_LICENSE "${PROJECT_SOURCE_DIR}/COPYING")
 set(CPACK_RESOURCE_file_README "${PROJECT_SOURCE_DIR}/README")
 
@@ -99,16 +94,16 @@ set(CPACK_RPM_PACKAGE_GROUP "System/Libraries")
 
 
 set(CPACK_SOURCE_GENERATOR ZIP)
-set(CPACK_SOURCE_PACKAGE_file_NAME "${CMAKE_PROJECT_NAME}-${ZEROXML_VERSION}" CACHE INTERNAL "tarball basename")
-set(CPACK_SOURCE_IGNORE_fileS
-  "^${PROJECT_BINARY_DIR};${PROJECT_SOURCE_DIR}/.git;\\\\.gitignore;Makefile.am;~$;${CPACK_SOURCE_IGNORE_fileS}")
+set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${ZEROXML_VERSION}" CACHE INTERNAL "tarball basename")
+set(CPACK_SOURCE_IGNORE_FILES
+  "^${PROJECT_BINARY_DIR};${PROJECT_SOURCE_DIR}/.git;\\\\.gitignore;Makefile.am;~$;${CPACK_SOURCE_IGNORE_FILES}")
 
 set(CPACK_GENERATOR "DEB;RPM")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Adalin B.V.")
 
 include(CPack)
 
-# We have some custom .cmake scripts not in the official distribution.
+# Custom .cmake scripts
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
 
 include(CPack_Defaults)
@@ -218,6 +213,7 @@ endif(MSVC)
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "C flags: ${CMAKE_C_FLAGS}")
 
+# Sources to build
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in"
     "${CMAKE_CURRENT_BINARY_DIR}/include/config.h")
@@ -225,7 +221,7 @@ configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/include/xml.h.in"
     "${CMAKE_CURRENT_BINARY_DIR}/include/xml.h"
 )
-set(ZEROXML_OBJS
+set(sources
     src/xml.c
     src/xml_cache.c
     src/localize.c
@@ -241,57 +237,57 @@ if(NOT DEFINED LIB_POSTFIX)
   set(LIB_POSTFIX "")
 endif(NOT DEFINED LIB_POSTFIX)
 
-set(LIB_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
-add_LIBRARY(${LIBZEROXML} ${LIBTYPE} ${ZEROXML_OBJS})
-set_target_PROPERTIES(${LIBZEROXML}
-    PROPERTIES DEFINE_SYMBOL XML_BUILD_LIBRARY
+# Build target library
+add_library(${LIBZEROXML} ${LIBTYPE} ${sources})
+
+set_target_properties(${LIBZEROXML} PROPERTIES
+    DEFINE_SYMBOL XML_BUILD_LIBRARY
     COMPILE_FLAGS "-D_PROTOTYPES -URMALLOC"
-    VERSION ${LIB_VERSION}
-    SOVERSION ${CPACK_PACKAGE_VERSION_MAJOR})
+    VERSION ${ZEROXML_VERSION}
+    SOVERSION ${CPACK_PACKAGE_VERSION_MAJOR}
+    OUTPUT_NAME ${LIBZEROXML})
+
 if(WIN32 AND NOT LIBTYPE STREQUAL "STATIC")
-    set_target_PROPERTIES(${LIBZEROXML} PROPERTIES PREFIX "")
+    set_target_properties(${LIBZEROXML} PROPERTIES PREFIX "")
 endif()
 
-target_LINK_LIBRARIES(${LIBZEROXML} ${EXTRA_LIBS})
+target_link_libraries(${LIBZEROXML} ${EXTRA_LIBS})
 
-# Add an install target here
+if(RMALLOC)
+  add_library(${LIBZEROXML_DEBUG} ${LIBTYPE} ${sources} src/rmalloc.c)
+
+  set_target_properties(${LIBZEROXML_DEBUG} PROPERTIES
+      DEFINE_SYMBOL XML_BUILD_LIBRARY
+      COMPILE_FLAGS "-D_PROTOTYPES -DMALLOC_DEBUG=ON"
+      VERSION ${ZEROXML_VERSION}
+      SOVERSION ${CPACK_PACKAGE_VERSION_MAJOR}
+      OUTPUT_NAME ${LIBZEROXML_DEBUG})
+
+  if(WIN32 AND NOT LIBTYPE STREQUAL "STATIC")
+    set_target_properties(${LIBZEROXML_DEBUG} PROPERTIES PREFIX "")
+  endif()
+
+  target_link_libraries(${LIBZEROXML_DEBUG} ${EXTRA_LIBS})
+
+  # Add an install target here
+  install(TARGETS ${LIBZEROXML_DEBUG}
+          RUNTIME DESTINATION bin
+          ARCHIVE DESTINATION "lib${LIB_POSTFIX}"
+       )
+endif(RMALLOC)
+
+# install settings
 install(TARGETS ${LIBZEROXML}
         RUNTIME DESTINATION bin
         ARCHIVE DESTINATION "lib${LIB_POSTFIX}"
        )
 
-if(RMALLOC)
-  set(ZEROXMLDEBUG_OBJS
-      src/xml.c
-      src/xml_cache.c
-      src/rmalloc.c
-     )
-
-  add_LIBRARY(${LIBZEROXML_DEBUG} ${LIBTYPE} ${ZEROXMLDEBUG_OBJS})
-  set_target_PROPERTIES(${LIBZEROXML_DEBUG}
-                         PROPERTIES DEFINE_SYMBOL XML_BUILD_LIBRARY
-                         COMPILE_FLAGS "-D_PROTOTYPES -DMALLOC_DEBUG=ON"
-                         VERSION ${LIB_VERSION}
-                         SOVERSION ${CPACK_PACKAGE_VERSION_MAJOR})
-  if(WIN32 AND NOT LIBTYPE STREQUAL "STATIC")
-    set_target_PROPERTIES(${LIBZEROXML_DEBUG} PROPERTIES PREFIX "")
-  endif()
-
-  target_LINK_LIBRARIES(${LIBZEROXML_DEBUG} ${EXTRA_LIBS})
-
-  # Add an install target here
-  install(TARGETS ${LIBZEROXML_DEBUG}
-        RUNTIME DESTINATION bin
-        ARCHIVE DESTINATION "lib${LIB_POSTFIX}"
-       )
-endif(RMALLOC)
-
 install(FILES
-        include/rmalloc.h
-        include/easyxml.hxx
-        ${CMAKE_CURRENT_BINARY_DIR}/include/xml.h
-        DESTINATION include
-       )
+    include/rmalloc.h
+    include/easyxml.hxx
+    ${CMAKE_CURRENT_BINARY_DIR}/include/xml.h
+    DESTINATION include
+  )
 
 add_definitions(-DSOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 add_subdirectory(test)
