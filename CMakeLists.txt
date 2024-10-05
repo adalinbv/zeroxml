@@ -13,7 +13,6 @@ include(CheckIncludeFile)
 include(CheckIncludeFiles)
 include(CheckLibraryExists)
 
-set(CMAKE_GNUtoMS ON)
 project(ZeroXml C CXX)
 set(PACKAGE_NAME "ZeroXml")
 set(PACKAGE "zeroxml")
@@ -236,6 +235,16 @@ endif(CMAKE_SIZEOF_VOID_P MATCHES "8")
 if(NOT DEFINED LIB_POSTFIX)
   set(LIB_POSTFIX "")
 endif(NOT DEFINED LIB_POSTFIX)
+
+if (MINGW)
+    # Mingw64 requires quite a few "C" runtime libraries in order for basic
+    # programs to link successfully with -nodefaultlibs.
+    set(MINGW_RUNTIME gcc_s gcc)
+    set(MINGW_LIBRARIES mingw32 ${MINGW_RUNTIME} moldname mingwex msvcrt
+                        advapi32 shell32 user32 kernel32 mingw32
+                        ${MINGW_RUNTIME} moldname mingwex msvcrt)
+    list(APPEND CMAKE_REQUIRED_LIBRARIES ${MINGW_LIBRARIES})
+endif()
 
 # Build target library
 add_library(${LIBZEROXML} ${LIBTYPE} ${sources})
