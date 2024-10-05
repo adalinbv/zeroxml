@@ -96,11 +96,9 @@
 # define UNICODE
 # include <windows.h>
 
-# ifndef __GNUC__
-#  define strtoll _strtoi64
-#  define strcasecmp _stricmp
-#  define strncasecmp _strnicmp
-# endif
+# define strtoll _strtoi64
+# define strcasecmp _stricmp
+# define strncasecmp _strnicmp
 
 typedef _locale_t locale_t;
 typedef const char* iconv_t;
