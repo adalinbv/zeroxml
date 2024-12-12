@@ -72,7 +72,7 @@ typedef struct _xml_node cacheId;
  *
  * @return cacheId which is used for further processing
  */
-const cacheId *cacheInit();
+const cacheId *cacheInit(const struct _root_id*);
 
 /**
  * Initialize a new level in the XML-tree.
