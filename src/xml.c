@@ -2362,7 +2362,9 @@ __zeroxmlProcessCDATA(const char **start, int *len, char mode)
         do
         {
             new = __zeroxml_memmem(cur, restlen, "]>", 2);
-            if (new && *(new-1) != ']')
+            if (!new) break;
+
+            if (*(new-1) != ']')
             {
                if (mode == RAW) new += 2;
                *len = new-1 - *start;
