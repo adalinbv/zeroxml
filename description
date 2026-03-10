@@ -1,7 +1,15 @@
-A lightweight, cross platform XML configuration file reading library that doesn't use any extra memory unless the client application requests for it. 
+A lightweight, cross-platform XML configuration file reading library that
+uses no extra memory unless the client application requests it.
 
-To achieve zero memory allocation operation the library maps the file to a memory region and walks the XML tree every time a new node is accessed. XML processing might be a bit slower this way but application memory will not get fragmented.
+To achieve zero-allocation operation the library maps the file to a memory
+region and walks the XML tree every time a new node is accessed. XML
+processing may be slightly slower this way, but application memory will not
+get fragmented.
 
-Memory will only be allocated to handle client application requests. In all cases a preallocated buffer can be provided by the client application to store XML data for further processing.
+Memory is only allocated to satisfy client requests. In all cases the client
+application can supply a pre-allocated buffer to store XML data for further
+processing.
 
-A separate caching option is available that will create a node tree when a XML file gets opened. As a result node searches will be much faster at the cost of a small amount of memory (48 bytes on a 64-bit machine for every XML node in the file). 
+A separate caching option is available that builds a node tree when an XML
+file is opened. Node searches are then much faster at the cost of a small
+amount of memory — 48 bytes per XML node on a 64-bit machine.
