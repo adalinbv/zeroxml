@@ -1717,7 +1717,7 @@ __zeroxml_node_get_path(const struct _xml_id *xid, const cacheId **nc, const cha
         {
             *name = node;
             *nlen = nodelen;
-            *nlen = blocklen;
+            *len = blocklen;
             rv = NULL;
         }
     }
