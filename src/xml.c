@@ -1418,10 +1418,8 @@ xmlErrorGetColumnNo(const xmlId *id, int clear)
             while (ps<pe)
             {
                 new = MEMCHR(ps, '\n', pe-ps);
-                new = MEMCHR(ps, '\n', pe-ps);
-                if (new) rv++;
+                if (new) { ps = new+1; }
                 else break;
-                ps = new+1;
             }
             rv = pe-ps;
 
