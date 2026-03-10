@@ -355,7 +355,7 @@ xmlSetFlags(const xmlId *id, enum xmlFlags flags)
 
     if (flags & XML_INDEX_STARTS_AT_ONE) {
         rid->flags |= __XML_INDEX_STARTS_AT_ONE;
-    } else if (flags & XML_INDEX_STARTS_AT_ONE) {
+    } else if (flags & XML_INDEX_STARTS_AT_ZERO) {
         rid->flags &= ~__XML_INDEX_STARTS_AT_ONE;
     }
 
@@ -367,13 +367,13 @@ xmlSetFlags(const xmlId *id, enum xmlFlags flags)
 
     if (flags & XML_CASE_SENSITIVE)
     {
-        rid->flags &= ~__XML_CASE_SENSITIVE;
+        rid->flags |= __XML_CASE_SENSITIVE;
         rid->strncmp = strncmp;
         rid->lcase = NULL;
     }
     else if (flags & XML_CASE_INSENSITIVE)
     {
-        rid->flags |= __XML_CASE_SENSITIVE;
+        rid->flags &= ~__XML_CASE_SENSITIVE;
         rid->strncmp = strncasecmp;
 #ifdef WIN32
 	rid->lcase = tolower;
