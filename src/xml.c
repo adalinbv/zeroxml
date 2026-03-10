@@ -149,7 +149,15 @@ xmlOpenFlags(const char *filename, enum xmlFlags flags)
 
                 fstat(fd, &statbuf);
                 mm = simple_mmap(fd, (int)statbuf.st_size, &rid->un);
-                if (mm != (void *)MMAP_ERROR)
+                if (mm == (void *)MMAP_ERROR)
+                {
+#ifdef HAVE_LOCALE_H
+                    free(locale);
+#endif
+                    free(rid);
+                    rid = 0;
+                }
+                else
                 {
                     int blocklen = statbuf.st_size;
                     char *encoding = (char*)&rid->encoding;
@@ -208,6 +216,8 @@ xmlOpenFlags(const char *filename, enum xmlFlags flags)
                             free(locale);
                         }
                         while(0);
+# else
+                        free(locale);
 # endif
 #endif
                     }
@@ -304,6 +314,8 @@ xmlInitBufferFlags(const char *buffer, int blocklen, enum xmlFlags flags)
                     free(locale);
                 }
                 while(0);
+# else
+                free(locale);
 # endif
 #endif
             }
