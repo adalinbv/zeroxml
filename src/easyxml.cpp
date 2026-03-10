@@ -113,7 +113,6 @@ XMLAttributesDefault::setValue (const char * name, const char * value)
 {
     int pos = findAttribute(name);
     if (pos >= 0) {
-        setName(pos, name);
         setValue(pos, value);
     } else {
         addAttribute(name, value);
@@ -127,7 +126,7 @@ void XMLVisitor::savePosition(void)
 {
     if (parser) {
         column = xmlErrorGetColumnNo(parser, 0);
-        line = xmlErrorGetLineNo(parser, 1);
+        line = xmlErrorGetLineNo(parser, 0);
     }
 }
 
@@ -214,9 +213,8 @@ readXML (std::istream &input, XMLVisitor &visitor, const std::string &path)
 
     xmlId *xid = xmlInitBuffer(buf.data(), buf.length());
     if (!xid) {
-        // TODO: report line and column number
-        std::string s = xmlErrorGetString(xid, XML_TRUE);
-        throw std::runtime_error(s + " opening XML buffer: " + path);
+        std::string s = xmlErrorGetString(nullptr, XML_TRUE);
+        throw std::runtime_error("Error opening XML buffer: " + path + ": " + s);
     }
 
     visitor.setParser(xid);
@@ -233,9 +231,8 @@ readXML (const std::string &path, XMLVisitor &visitor)
 {
     xmlId *xid = xmlOpen(path.c_str());
     if (!xid) {
-        // TODO: report line and column number
-        std::string s = xmlErrorGetString(xid, XML_TRUE);
-        throw std::runtime_error(s + " reading file: " + path);
+        std::string s = xmlErrorGetString(nullptr, XML_TRUE);
+        throw std::runtime_error("Error reading file: " + path + ": " + s);
     }
 
     visitor.setParser(xid);
@@ -252,9 +249,8 @@ readXML (const char *buf, const int size, XMLVisitor &visitor)
 {
     xmlId *xid = xmlInitBuffer(buf, size);
     if (!xid) {
-        // TODO: report line and column number
-        std::string s = xmlErrorGetString(xid, XML_TRUE);
-        throw std::runtime_error("Error opening XML buffer:" + s);
+        std::string s = xmlErrorGetString(nullptr, XML_TRUE);
+        throw std::runtime_error("Error opening XML buffer: " + s);
     }
 
     visitor.setParser(xid);
