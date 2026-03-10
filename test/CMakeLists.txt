@@ -16,6 +16,7 @@ CREATE_TEST(test_buffer)
 CREATE_TEST(test_errors)
 CREATE_TEST(test_functions)
 CREATE_TEST(test_doctype)
+CREATE_TEST(test_unicode)
 
 CREATE_TEST_CPP(test_easy_xml "")
 if(WIN32)

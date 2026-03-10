@@ -1,3 +1,12 @@
+2026-03-10 Erik Hofman <tech@adalin.org>
+ * Fix XML declaration encoding attribute detecion.
+ * Fix a NULL pointer dereference unterminated DOCTYPE declarations.
+ * Fix a out-of-bounds memory reads for malformed XML documents.
+ * Fix three memory leaks of the `locale` string.
+ * Fix xmlErrorGetColumnNo() always reporting a wrong column number.
+ * Fix parsing XML_INDEX_STARTS_AT_ZERO to xmlSetFlags() being silently ignored.
+ * Fix inverted bit-set/clear for XML_CASE_SENSITIVE.
+
 2023-03-22 Erik Hofman <tech@adalin.org>
  * Increase the version number to 2.3.4
  * Windows and MSVC fixes.
