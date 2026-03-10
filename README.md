@@ -259,7 +259,7 @@ XML_API int XML_APIENTRY xmlNodeCopyName(const xmlId *xid, char *buffer, int buf
 
 #### `xmlNodeCompareName` — compare this node's name to a string
 
-Comparison is case-insensitive. Returns an integer less than, equal to, or
+Comparison case-sensitivity follows the `XML_CASE_SENSITIVE` / `XML_CASE_INSENSITIVE` flag (case-sensitive by default). Returns an integer less than, equal to, or
 greater than zero when the name is less than, equal to, or greater than `str`.
 
 ```c
@@ -293,7 +293,7 @@ XML_API int XML_APIENTRY xmlCopyString(const xmlId *xid, char *buffer, int bufle
 
 #### `xmlCompareString` — compare the value of this node to a string
 
-Comparison is case-insensitive. Returns an integer less than, equal to, or
+Comparison case-sensitivity follows the `XML_CASE_SENSITIVE` / `XML_CASE_INSENSITIVE` flag (case-sensitive by default). Returns an integer less than, equal to, or
 greater than zero when the node value is less than, equal to, or greater than `str`.
 
 ```c
@@ -318,7 +318,7 @@ XML_API int XML_APIENTRY xmlNodeCopyString(const xmlId *xid, const char *path, c
 
 #### `xmlNodeCompareString` — compare the value of a node at a path to a string
 
-Comparison is case-insensitive. Returns an integer less than, equal to, or
+Comparison case-sensitivity follows the `XML_CASE_SENSITIVE` / `XML_CASE_INSENSITIVE` flag (case-sensitive by default). Returns an integer less than, equal to, or
 greater than zero when the node value is less than, equal to, or greater than `str`.
 
 ```c
@@ -403,7 +403,7 @@ XML_API int XML_APIENTRY xmlAttributeCopyName(const xmlId *xid, char *buffer, in
 
 #### `xmlAttributeCompareName` — compare the name of the nth attribute to a string
 
-Comparison is case-insensitive. Returns an integer less than, equal to, or
+Comparison case-sensitivity follows the `XML_CASE_SENSITIVE` / `XML_CASE_INSENSITIVE` flag (case-sensitive by default). Returns an integer less than, equal to, or
 greater than zero when the attribute name is less than, equal to, or greater than `str`.
 
 ```c
@@ -428,7 +428,7 @@ XML_API int XML_APIENTRY xmlAttributeCopyString(const xmlId *xid, const char *na
 
 #### `xmlAttributeCompareString` — compare the value of a named attribute to a string
 
-Comparison is case-insensitive. Returns an integer less than, equal to, or
+Comparison case-sensitivity follows the `XML_CASE_SENSITIVE` / `XML_CASE_INSENSITIVE` flag (case-sensitive by default). Returns an integer less than, equal to, or
 greater than zero when the attribute value is less than, equal to, or greater than `str`.
 
 ```c
