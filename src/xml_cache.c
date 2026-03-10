@@ -200,7 +200,7 @@ void
 cacheNodeAdd(const cacheId *n, const char *name, int namelen, const char *data, int datalen)
 {
     const cacheId *nc = cacheNodeNew(n);
-    cacheDataSet(nc, name, strlen(name), data, datalen);
+    cacheDataSet(nc, name, namelen, data, datalen);
 }
 
 /*

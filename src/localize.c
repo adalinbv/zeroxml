@@ -179,7 +179,7 @@ __zeroxml_iconv(const struct _root_id *rid,
     {
         if (outbytesleft > inbytesleft) outbytesleft = inbytesleft;
         memcpy(outbuf, inbuf, outbytesleft);
-        outbuf[inbytesleft] = 0;
+        outbuf[outbytesleft] = 0;
     }
     return rv;
 }

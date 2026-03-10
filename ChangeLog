@@ -6,6 +6,8 @@
  * Fix xmlErrorGetColumnNo() always reporting a wrong column number.
  * Fix parsing XML_INDEX_STARTS_AT_ZERO to xmlSetFlags() being silently ignored.
  * Fix inverted bit-set/clear for XML_CASE_SENSITIVE.
+ * Fix __zeroxml_iconv; null terminator written at wrong index.
+ * Fix __zeroxml_memmem; loop exiting before last possible match.
 
 2023-03-22 Erik Hofman <tech@adalin.org>
  * Increase the version number to 2.3.4

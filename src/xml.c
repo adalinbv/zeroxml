@@ -2223,6 +2223,7 @@ __zeroxml_node_get_num(const xmlId *id, const char *path, char mode)
             if (ptr == NULL && slen == 0) {
                 SET_ERROR(xid, node, node, len);
             }
+            nodename = pathname; /* leaf name for the count call below */
         }
         else
         {
@@ -2821,7 +2822,7 @@ __zeroxml_memmem(const char *haystack, int haystacklen, const char *needle, int 
             haystack = new+1;
             haystacklen -= haystack-new;
         }
-        while (haystacklen > 2);
+        while (haystacklen >= needlelen);
     }
     return rv;
 }
