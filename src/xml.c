@@ -3,8 +3,8 @@
  *
  * ALTERNATIVE A - Modified BSD license
  *
- * Copyright (C) 2008-2023 by Erik Hofman.
- * Copyright (C) 2009-2023 by Adalin B.V.
+ * Copyright © 2008-2026 by Erik Hofman.
+ * Copyright © 2009-2026 by Adalin B.V.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -1496,6 +1496,278 @@ static const char *__zeroxml_memmem(const char*, int, const char*, int);
 static const char *__zeroxml_memncasestr(const struct _root_id*, const char*, int, const char*);
 static const char *__zeroxml_memncasecmp(const struct _root_id*, const char**, int*, const char**, int*);
 
+/* -------------------------------------------------------------------------- */
+/* SIMD-accelerated helper functions for x86-64                               */
+/* -------------------------------------------------------------------------- */
+#if defined(__x86_64__) || defined(_M_X64)
+# include <immintrin.h>
+# include <stdint.h>
+
+/*
+ * SIMD whitespace skip (forward).
+ *
+ * Semantics match the original: ps and pe are inclusive bounds (pe points
+ * to the last valid byte). Returns the first byte in [ps, pe] that is not
+ * whitespace, or pe+1 if all bytes are whitespace (so callers doing
+ * "ps < pe" still work correctly).
+ *
+ * Only scans complete 16/32-byte chunks that lie entirely within [ps, pe].
+ * The scalar tail handles the remainder, preserving the original byte-by-byte
+ * semantics for the boundary bytes -- critical for multi-byte UTF-8 where
+ * continuation bytes (0x80-0xBF) must never be misidentified as whitespace.
+ *
+ * Handles: space (0x20), \t (0x09), \n (0x0A), \r (0x0D), \f (0x0C), \v (0x0B)
+ * Note: all of these are < 0x80, so they can never collide with UTF-8
+ * multi-byte continuation bytes (0x80-0xBF) or leading bytes (0xC0-0xFF).
+ */
+static inline const char *
+__simd_skip_ws_fwd(const char *ps, const char *pe)
+{
+    /* pe is the last valid byte (inclusive). We need at least N+1 bytes
+     * available to safely load an N-byte vector without reading past pe. */
+#ifdef __AVX2__
+    while (ps + 32 <= pe) /* [ps, ps+31] all within [ps, pe] */
+    {
+        __m256i chunk = _mm256_loadu_si256((const __m256i*)ps);
+        __m256i sp    = _mm256_set1_epi8(0x20);
+        __m256i tab   = _mm256_set1_epi8(0x09);
+        __m256i nl    = _mm256_set1_epi8(0x0A);
+        __m256i cr    = _mm256_set1_epi8(0x0D);
+        __m256i ff    = _mm256_set1_epi8(0x0C);
+        __m256i vt    = _mm256_set1_epi8(0x0B);
+        __m256i is_ws = _mm256_or_si256(
+                            _mm256_or_si256(
+                                _mm256_or_si256(_mm256_cmpeq_epi8(chunk, sp),
+                                                _mm256_cmpeq_epi8(chunk, tab)),
+                                _mm256_or_si256(_mm256_cmpeq_epi8(chunk, nl),
+                                                _mm256_cmpeq_epi8(chunk, cr))),
+                            _mm256_or_si256(_mm256_cmpeq_epi8(chunk, ff),
+                                            _mm256_cmpeq_epi8(chunk, vt)));
+        unsigned int mask = (unsigned int)_mm256_movemask_epi8(is_ws);
+        if (mask != 0xFFFFFFFFu) {
+            return ps + __builtin_ctz(~mask);
+        }
+        ps += 32;
+    }
+#endif
+
+#ifdef __SSE2__
+    while (ps + 16 <= pe) /* [ps, ps+15] all within [ps, pe] */
+    {
+        __m128i chunk = _mm_loadu_si128((const __m128i*)ps);
+        __m128i sp    = _mm_set1_epi8(0x20);
+        __m128i tab   = _mm_set1_epi8(0x09);
+        __m128i nl    = _mm_set1_epi8(0x0A);
+        __m128i cr    = _mm_set1_epi8(0x0D);
+        __m128i ff    = _mm_set1_epi8(0x0C);
+        __m128i vt    = _mm_set1_epi8(0x0B);
+        __m128i is_ws = _mm_or_si128(
+                            _mm_or_si128(
+                                _mm_or_si128(_mm_cmpeq_epi8(chunk, sp),
+                                             _mm_cmpeq_epi8(chunk, tab)),
+                                _mm_or_si128(_mm_cmpeq_epi8(chunk, nl),
+                                             _mm_cmpeq_epi8(chunk, cr))),
+                            _mm_or_si128(_mm_cmpeq_epi8(chunk, ff),
+                                         _mm_cmpeq_epi8(chunk, vt)));
+        unsigned int mask = (unsigned int)_mm_movemask_epi8(is_ws);
+        if (mask != 0xFFFFu) {
+            return ps + __builtin_ctz(~mask);
+        }
+        ps += 16;
+    }
+#endif /* __AVX2__ elif __SSE2__ */
+
+    /* Scalar tail: mirrors original "while ((ps<pe) && isspace(*ps)) ps++" */
+    while (ps < pe && isspace((unsigned char)*ps)) ps++;
+    return ps;
+}
+
+/*
+ * SIMD whitespace skip (backward).
+ *
+ * Semantics match the original: ps is the start (inclusive), pe is the last
+ * valid byte (inclusive). Returns the last byte in [ps, pe] that is NOT
+ * whitespace, or ps if all are whitespace (callers use "pe > ps").
+ *
+ * SAFETY: We only load complete 16/32-byte blocks whose HIGH end is pe (so
+ * block[0..N-1] all fall within [ps, pe]). The result offset is clamped to
+ * [0, pe-block] before use, preventing any read or return past pe.
+ * The scalar tail handles the remainder byte-by-byte, exactly as the original.
+ */
+static inline const char *
+__simd_skip_ws_bwd(const char *ps, const char *pe)
+{
+#ifdef __AVX2__
+    /* block = pe-31 means block[0..31] covers [pe-31, pe] -- all valid */
+    while (pe - ps >= 31)
+    {
+        const char *block = pe - 31;
+        __m256i chunk = _mm256_loadu_si256((const __m256i*)block);
+        __m256i sp    = _mm256_set1_epi8(0x20);
+        __m256i tab   = _mm256_set1_epi8(0x09);
+        __m256i nl    = _mm256_set1_epi8(0x0A);
+        __m256i cr    = _mm256_set1_epi8(0x0D);
+        __m256i ff    = _mm256_set1_epi8(0x0C);
+        __m256i vt    = _mm256_set1_epi8(0x0B);
+        __m256i is_ws = _mm256_or_si256(
+                            _mm256_or_si256(
+                                _mm256_or_si256(_mm256_cmpeq_epi8(chunk, sp),
+                                                _mm256_cmpeq_epi8(chunk, tab)),
+                                _mm256_or_si256(_mm256_cmpeq_epi8(chunk, nl),
+                                                _mm256_cmpeq_epi8(chunk, cr))),
+                            _mm256_or_si256(_mm256_cmpeq_epi8(chunk, ff),
+                                            _mm256_cmpeq_epi8(chunk, vt)));
+        /* movemask: bit N = byte N of block. We want the highest non-WS byte.
+         * ~mask has 1 bits where bytes are NOT whitespace.
+         * __builtin_clz counts from bit 31 down; 31-clz gives the index. */
+        unsigned int mask = (unsigned int)_mm256_movemask_epi8(is_ws);
+        if (mask != 0xFFFFFFFFu)
+        {
+            int idx = 31 - __builtin_clz(~mask);  /* 0..31, highest non-WS */
+            const char *result = block + idx;
+            /* Clamp: result must not exceed pe (it can't because idx<=31
+             * and block = pe-31, so block+31 == pe). No clamp needed. */
+            return result;
+        }
+        /* Entire block is whitespace; continue scanning leftward.
+         * pe moves to one before the block start. */
+        pe = block - 1;
+    }
+#endif
+
+#if 1
+#ifdef __SSE2__
+    while (pe - ps >= 15) {
+        const char *block = pe - 15;
+        __m128i chunk = _mm_loadu_si128((const __m128i*)block);
+        __m128i sp    = _mm_set1_epi8(0x20);
+        __m128i tab   = _mm_set1_epi8(0x09);
+        __m128i nl    = _mm_set1_epi8(0x0A);
+        __m128i cr    = _mm_set1_epi8(0x0D);
+        __m128i ff    = _mm_set1_epi8(0x0C);
+        __m128i vt    = _mm_set1_epi8(0x0B);
+        __m128i is_ws = _mm_or_si128(
+                            _mm_or_si128(
+                                _mm_or_si128(_mm_cmpeq_epi8(chunk, sp),
+                                             _mm_cmpeq_epi8(chunk, tab)),
+                                _mm_or_si128(_mm_cmpeq_epi8(chunk, nl),
+                                             _mm_cmpeq_epi8(chunk, cr))),
+                            _mm_or_si128(_mm_cmpeq_epi8(chunk, ff),
+                                         _mm_cmpeq_epi8(chunk, vt)));
+        unsigned int mask = (unsigned int)_mm_movemask_epi8(is_ws);
+        if (mask != 0xFFFFu) {
+            /* movemask puts block[0] in bit 0, block[15] in bit 15.
+             * We want the index of the highest non-whitespace byte.
+             * Shift the 16 valid bits into the top of a 32-bit word so
+             * __builtin_clz counts from bit 31 down correctly:
+             *   clz(~mask << 16) == number of leading WS bytes from block[15]
+             *   idx = 15 - that count                                        */
+            int idx = 15 - __builtin_clz((~mask) << 16);
+            return block + idx;
+        }
+        pe = block - 1;
+    }
+#endif /* __AVX2__ elif __SSE2__ */
+#endif
+
+    /* Scalar tail: mirrors original "while ((pe>ps) && isspace(*pe)) pe--" */
+    while (pe > ps && isspace((unsigned char)*pe)) pe--;
+    return pe;
+}
+
+/*
+ * SIMD-accelerated memmem using two-byte needle matching for long needles.
+ *
+ * Strategy:
+ *   For needlelen == 1: delegate to memchr (already SIMD in glibc).
+ *   For needlelen >= 2: use AVX2/SSE2 to scan for the first byte of the
+ *   needle 16/32 bytes at a time, then verify full needle with memcmp.
+ *   This is similar to the glibc memmem Two-Way algorithm but tuned for
+ *   the short needles that appear in XML parsing ("-->", "]]>", "?>", etc.).
+ */
+static const char *
+__simd_memmem(const char *haystack, int haystacklen,
+              const char *needle,   int needlelen)
+{
+    if (needlelen == 0) return haystack;
+    if (needlelen  > haystacklen) return NULL;
+
+    const unsigned char first = (unsigned char)needle[0];
+    const char *hs  = haystack;
+    const char *end = haystack + haystacklen - needlelen + 1; /* last valid start */
+
+#ifdef __AVX2__
+    do
+    {
+        __m256i vfirst = _mm256_set1_epi8((char)first);
+        while (hs + 32 <= end)
+        {
+            __m256i chunk = _mm256_loadu_si256((const __m256i*)hs);
+            unsigned int mask = (unsigned int)_mm256_movemask_epi8(
+                                    _mm256_cmpeq_epi8(chunk, vfirst));
+            while (mask)
+            {
+                int off = __builtin_ctz(mask);
+                if (MEMCMP(hs + off, needle, needlelen) == 0) {
+                    return hs + off;
+                }
+                mask &= mask - 1; /* clear lowest set bit */
+            }
+            hs += 32;
+        }
+    }
+    while(0);
+#endif
+
+    // process the remaining charatcters
+#ifdef __SSE2__
+    do
+    {
+        __m128i vfirst = _mm_set1_epi8((char)first);
+        while (hs + 16 <= end)
+        {
+            __m128i chunk = _mm_loadu_si128((const __m128i*)hs);
+            unsigned int mask = (unsigned int)_mm_movemask_epi8(
+                                    _mm_cmpeq_epi8(chunk, vfirst));
+            while (mask)
+            {
+                int off = __builtin_ctz(mask);
+                if (MEMCMP(hs + off, needle, needlelen) == 0) {
+                    return hs + off;
+                }
+                mask &= mask - 1;
+            }
+            hs += 16;
+        }
+    }
+    while(0);
+#endif /* __AVX2__ elif __SSE2__ */
+
+    /* Scalar tail */
+    while (hs < end)
+    {
+        const char *p = (const char *)memchr(hs, first, end - hs);
+        if (!p) return NULL;
+        if (MEMCMP(p, needle, needlelen) == 0) return p;
+        hs = p + 1;
+    }
+    return NULL;
+}
+
+#endif /* __x86_64__ */
+
+/* Dispatch macros: use SIMD path on x86-64, fall back to scalar elsewhere */
+#if defined(__x86_64__) || defined(_M_X64)
+# define FAST_MEMMEM(hs,hl,nd,nl)       __simd_memmem((hs),(hl),(nd),(nl))
+# define FAST_SKIP_WS_FWD(ps,pe)        __simd_skip_ws_fwd((ps),(pe))
+# define FAST_SKIP_WS_BWD(ps,pe)        __simd_skip_ws_bwd((ps),(pe))
+#else
+# define FAST_MEMMEM(hs,hl,nd,nl)       __zeroxml_memmem((hs),(hl),(nd),(nl))
+# define FAST_SKIP_WS_FWD(ps,pe)        do { const char *_p=(ps); while(_p<(pe)&&isspace((unsigned char)*_p))_p++; _p; } while(0)
+# define FAST_SKIP_WS_BWD(ps,pe)        do { const char *_p=(pe); while(_p>(ps)&&isspace((unsigned char)*_p))_p--; _p; } while(0)
+#endif
+
+
 static const char *__zeroxml_error_str[XML_MAX_ERROR] =
 {
     "no error",
@@ -1525,7 +1797,7 @@ static const char *__zeroxml_error_str[XML_MAX_ERROR] =
  * @param len length of the attribute name.
  * @retrun a pointer to attribute data or NULL in case of an error
  */
-static const char*
+static const char* __attribute__((hot))
 __zeroxml_get_attribute_data_ptr(const struct _xml_id *id, const char *name, int *len)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
@@ -1634,7 +1906,7 @@ __zeroxml_get_attribute_data_ptr(const struct _xml_id *id, const char *name, int
  * @param *nlen length of the path string
  * @retrun a pointer to the section containing the last node in the path
  */
-const char*
+const char* __attribute__((hot))
 __zeroxml_node_get_path(const struct _xml_id *xid, const cacheId **nc, const char *start, int *len, const char **name, int *nlen)
 {
     const char *path, *end;
@@ -1769,7 +2041,7 @@ __zeroxml_node_get_path(const struct _xml_id *xid, const cacheId **nc, const cha
  }
 #endif
 
- const char*
+ const char* __attribute__((hot))
 __zeroxml_get_node(const struct _xml_id *xid, const cacheId *nc, const char **buf, int *len, const char **name, int *rlen, int *nodenum, char mode)
 {
 static int level = 0;
@@ -2328,7 +2600,7 @@ __zeroxmlProcessCDATA(const char **start, int *len, char mode)
         restlen -= 3;
         *len = 0;
 
-        new = __zeroxml_memmem(cur, restlen, "-->", 3);
+        new = FAST_MEMMEM(cur, restlen, "-->", 3);
         if (new)
         {
            *len = new+2 - *start;
@@ -2344,7 +2616,7 @@ __zeroxmlProcessCDATA(const char **start, int *len, char mode)
         if (mode == STRIPPED) *start = cur;
         *len = 0;
 
-        new = __zeroxml_memmem(cur, restlen, "]]>", 3);
+        new = FAST_MEMMEM(cur, restlen, "]]>", 3);
         if (new)
         {
            if (mode == RAW) new += 3;
@@ -2362,7 +2634,7 @@ __zeroxmlProcessCDATA(const char **start, int *len, char mode)
 
         do
         {
-            new = __zeroxml_memmem(cur, restlen, "]>", 2);
+            new = FAST_MEMMEM(cur, restlen, "]>", 2);
             if (!new) break;
 
             if (*(new-1) != ']')
@@ -2387,7 +2659,7 @@ __zeroxmlProcessCDATA(const char **start, int *len, char mode)
         if (mode == STRIPPED) *start = cur;
         *len = 0;
 
-        new = __zeroxml_memmem(cur, restlen, "?>", 2);
+        new = FAST_MEMMEM(cur, restlen, "?>", 2);
         if (new)
         {
            if (mode == RAW) new += 2;
@@ -2574,10 +2846,10 @@ __zeroxml_prepare_data(const struct _root_id *rid, const char **start, int *bloc
         const char *rptr;
 
         /* find a CDATA block */
-        if ((rptr = __zeroxml_memmem(ps, restlen, "<![CDATA[", 9)) != NULL)
+        if ((rptr = FAST_MEMMEM(ps, restlen, "<![CDATA[", 9)) != NULL)
         {
             ps = rptr + 9; /* strlen("<![CDATA[") */
-            if ((rptr = __zeroxml_memmem(ps, restlen, "]]>", 3)) == NULL) {
+            if ((rptr = FAST_MEMMEM(ps, restlen, "]]>", 3)) == NULL) {
                 return;
             }
 
@@ -2589,13 +2861,14 @@ __zeroxml_prepare_data(const struct _root_id *rid, const char **start, int *bloc
             do
             {
                 pe = ps + restlen-1;
-                while ((ps<pe) && isspace(*ps)) ps++;
+                /* SIMD-accelerated forward whitespace skip */
+                ps = FAST_SKIP_WS_FWD(ps, pe);
                 restlen = (pe-ps)+1;
 
                 /* find comment before the data */
                 if (restlen >= 7 && !STRNCMP(rid, ps, "<!--", 4))
                 {
-                    rptr = __zeroxml_memmem(ps, restlen, "-->", 3);
+                    rptr = FAST_MEMMEM(ps, restlen, "-->", 3);
                     if (rptr == NULL) {
                         return;
                     }
@@ -2608,17 +2881,21 @@ __zeroxml_prepare_data(const struct _root_id *rid, const char **start, int *bloc
             while(restlen >= 0);
 
             /* find comment after the data */
-            if ((rptr = __zeroxml_memmem(ps, restlen, "<!--", 4)) != NULL)
+            if ((rptr = FAST_MEMMEM(ps, restlen, "<!--", 4)) != NULL)
             {
                 pe = rptr;
                 restlen = pe-ps;
             }
         }
 
-        pe = ps + restlen-1;
-        while ((ps<pe) && isspace(*ps)) ps++;
-        while ((pe>ps) && isspace(*pe)) pe--;
-        restlen = (pe-ps)+1;
+        if (restlen > 0)
+        {
+            pe = ps + restlen-1;
+            /* SIMD-accelerated whitespace trim from both ends */
+            ps = FAST_SKIP_WS_FWD(ps, pe);
+            pe = FAST_SKIP_WS_BWD(ps, pe);
+            restlen = (pe-ps)+1;
+        }
     }
 
     *start = ps;
@@ -2792,9 +3069,10 @@ __zeroxml_strtob(const struct _root_id *rid, const char *start, const char *end,
  * @param haystacklen the length of the memory block
  * @param needle the string to search for
  * @param needlelen the length of the needle to search for
- * @return a pointer to the located sub‐string, or NULL if not found
+ * @return a pointer to the located sub-string, or NULL if not found
  */
-static const char*
+
+static const char* __attribute__((hot))
 __zeroxml_memmem(const char *haystack, int haystacklen, const char *needle, int needlelen)
 {
     const char *rv = NULL;
@@ -2806,6 +3084,9 @@ __zeroxml_memmem(const char *haystack, int haystacklen, const char *needle, int 
     first = *needle;
     if (haystacklen && needlelen && first != '\0')
     {
+#if defined(__x86_64__) || defined(_M_X64)
+        rv = __simd_memmem(haystack, haystacklen, needle, needlelen);
+#else
         do
         {
             const char *new = MEMCHR(haystack, first, haystacklen);
@@ -2823,6 +3104,7 @@ __zeroxml_memmem(const char *haystack, int haystacklen, const char *needle, int 
             haystacklen -= haystack-new;
         }
         while (haystacklen >= needlelen);
+#endif
     }
     return rv;
 }
@@ -2833,7 +3115,7 @@ __zeroxml_memmem(const char *haystack, int haystacklen, const char *needle, int 
  * @param haystack a pointer to the beginning of the memory block
  * @param haystacklen the length of the memory block
  * @param needle the string to search for
- * @return a pointer to the located sub‐string, or NULL if not found
+ * @return a pointer to the located sub-string, or NULL if not found
  */
 static const char*
 __zeroxml_memncasestr(const struct _root_id *rid, const char *haystack, int haystacklen, const char *needle)
@@ -2848,17 +3130,33 @@ __zeroxml_memncasestr(const struct _root_id *rid, const char *haystack, int hays
     {
         const char *cur = haystack;
         const char *end = cur + haystacklen;
-
         int first = CASE(rid, *needle++);
-        do
+
+        /*
+         * Fast path: if the search is case-sensitive (no locale transform),
+         * use SIMD to find the first character, then verify the rest.
+         * Fall back to the scalar loop for case-insensitive mode.
+         */
+        if (rid->lcase == NULL) /* case-sensitive: use memchr */
         {
-            while (cur < end && (CASE(rid, cur[0]) != first)) {
-                cur++;
-            }
-            if (++cur >= end) return NULL;
+            do {
+                cur = (const char*)memchr(cur, first, end - cur);
+                if (!cur || ++cur >= end) return NULL;
+            } while (STRNCMP(rid, cur, needle, needlelen) != 0);
+            rv = cur - 1;
         }
-        while (STRNCMP(rid, cur, needle, needlelen) != 0);
-        rv = --cur;
+        else /* case-insensitive: scalar char-by-char (locale-aware) */
+        {
+            do
+            {
+                while (cur < end && (CASE(rid, cur[0]) != first)) {
+                    cur++;
+                }
+                if (++cur >= end) return NULL;
+            }
+            while (STRNCMP(rid, cur, needle, needlelen) != 0);
+            rv = --cur;
+        }
     }
     return rv;
 }
@@ -2886,15 +3184,67 @@ __zeroxml_memncasestr(const struct _root_id *rid, const char *haystack, int hays
  */
 
 /*
- * References:
- * https://www.w3schools.com/xml/xml_elements.asp
+ * VALIDNAME lookup table: 1 if character is valid inside an XML element name,
+ * 0 otherwise.  Invalid characters: space, colon, tilde, slash, backslash,
+ * semicolon, dollar, ampersand, percent, at, caret, equals, asterisk, plus,
+ * open/close paren, pipe, double-quote, open/close brace, open/close bracket,
+ * less-than, greater-than.
+ * Note: the original VALIDNAME() also disallows ':' which means namespace
+ * prefixes are treated as invalid -- preserved for compatibility.
+ *
+ * For checking multiple characters a table lookup (e.g., a 256-byte table
+ * indicating if a character is "allowed") is generally faster than calling
+ * strchr multiple times.
+ *
+ * A lookup table reduces this to a single operation
+ * 1. Direct Indexing: The CPU uses the numerical value of the character (a)
+ *    as an index (e.g., table[(unsigned char)a]).
+ * 2. O(1) Speed: No matter which character you are checking, it always takes
+ *    the same amount of time-one memory lookup.
  */
-#define VALIDNAME(a)	(!strchr(" :~/\\;$&%@^=*+()|\"{}[]<>", (a)))
-#define ISCLOSING(a)	(strchr(">/", (a)))
+static const uint8_t __validname_table[256] = {
+    // 0x00-0x1F: all invalid (control chars) */
+    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
+
+    // 0x20 ' '=0, 0x21 '!'=1, 0x22 '"'=0, 0x23 '#'=1, 0x24 '$'=0, 0x25 '%'=0
+    // 0x26 '&'=0, 0x27 '\''=1, 0x28 '('=0, 0x29 ')'=0, 0x2A '*'=0,
+    // 0x2B '+'=0, 0x2C ','=1, 0x2D '-'=1, 0x2E '.'=1, 0x2F '/'=0
+    0,1,0,1,0,0,0,1, 0,0,0,0,1,1,1,0,
+
+    // 0x30-0x39 '0'-'9': valid
+    1,1,1,1,1,1,1,1,1,1,
+
+    // 0x3A ':'=0, 0x3B ';'=0, 0x3C '<'=0, 0x3D '='=0, 0x3E '>'=0, 0x3F '?'=1
+    0,0,0,0,0,1,
+
+    // 0x40 '@'=0
+    0,
+
+    // 0x41-0x5A 'A'-'Z': valid
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+
+    // 0x5B '['=0, 0x5C '\\'=0, 0x5D ']'=0, 0x5E '^'=0, 0x5F '_'=1, 0x60 '`'=1
+    0,0,0,0,1,1,
+
+    // 0x61-0x7A 'a'-'z': valid
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+
+    // 0x7B '{'=0, 0x7C '|'=0, 0x7D '}'=0, 0x7E '~'=0, 0x7F DEL=0
+    0,0,0,0,0,
+
+    // 0x80-0xFF: treat extended bytes as valid (multibyte sequences)
+    1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1
+};
+
+#define VALIDNAME(a)    (__validname_table[(unsigned char)(a)])
+#define ISCLOSING(a)    ((unsigned char)(a) == '>' || (unsigned char)(a) == '/')
 #define ISSPACE(a)	(isspace(a))
 #define ISSEPARATOR(a)	(ISSPACE(a) || ISCLOSING(a))
 #define ISNUM(a)	(isdigit(a))
-static const char*
+static const char* __attribute__((hot))
 __zeroxml_memncasecmp(const struct _root_id *rid,
                       const char **haystack_ptr, int *haystacklen,
                       const char **needle, int *needlelen)
