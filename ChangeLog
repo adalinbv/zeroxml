@@ -1,4 +1,9 @@
+2026-04-27 Erik Hofman <tech@adalin.org>
+ * Increase the version number to 2.4.2
+ * Add RISCV vector support
+
 2026-03-10 Erik Hofman <tech@adalin.org>
+ * Increase the version number to 2.4.0
  * Fix XML declaration encoding attribute detecion.
  * Fix a NULL pointer dereference unterminated DOCTYPE declarations.
  * Fix a out-of-bounds memory reads for malformed XML documents.
