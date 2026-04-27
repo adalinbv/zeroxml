@@ -1497,12 +1497,8 @@ static const char *__zeroxml_memncasestr(const struct _root_id*, const char*, in
 static const char *__zeroxml_memncasecmp(const struct _root_id*, const char**, int*, const char**, int*);
 
 /* -------------------------------------------------------------------------- */
-/* SIMD-accelerated helper functions for x86-64                               */
+/* SIMD-accelerated helper functions                                          */
 /* -------------------------------------------------------------------------- */
-#if defined(__x86_64__) || defined(_M_X64)
-# include <immintrin.h>
-# include <stdint.h>
-
 /*
  * SIMD whitespace skip (forward).
  *
@@ -1520,6 +1516,140 @@ static const char *__zeroxml_memncasecmp(const struct _root_id*, const char**, i
  * Note: all of these are < 0x80, so they can never collide with UTF-8
  * multi-byte continuation bytes (0x80-0xBF) or leading bytes (0xC0-0xFF).
  */
+#if (defined(__riscv_v) && defined(__riscv_v_intrinsic))
+#include <riscv_vector.h>
+
+static inline const char *
+__simd_skip_ws_fwd(const char *ps, const char *pe)
+{
+    // pe is inclusive, so total length is (pe - ps + 1)
+    size_t n = (pe >= ps) ? (pe - ps + 1) : 0;
+
+    while (n > 0) {
+        // Dynamically set vector length for 8-bit elements
+        size_t vl = __riscv_vsetvl_e8m1(n);
+        vint8m1_t chunk = __riscv_vle8_v_i8m1((const int8_t *)ps, vl);
+
+        // Compare against whitespace characters
+        vbool8_t is_sp  = __riscv_vmseq_vx_i8m1_b8(chunk, 0x20, vl);
+        vbool8_t is_tab = __riscv_vmseq_vx_i8m1_b8(chunk, 0x09, vl);
+        vbool8_t is_nl  = __riscv_vmseq_vx_i8m1_b8(chunk, 0x0A, vl);
+        vbool8_t is_cr  = __riscv_vmseq_vx_i8m1_b8(chunk, 0x0D, vl);
+        vbool8_t is_ff  = __riscv_vmseq_vx_i8m1_b8(chunk, 0x0C, vl);
+        vbool8_t is_vt  = __riscv_vmseq_vx_i8m1_b8(chunk, 0x0B, vl);
+
+        // Combine masks
+        vbool8_t is_ws = __riscv_vmor_mm_b8(is_sp, is_tab, vl);
+        is_ws = __riscv_vmor_mm_b8(is_ws, is_nl, vl);
+        is_ws = __riscv_vmor_mm_b8(is_ws, is_cr, vl);
+        is_ws = __riscv_vmor_mm_b8(is_ws, is_ff, vl);
+        is_ws = __riscv_vmor_mm_b8(is_ws, is_vt, vl);
+
+        // Find first bit that is NOT whitespace (first 0 in the mask)
+        vbool8_t not_ws = __riscv_vmnot_m_b8(is_ws, vl);
+        long first = __riscv_vfirst_m_b8(not_ws, vl);
+
+        if (first >= 0) {
+            return ps + first;
+        }
+
+        ps += vl;
+        n -= vl;
+    }
+
+    return ps; // Returns pe + 1 if all were whitespace
+}
+
+static inline const char *
+__simd_skip_ws_bwd(const char *ps, const char *pe)
+{
+    // Total length from pe down to ps (inclusive)
+    size_t n = (pe >= ps) ? (pe - ps + 1) : 0;
+
+    while (n > 0) {
+        // Set vector length for 8-bit elements
+        size_t vl = __riscv_vsetvl_e8m1(n);
+
+        // Load the chunk ending at pe
+        // We calculate the start of this specific chunk
+        const char *block_start = (pe - vl + 1);
+        vint8m1_t chunk = __riscv_vle8_v_i8m1((const int8_t *)block_start, vl);
+
+        // Standard whitespace comparisons
+        vbool8_t is_ws = __riscv_vmseq_vx_i8m1_b8(chunk, 0x20, vl);
+        is_ws = __riscv_vmor_mm_b8(is_ws, __riscv_vmseq_vx_i8m1_b8(chunk, 0x09, vl), vl);
+        is_ws = __riscv_vmor_mm_b8(is_ws, __riscv_vmseq_vx_i8m1_b8(chunk, 0x0A, vl), vl);
+        is_ws = __riscv_vmor_mm_b8(is_ws, __riscv_vmseq_vx_i8m1_b8(chunk, 0x0D, vl), vl);
+        is_ws = __riscv_vmor_mm_b8(is_ws, __riscv_vmseq_vx_i8m1_b8(chunk, 0x0C, vl), vl);
+        is_ws = __riscv_vmor_mm_b8(is_ws, __riscv_vmseq_vx_i8m1_b8(chunk, 0x0B, vl), vl);
+
+        vbool8_t not_ws = __riscv_vmnot_m_b8(is_ws, vl);
+
+        // Check if any non-whitespace exists in this chunk
+        if (__riscv_vcpop_m_b8(not_ws, vl) > 0) {
+            /* Find the HIGHEST index where not_ws is true.
+             * We use viota to generate indices [0, 1, 2, ... vl-1]
+             * masked by not_ws, then take the maximum. */
+            vuint8m1_t indices = __riscv_viota_m_u8m1(not_ws, vl);
+            vuint8m1_t max_vec = __riscv_vmv_v_x_u8m1(0, vl);
+            max_vec = __riscv_vredmaxu_vs_u8m1_u8m1(indices, max_vec, vl);
+            uint8_t last_idx = __riscv_vmv_x_s_u8m1_u8(max_vec);
+
+            return block_start + last_idx;
+        }
+
+        // Entire chunk is whitespace; move pe back and reduce n
+        pe -= vl;
+        n -= vl;
+    }
+
+    return ps - 1; // All whitespace, pointer "underflows" ps
+}
+
+static const char *
+__simd_memmem(const char *haystack, int haystacklen,
+              const char *needle,   int needlelen)
+{
+    if (needlelen == 0) return haystack;
+    if (needlelen > haystacklen) return NULL;
+
+    const unsigned char first = (unsigned char)needle[0];
+    const char *hs = haystack;
+    /* last_start is the last position where the needle could possibly begin */
+    const char *last_start = haystack + haystacklen - needlelen;
+
+    while (hs <= last_start) {
+        // Calculate remaining bytes from current hs to last possible start
+        size_t n = last_start - hs + 1;
+        size_t vl = __riscv_vsetvl_e8m1(n);
+
+        vint8m1_t chunk = __riscv_vle8_v_i8m1((const int8_t *)hs, vl);
+        vbool8_t mask = __riscv_vmseq_vx_i8m1_b8(chunk, (int8_t)first, vl);
+
+        long off = __riscv_vfirst_m_b8(mask, vl);
+        while (off != -1) {
+            if (MEMCMP(hs + off, needle, needlelen) == 0) {
+                return hs + off;
+            }
+
+            // Generate indices [0, 1, 2... vl-1]
+            vuint8m1_t idx_vec = __riscv_vid_v_u8m1(vl); 
+            
+            // Create a new mask where only bits GREATER than current 'off' are kept
+            mask = __riscv_vmsgtu_vx_u8m1_b8(idx_vec, (uint8_t)off, vl);
+            
+            off = __riscv_vfirst_m_b8(mask, vl);
+        }
+
+        hs += vl;
+    }
+
+    return NULL;
+}
+
+#elif defined(__x86_64__) || defined(_M_X64)
+# include <immintrin.h>
+# include <stdint.h>
 static inline const char *
 __simd_skip_ws_fwd(const char *ps, const char *pe)
 {
@@ -1635,7 +1765,6 @@ __simd_skip_ws_bwd(const char *ps, const char *pe)
     }
 #endif
 
-#if 1
 #ifdef __SSE2__
     while (pe - ps >= 15) {
         const char *block = pe - 15;
@@ -1668,7 +1797,6 @@ __simd_skip_ws_bwd(const char *ps, const char *pe)
         pe = block - 1;
     }
 #endif /* __AVX2__ elif __SSE2__ */
-#endif
 
     /* Scalar tail: mirrors original "while ((pe>ps) && isspace(*pe)) pe--" */
     while (pe > ps && isspace((unsigned char)*pe)) pe--;
@@ -1753,18 +1881,20 @@ __simd_memmem(const char *haystack, int haystacklen,
     }
     return NULL;
 }
+#endif
 
-#endif /* __x86_64__ */
-
-/* Dispatch macros: use SIMD path on x86-64, fall back to scalar elsewhere */
-#if defined(__x86_64__) || defined(_M_X64)
+/* Dispatch macros: use SIMD path on x86-64 and RISCV,
+ * fall back to scalar elsewhere
+ */
+#if defined(__x86_64__) || defined(_M_X64) || \
+    (defined(__riscv_v) && defined(__riscv_v_intrinsic))
 # define FAST_MEMMEM(hs,hl,nd,nl)       __simd_memmem((hs),(hl),(nd),(nl))
 # define FAST_SKIP_WS_FWD(ps,pe)        __simd_skip_ws_fwd((ps),(pe))
 # define FAST_SKIP_WS_BWD(ps,pe)        __simd_skip_ws_bwd((ps),(pe))
 #else
 # define FAST_MEMMEM(hs,hl,nd,nl)       __zeroxml_memmem((hs),(hl),(nd),(nl))
-# define FAST_SKIP_WS_FWD(ps,pe)        do { const char *_p=(ps); while(_p<(pe)&&isspace((unsigned char)*_p))_p++; _p; } while(0)
-# define FAST_SKIP_WS_BWD(ps,pe)        do { const char *_p=(pe); while(_p>(ps)&&isspace((unsigned char)*_p))_p--; _p; } while(0)
+# define FAST_SKIP_WS_FWD(ps,pe)        ({ const char *_p=(ps); while(_p<(pe)&&isspace((unsigned char)*_p))_p++; _p; })
+# define FAST_SKIP_WS_BWD(ps,pe)        ({ const char *_p=(pe); while(_p>(ps)&&isspace((unsigned char)*_p))_p--; _p; })
 #endif
 
 
