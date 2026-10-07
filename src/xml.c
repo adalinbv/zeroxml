@@ -110,6 +110,7 @@ static char __zeroxml_strerror[BUF_LEN+1];
 static char __zeroxml_filename[FILENAME_LEN+1];
 #endif
 
+#define ISSPACE(a)      (isspace((unsigned char)a))
 
 XML_API xmlId* XML_APIENTRY
 xmlOpen(const char *filename)
@@ -610,7 +611,7 @@ xmlAttributeCopyName(const xmlId *id, char *buf, int buflen, int pos)
         pe = xid->start - 1;
         while (ps<pe)
         {
-            while ((ps<pe) && isspace(*ps)) ps++;
+            while ((ps<pe) && ISSPACE(*ps)) ps++;
 
             new = MEMCHR(ps, '=', pe-ps);
             if (!new) break;
@@ -618,7 +619,7 @@ xmlAttributeCopyName(const xmlId *id, char *buf, int buflen, int pos)
             if (num++ == pos)
             {
                 pe = new-1;
-                while ((pe>ps) && isspace(*pe)) pe--;
+                while ((pe>ps) && ISSPACE(*pe)) pe--;
                 slen = (pe-ps)+1;
 
                 if (slen >= buflen)
@@ -686,7 +687,7 @@ xmlAttributeCompareName(const xmlId *id, int pos, const char *str)
         pe = xid->start - 1;
         while (ps<pe)
         {
-            while ((ps<pe) && isspace(*ps)) ps++;
+            while ((ps<pe) && ISSPACE(*ps)) ps++;
 
             new = MEMCHR(ps, '=', pe-ps);
             if (!new) break;
@@ -1751,8 +1752,8 @@ __simd_skip_ws_fwd(const char *ps, const char *pe)
     }
 #endif /* __AVX2__ elif __SSE2__ */
 
-    /* Scalar tail: mirrors original "while ((ps<pe) && isspace(*ps)) ps++" */
-    while (ps < pe && isspace((unsigned char)*ps)) ps++;
+    /* Scalar tail: mirrors original "while ((ps<pe) && ISSPACE(*ps)) ps++" */
+    while (ps < pe && ISSPACE(*ps)) ps++;
     return ps;
 }
 
@@ -1842,8 +1843,8 @@ __simd_skip_ws_bwd(const char *ps, const char *pe)
     }
 #endif /* __AVX2__ elif __SSE2__ */
 
-    /* Scalar tail: mirrors original "while ((pe>ps) && isspace(*pe)) pe--" */
-    while (pe > ps && isspace((unsigned char)*pe)) pe--;
+    /* Scalar tail: mirrors original "while ((pe>ps) && ISSPACE(*pe)) pe--" */
+    while (pe > ps && ISSPACE(*pe)) pe--;
     return pe;
 }
 
@@ -1984,8 +1985,8 @@ static const char* __attribute__((hot)) __simd_memmem(const char *haystack, int 
 # define FAST_SKIP_WS_FWD(ps,pe)        __simd_skip_ws_fwd((ps),(pe))
 # define FAST_SKIP_WS_BWD(ps,pe)        __simd_skip_ws_bwd((ps),(pe))
 #else
-# define FAST_SKIP_WS_FWD(ps,pe)        ({ const char *_p=(ps); while(_p<(pe)&&isspace((unsigned char)*_p))_p++; _p; })
-# define FAST_SKIP_WS_BWD(ps,pe)        ({ const char *_p=(pe); while(_p>(ps)&&isspace((unsigned char)*_p))_p--; _p; })
+# define FAST_SKIP_WS_FWD(ps,pe)        ({ const char *_p=(ps); while(_p<(pe)&&ISSPACE(*_p))_p++; _p; })
+# define FAST_SKIP_WS_BWD(ps,pe)        ({ const char *_p=(pe); while(_p>(ps)&&ISSPACE(*_p))_p--; _p; })
 #endif
 
 
@@ -2041,7 +2042,7 @@ __zeroxml_get_attribute_data_ptr(const struct _xml_id *id, const char *name, int
         while (ps<pe)
         {
             int slen = (int)(pe-ps);
-            while ((ps<pe) && isspace(*ps)) ps++;
+            while ((ps<pe) && ISSPACE(*ps)) ps++;
 
             if (!LSTRNCMP(cd, name, ps, &slen))
             {
@@ -2080,13 +2081,13 @@ __zeroxml_get_attribute_data_ptr(const struct _xml_id *id, const char *name, int
                 }
                 else
                 {
-                    while ((ps<pe) && !isspace(*ps)) ps++;
+                    while ((ps<pe) && !ISSPACE(*ps)) ps++;
                     continue;
                 }
 
                 break;
             }
-            while ((ps<pe) && !isspace(*ps)) ps++;
+            while ((ps<pe) && !ISSPACE(*ps)) ps++;
         }
     }
 
@@ -2504,7 +2505,7 @@ __zeroxml_get_node(const struct _xml_id *xid, const cacheId *nc, const char **bu
         {
             const char *pe = new+restlen;
             const char *ps = new+elementlen+1;
-            while ((ps<pe) && isspace(*ps)) ps++;
+            while ((ps<pe) && ISSPACE(*ps)) ps++;
             if (*ps != '>') {
                 break;
             }
@@ -3417,7 +3418,6 @@ static const uint8_t __validname_table[256] = {
 
 #define VALIDNAME(a)    (__validname_table[(unsigned char)(a)])
 #define ISCLOSING(a)    ((unsigned char)(a) == '>' || (unsigned char)(a) == '/')
-#define ISSPACE(a)	(isspace(a))
 #define ISSEPARATOR(a)	(ISSPACE(a) || ISCLOSING(a))
 #define ISNUM(a)	(isdigit(a))
 static const char* __attribute__((hot))
