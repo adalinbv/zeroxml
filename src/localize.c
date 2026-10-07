@@ -87,10 +87,10 @@
  */
 #define BUFSIZE		1024
 int
-string_compare(const iconv_t cd, const char *s1, const char *s2, int *s2len)
+string_compare(const iconv_t cd, const char *s1, const char *s2, ssize_t *s2len)
 {
 #if defined(HAVE_ICONV_H) || defined(WIN32)
-    size_t s1len = strlen(s1);
+    ssize_t s1len = strlen(s1);
     int rv = -1;
 
     if (s1len > 0 && *s2len > 0)
@@ -100,7 +100,7 @@ string_compare(const iconv_t cd, const char *s1, const char *s2, int *s2len)
         char *inbuf = (char*)s2;
         size_t outbytesleft = BUFSIZE;
         size_t inbytesleft = *s2len; // strlen(s1);
-        size_t nconv;
+        ssize_t nconv;
 
         iconv(cd, NULL, NULL, NULL, NULL);
         nconv = iconv(cd, &inbuf, &inbytesleft, &outbuf, &outbytesleft);
@@ -144,7 +144,7 @@ __zeroxml_iconv(const struct _root_id *rid,
         if (cd != (iconv_t)-1)
         {
             char *ptr = (char*)inbuf;
-            size_t nconv;
+            ssize_t nconv;
             iconv(cd, NULL, NULL, NULL, NULL);
             nconv = iconv(cd, &ptr, &inbytesleft, &outbuf, &outbytesleft);
             if (nconv != (size_t)-1)
@@ -226,8 +226,8 @@ charset_to_identifier(const char *charset)
 }
 
 size_t
-iconv(iconv_t cd, char **inbuf, size_t *inbytesleft,
-                  char **outbuf, size_t *outbytesleft)
+iconv(iconv_t cd, char **inbuf, ssize_t *inbytesleft,
+                  char **outbuf, ssize_t *outbytesleft)
 {
     if (inbuf && *inbuf && inbytesleft &&
         outbuf && *outbuf && outbytesleft)

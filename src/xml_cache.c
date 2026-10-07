@@ -80,7 +80,7 @@ struct _xml_node
     /* XML node information */
     short int name_len;	/* lenght of the name of the XML node */
     const char *name;	/* name of the XML node */
-    int data_len;	/* lenght of the  data section of the XML node */
+    ssize_t data_len;	/* lenght of the  data section of the XML node */
     const char *data;	/* data section of the XML node */
 };
 
@@ -180,7 +180,7 @@ cacheNodeNew(const cacheId *nc)
 }
 
 void
-cacheDataSet(const cacheId *nc, const char *name, int namelen, const char *data, int datalen)
+cacheDataSet(const cacheId *nc, const char *name, ssize_t namelen, const char *data, ssize_t datalen)
 {
     struct _xml_node *cache = (struct _xml_node *)nc;
     if (cache)
@@ -197,7 +197,7 @@ cacheDataSet(const cacheId *nc, const char *name, int namelen, const char *data,
 }
 
 void
-cacheNodeAdd(const cacheId *n, const char *name, int namelen, const char *data, int datalen)
+cacheNodeAdd(const cacheId *n, const char *name, ssize_t namelen, const char *data, ssize_t datalen)
 {
     const cacheId *nc = cacheNodeNew(n);
     cacheDataSet(nc, name, namelen, data, datalen);
@@ -226,8 +226,8 @@ cacheNodeAdd(const cacheId *n, const char *name, int namelen, const char *data, 
            of an error
  */
 const char*
-__zeroxml_get_node_from_cache(const cacheId **nc, const char **buf, int *len,
-                      const char **element, int *elementlen, int *nodenum)
+__zeroxml_get_node_from_cache(const cacheId **nc, const char **buf, ssize_t *len,
+                      const char **element, ssize_t *elementlen, int *nodenum)
 {
     struct _xml_node *cache;
     const char *name = *element;
@@ -268,7 +268,7 @@ __zeroxml_get_node_from_cache(const cacheId **nc, const char **buf, int *len,
         }
         else
         {
-            int namelen = *elementlen;
+            ssize_t namelen = *elementlen;
             int i;
 
             found = 0;

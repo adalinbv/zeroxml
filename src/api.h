@@ -96,6 +96,7 @@
 # define UNICODE
 # include <windows.h>
 
+typedef intptr_t ssize_t;
 # define strtoll _strtoi64
 # define strcasecmp _stricmp
 # define strncasecmp _strnicmp
@@ -105,7 +106,7 @@ typedef const char* iconv_t;
 
 # define iconv_close(l)
 # define iconv_open(l,e)        (e)
-size_t iconv(iconv_t, char**, size_t*, char**, size_t*);
+size_t iconv(iconv_t, char**, ssize_t*, char**, ssize_t*);
 
 typedef struct
 {
@@ -161,7 +162,7 @@ void simple_unmmap(void*, int, SIMPLE_UNMMAP *);
 #define CASECMP(rid,a,b)	((CASE(rid,a)) == (CASE(rid,b)))
 #define LSTRNCMP(a,b,c,d)	string_compare((a),(b),(c),(d))
 
-int string_compare(iconv_t, const char*, const char*, int*);
+int string_compare(iconv_t, const char*, const char*, ssize_t*);
 int __zeroxml_iconv(const struct _root_id*, const char*, size_t, char*, size_t);
 
 #if defined(HAVE_LOCALE_H) && !defined(WIN32)
@@ -228,7 +229,7 @@ struct _root_id
     struct _root_id *root;
     const char *name;
     const char *start;
-    off_t len;
+    ssize_t len;
     const cacheId *node;
 
     /* _root_id specifics */
@@ -263,17 +264,17 @@ struct _xml_id
     struct _root_id *root;
     const char *name;
     const char *start;
-    off_t len;
+    ssize_t len;
     const cacheId *node;
 
     /* _xml_id specifics */
-    off_t name_len;
+    ssize_t name_len;
 };
 
 #define PRINT(s, b, c) { \
-  int l1 = (b), l2 = (c); \
+  ssize_t l1 = (b), l2 = (c); \
   if (s) { \
-    int q, len = l2; \
+    ssize_t q, len = l2; \
     if (l1 < l2) len = l1; \
     if (len < 50000) { \
         printf("(%i) '", len); \

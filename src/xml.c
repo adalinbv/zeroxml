@@ -91,21 +91,21 @@
 static double __zeroxml_strtod(const char*, char**, double);
 static long __zeroxml_strtol(const char*, char**, int, long);
 static int __zeroxml_strtob(const struct _root_id*, const char*, const char*, int);
-static void __zeroxml_prepare_data(const struct _root_id*, const char**, int*, char);
+static void __zeroxml_prepare_data(const struct _root_id*, const char**, ssize_t*, char);
 static char *__zeroxml_get_string(const xmlId*, char);
 static int __zeroxml_node_get_num(const xmlId*, const char*, char);
-static const char *__zeroxml_process_declaration(const struct _root_id*, const char*, int, char*);
-static const char *__zeroxml_node_get_path(const struct _xml_id*, const cacheId**, const char*, int*,  const char**, int*);
-static const char *__zeroxml_get_node(const struct _xml_id*, const cacheId*, const char**, int*,  const char**, int*, int*, char);
+static const char *__zeroxml_process_declaration(const struct _root_id*, const char*, ssize_t, char*);
+static const char *__zeroxml_node_get_path(const struct _xml_id*, const cacheId**, const char*, ssize_t*,  const char**, ssize_t*);
+static const char *__zeroxml_get_node(const struct _xml_id*, const cacheId*, const char**, ssize_t*, const char**, ssize_t*, int*, char);
 static xmlId *__zeroxml_get_node_pos(const xmlId*, xmlId*, const char*, int, char);
-static const char *__zeroxml_get_attribute_data_ptr(const struct _xml_id*, const char *, int*);
+static const char *__zeroxml_get_attribute_data_ptr(const struct _xml_id*, const char *, ssize_t*);
 static void __zeroxml_set_error(const struct _xml_id*, const char*, const char*, int);
 
 static const char *comment = XML_COMMENT;
 static struct _zeroxml_error __zeroxml_info = { NULL, 0 };
 static const char *__zeroxml_error_str[XML_MAX_ERROR];
 #ifndef NDEBUG
-static void __zeroxml_set_error_debug(const struct _xml_id*, const char*, const char*, int, const char*, size_t);
+static void __zeroxml_set_error_debug(const struct _xml_id*, const char*, const char*, int, const char*, ssize_t);
 static char __zeroxml_strerror[BUF_LEN+1];
 static char __zeroxml_filename[FILENAME_LEN+1];
 #endif
@@ -151,6 +151,13 @@ xmlOpenFlags(const char *filename, enum xmlFlags flags)
                 }
 
                 fstat(fd, &statbuf);
+                if (statbuf.st_size > SSIZE_MAX)
+                {
+                    free(rid);
+                    close(fd);
+                    return NULL;
+                }
+
                 mm = simple_mmap(fd, (int)statbuf.st_size, &rid->un);
                 if (mm == (void *)MMAP_ERROR)
                 {
@@ -163,7 +170,7 @@ xmlOpenFlags(const char *filename, enum xmlFlags flags)
                 }
                 else
                 {
-                    int blocklen = statbuf.st_size;
+                    ssize_t blocklen = statbuf.st_size;
                     char *encoding = (char*)&rid->encoding;
                     const char *start;
 #if defined(HAVE_LOCALE_H) && !defined(WIN32)
@@ -179,9 +186,10 @@ xmlOpenFlags(const char *filename, enum xmlFlags flags)
                     if (CACHED_NODES(rid))
                     {
                         const char *n = "*";
-                        int num = -1, nlen = 1;
                         const char *ret, *new = start;
-                        int len = blocklen;
+                        ssize_t len = blocklen;
+                        ssize_t nlen = 1;
+                        int num = -1;
 
                         rid->node = cacheInit(rid);
                         ret = __zeroxml_get_node((struct _xml_id*)rid,
@@ -243,9 +251,10 @@ xmlInitBuffer(const char *buffer, int blocklen)
 }
 
 XML_API xmlId* XML_APIENTRY
-xmlInitBufferFlags(const char *buffer, int blocklen, enum xmlFlags flags)
+xmlInitBufferFlags(const char *buffer, int bufferlen, enum xmlFlags flags)
 {
     struct _root_id *rid = 0;
+    ssize_t blocklen = bufferlen;
 
 # ifndef NDEBUG
     snprintf(__zeroxml_filename, FILENAME_LEN, "XML buffer");
@@ -283,9 +292,10 @@ xmlInitBufferFlags(const char *buffer, int blocklen, enum xmlFlags flags)
             if (CACHED_NODES(rid))
             {
                 const char *n = "*";
-                int num = -1, nlen = 1;
                 const char *ret, *new = start;
-                int len = blocklen;
+                ssize_t len = blocklen;
+                ssize_t nlen = 1;
+                int num = -1;
 
                 rid->node = cacheInit(rid);
                 ret = __zeroxml_get_node((struct _xml_id*)rid,
@@ -439,7 +449,7 @@ xmlNodeTest(const xmlId *id, const char *path)
     const struct _xml_id *xid = (const struct _xml_id *)id;
     const cacheId *nc, *nnc;
     const char *node;
-    int len, slen;
+    ssize_t len, slen;
     int rv;
 
     assert(id != 0);
@@ -471,7 +481,7 @@ xmlNodeGet(const xmlId *id, const char *path)
     struct _xml_id *xsid = NULL;
     const  cacheId *nc, *nnc;
     const char *ptr, *node;
-    int len, slen;
+    ssize_t len, slen;
 
     assert(id != 0);
     assert(path != 0);
@@ -535,7 +545,7 @@ xmlNodeGetName(const xmlId *id)
 {
     const struct _xml_id *xid = (const struct _xml_id *)id;
     const struct _root_id *rid = xid->root;
-    int len;
+    ssize_t len;
     char *rv;
 
     assert(xid != 0);
@@ -558,7 +568,8 @@ xmlNodeCopyName(const xmlId *id, char *buf, int buflen)
 {
     const struct _xml_id *xid = (const struct _xml_id *)id;
     const struct _root_id *rid = xid->root;
-    int res, slen = 0;
+    ssize_t slen = 0;
+    int res;
 
     assert(buf != 0);
     assert(buflen > 0);
@@ -580,8 +591,9 @@ XML_API int XML_APIENTRY
 xmlNodeCompareName(const xmlId *id, const char *str)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    int slen = str ? strlen(str) : 0;
-    int nlen, rv = XML_TRUE;
+    ssize_t slen = str ? strlen(str) : 0;
+    int rv = XML_TRUE;
+    ssize_t nlen;
 
     nlen = xid->name_len;
     if (nlen >= slen)
@@ -598,7 +610,7 @@ xmlAttributeCopyName(const xmlId *id, char *buf, int buflen, int pos)
 {
     const struct _xml_id *xid = (const struct _xml_id *)id;
     const struct _root_id *rid = xid->root;
-    int slen = 0;
+    ssize_t slen = 0;
 
     assert(buf != 0);
     assert(buflen > 0);
@@ -656,7 +668,7 @@ xmlAttributeGetName(const xmlId *id, int pos)
     const struct _root_id *rid = xid->root;
     char buf[4096];
     char *rv;
-    int len;
+    ssize_t len;
 
     assert(xid != 0);
 
@@ -701,7 +713,7 @@ xmlAttributeCompareName(const xmlId *id, int pos, const char *str)
             if (num++ == pos)
             {
                 iconv_t cd = xid->root->cd;
-                int slen = new-ps;
+                ssize_t slen = new-ps;
                 rv = LSTRNCMP(cd, str, ps, &slen);
                 break;
             }
@@ -816,7 +828,8 @@ xmlCopyString(const xmlId *id, char *buf, int buflen)
     if (xid->len)
     {
         const char *ps;
-        int res, len;
+        ssize_t len;
+        int res;
 
         ps = xid->start;
         len = xid->len;
@@ -851,7 +864,7 @@ xmlCompareString(const xmlId *id, const char *s)
     {
         iconv_t cd = xid->root->cd;
         const char *ps;
-        int len;
+        ssize_t len;
 
         ps = xid->start;
         len = xid->len;
@@ -876,7 +889,7 @@ xmlNodeGetString(const xmlId *id, const char *path)
     {
         const char *node, *str;
         const cacheId *nc;
-        int len, slen;
+        ssize_t len, slen;
 
         len = xid->len;
         slen = strlen(path);
@@ -920,9 +933,10 @@ xmlNodeCopyString(const xmlId *id, const char *path, char *buf, int buflen)
     if (xid->len)
     {
         const char *ptr, *node = (const char *)path;
-        int res, slen = strlen(node);
-        int len = xid->len;
+        ssize_t slen = strlen(node);
+        ssize_t len = xid->len;
         const cacheId *nc;
+        int res;
 
         nc = cacheNodeGet(id);
         ptr = __zeroxml_node_get_path(xid, &nc, xid->start, &len, &node, &slen);
@@ -965,7 +979,7 @@ xmlNodeCompareString(const xmlId *id, const char *path, const char *s)
     {
         const char *node, *str;
         const cacheId *nc;
-        int len, slen;
+        ssize_t len, slen;
 
         len = xid->len;
         slen = strlen(path);
@@ -997,7 +1011,7 @@ xmlGetBool(const xmlId *id)
     {
         const struct _root_id *rid = xid->root;
         const char *ps = xid->start;
-        int len = xid->len;
+        ssize_t len = xid->len;
 
         __zeroxml_prepare_data(rid, &ps, &len, STRIPPED);
         if (len)
@@ -1024,7 +1038,7 @@ xmlNodeGetBool(const xmlId *id, const char *path)
     {
         const char *ps, *ptr, *node;
         const cacheId *nc;
-        int len, slen;
+        ssize_t len, slen;
 
         ps = xid->start;
         len = xid->len;
@@ -1063,7 +1077,7 @@ xmlGetInt(const xmlId *id)
     {
         const struct _root_id *rid = xid->root;
         const char *ps = xid->start;
-        int len = xid->len;
+        ssize_t len = xid->len;
 
         __zeroxml_prepare_data(rid, &ps, &len, STRIPPED);
         if (len)
@@ -1090,7 +1104,7 @@ xmlNodeGetInt(const xmlId *id, const char *path)
     {
         const char *ps, *ptr, *node;
         const cacheId *nc;
-        int len, slen;
+        ssize_t len, slen;
 
         ps = xid->start;
         len = xid->len;
@@ -1129,7 +1143,7 @@ xmlGetDouble(const xmlId *id)
     {
         const struct _root_id *rid = xid->root;
         const char *ps = xid->start;
-        int len = xid->len;
+        ssize_t len = xid->len;
 
         __zeroxml_prepare_data(rid, &ps, &len, STRIPPED);
         if (len)
@@ -1156,7 +1170,7 @@ xmlNodeGetDouble(const xmlId *id, const char *path)
     {
         const char *ps, *ptr, *node;
         const cacheId *nc;
-        int len, slen;
+        ssize_t len, slen;
 
         ps = xid->start;
         len = xid->len;
@@ -1230,7 +1244,7 @@ xmlAttributeExists(const xmlId *id, const char *name)
 
     if (xid->name_len && xid->name != comment)
     {
-        int len;
+        ssize_t len;
         rv = __zeroxml_get_attribute_data_ptr(xid, name, &len) ? XML_TRUE : XML_FALSE;
     }
     return rv;
@@ -1245,7 +1259,7 @@ xmlAttributeGetDouble(const xmlId *id, const char *name)
     if (xid->name_len && xid->name != comment)
     {
         const char *ptr;
-        int len;
+        ssize_t len;
 
         ptr = __zeroxml_get_attribute_data_ptr(xid, name, &len);
         if (ptr)
@@ -1267,7 +1281,7 @@ xmlAttributeGetBool(const xmlId *id, const char *name)
     if (xid->name_len && xid->name != comment)
     {
         const char *ptr;
-        int len;
+        ssize_t len;
 
         ptr = __zeroxml_get_attribute_data_ptr(xid, name, &len);
         if (ptr)
@@ -1288,7 +1302,7 @@ xmlAttributeGetInt(const xmlId *id, const char *name)
     if (xid->name_len && xid->name != comment)
     {
         const char *ptr;
-        int len;
+        ssize_t len;
 
         ptr = __zeroxml_get_attribute_data_ptr(xid, name, &len);
         if (ptr)
@@ -1309,8 +1323,8 @@ xmlAttributeGetString(const xmlId *id, const char *name)
 
     if (xid->name_len && xid->name != comment)
     {
-        int len;
         const char *ptr;
+        ssize_t len;
 
         ptr = __zeroxml_get_attribute_data_ptr(xid, name, &len);
         if (ptr)
@@ -1339,7 +1353,7 @@ xmlAttributeCopyString(const xmlId *id, const char *name,
     if (xid->name_len && xid->name != comment)
     {
         const char *ptr;
-        int len;
+        ssize_t len;
 
         assert(buf != 0);
         assert(buflen > 0);
@@ -1348,7 +1362,8 @@ xmlAttributeCopyString(const xmlId *id, const char *name,
         ptr = __zeroxml_get_attribute_data_ptr(xid, name, &len);
         if (ptr)
         {
-            int res, restlen = len;
+            ssize_t restlen = len;
+            int res;
             if (restlen >= buflen)
             {
                 restlen = buflen-1;
@@ -1372,7 +1387,7 @@ xmlAttributeCompareString(const xmlId *id, const char *name, const char *s)
     if (xid->name_len && xid->name != comment)
     {
         const char *ptr;
-        int len;
+        ssize_t len;
 
         assert(s != 0);
 
@@ -1552,10 +1567,10 @@ xmlErrorGetString(const xmlId *id, int clear)
 
 /* -------------------------------------------------------------------------- */
 
-static const char *__zeroxmlProcessCDATA(const char**, int*, char);
+static const char *__zeroxmlProcessCDATA(const char**, ssize_t*, char);
 
 static const char *__zeroxml_memncasestr(const struct _root_id*, const char*, int, const char*);
-static const char *__zeroxml_memncasecmp(const struct _root_id*, const char**, int*, const char**, int*);
+static const char *__zeroxml_memncasecmp(const struct _root_id*, const char**, ssize_t*, const char**, ssize_t*);
 
 /* -------------------------------------------------------------------------- */
 /* SIMD-accelerated helper functions                                          */
@@ -1584,11 +1599,11 @@ static inline const char *
 __simd_skip_ws_fwd(const char *ps, const char *pe)
 {
     // pe is inclusive, so total length is (pe - ps + 1)
-    size_t n = (pe >= ps) ? (pe - ps + 1) : 0;
+    ssize_t n = (pe >= ps) ? (pe - ps + 1) : 0;
 
     while (n > 0) {
         // Dynamically set vector length for 8-bit elements
-        size_t vl = __riscv_vsetvl_e8m1(n);
+        ssize_t vl = __riscv_vsetvl_e8m1(n);
         vint8m1_t chunk = __riscv_vle8_v_i8m1((const int8_t *)ps, vl);
 
         // Compare against whitespace characters
@@ -1625,11 +1640,11 @@ static inline const char *
 __simd_skip_ws_bwd(const char *ps, const char *pe)
 {
     // Total length from pe down to ps (inclusive)
-    size_t n = (pe >= ps) ? (pe - ps + 1) : 0;
+    ssize_t n = (pe >= ps) ? (pe - ps + 1) : 0;
 
     while (n > 0) {
         // Set vector length for 8-bit elements
-        size_t vl = __riscv_vsetvl_e8m1(n);
+        ssize_t vl = __riscv_vsetvl_e8m1(n);
 
         // Load the chunk ending at pe
         // We calculate the start of this specific chunk
@@ -1668,8 +1683,8 @@ __simd_skip_ws_bwd(const char *ps, const char *pe)
 }
 
 static const char *
-__simd_memmem(const char *haystack, int haystacklen,
-              const char *needle,   int needlelen)
+__simd_memmem(const char *haystack, ssize_t haystacklen,
+              const char *needle,   ssize_t needlelen)
 {
     if (needlelen == 0) return haystack;
     if (needlelen > haystacklen) return NULL;
@@ -1681,8 +1696,8 @@ __simd_memmem(const char *haystack, int haystacklen,
 
     while (hs <= last_start) {
         // Calculate remaining bytes from current hs to last possible start
-        size_t n = last_start - hs + 1;
-        size_t vl = __riscv_vsetvl_e8m1(n);
+        ssize_t n = last_start - hs + 1;
+        ssize_t vl = __riscv_vsetvl_e8m1(n);
 
         vint8m1_t chunk = __riscv_vle8_v_i8m1((const int8_t *)hs, vl);
         vbool8_t mask = __riscv_vmseq_vx_i8m1_b8(chunk, (int8_t)first, vl);
@@ -1875,8 +1890,8 @@ __simd_skip_ws_bwd(const char *ps, const char *pe)
  *   the short needles that appear in XML parsing ("-->", "]]>", "?>", etc.).
  */
 static const char *
-__simd_memmem(const char *haystack, int haystacklen,
-              const char *needle,   int needlelen)
+__simd_memmem(const char *haystack, ssize_t haystacklen,
+              const char *needle,   ssize_t needlelen)
 {
     if (needlelen == 0) return haystack;
     if (needlelen  > haystacklen) return NULL;
@@ -1955,7 +1970,7 @@ __simd_memmem(const char *haystack, int haystacklen,
  * @param needlelen the length of the needle to search for
  * @return a pointer to the located sub-string, or NULL if not found
  */
-static const char* __attribute__((hot)) __simd_memmem(const char *haystack, int haystacklen, const char *needle, int needlelen)
+static const char* __attribute__((hot)) __simd_memmem(const char *haystack, ssize_t haystacklen, const char *needle, ssize_t needlelen)
 {
     const char *rv = NULL;
     int first;
@@ -2036,7 +2051,7 @@ static const char *__zeroxml_error_str[XML_MAX_ERROR] =
  * @retrun a pointer to attribute data or NULL in case of an error
  */
 static const char* __attribute__((hot))
-__zeroxml_get_attribute_data_ptr(const struct _xml_id *id, const char *name, int *len)
+__zeroxml_get_attribute_data_ptr(const struct _xml_id *id, const char *name, ssize_t *len)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
     const char *rv = NULL;
@@ -2057,7 +2072,7 @@ __zeroxml_get_attribute_data_ptr(const struct _xml_id *id, const char *name, int
         pe = xid->start - 1;
         while (ps<pe)
         {
-            int slen = (int)(pe-ps);
+            ssize_t slen = (int)(pe-ps);
             while ((ps<pe) && ISSPACE(*ps)) ps++;
 
             if (!LSTRNCMP(cd, name, ps, &slen))
@@ -2145,11 +2160,11 @@ __zeroxml_get_attribute_data_ptr(const struct _xml_id *id, const char *name, int
  * @retrun a pointer to the section containing the last node in the path
  */
 const char* __attribute__((hot))
-__zeroxml_node_get_path(const struct _xml_id *xid, const cacheId **nc, const char *start, int *len, const char **name, int *nlen)
+__zeroxml_node_get_path(const struct _xml_id *xid, const cacheId **nc, const char *start, ssize_t *len, const char **name, ssize_t *nlen)
 {
     const char *path, *end;
     const char *rv = NULL;
-    int pathlen;
+    ssize_t pathlen;
 
     assert(start != 0);
     assert(len != 0);
@@ -2171,8 +2186,9 @@ __zeroxml_node_get_path(const struct _xml_id *xid, const cacheId **nc, const cha
 
     if (path < end)
     {
-        int num, blocklen, nodelen;
+        ssize_t blocklen, nodelen;
         const char *new, *node, *p;
+        int num;
 
         node = path;
         nodelen = end - node;
@@ -2280,7 +2296,7 @@ __zeroxml_node_get_path(const struct _xml_id *xid, const cacheId **nc, const cha
 #endif
 
 const char* __attribute__((hot))
-__zeroxml_get_node(const struct _xml_id *xid, const cacheId *nc, const char **buf, int *len, const char **name, int *rlen, int *nodenum, char mode)
+__zeroxml_get_node(const struct _xml_id *xid, const cacheId *nc, const char **buf, ssize_t *len, const char **name, ssize_t *rlen, int *nodenum, char mode)
 {
 #ifndef NDEBUG
     const char *end = *buf + *len;
@@ -2290,8 +2306,8 @@ __zeroxml_get_node(const struct _xml_id *xid, const cacheId *nc, const char **bu
     const char *element, *start_tag = 0;
     const char *rptr, *start = NULL;
     const char *new, *cur;
-    int restlen, elementlen;
-    int open_len = *rlen;
+    ssize_t restlen, elementlen;
+    ssize_t open_len = *rlen;
     const cacheId *nnc = NULL;
     const char *rv = NULL;
     int found;
@@ -2374,7 +2390,7 @@ __zeroxml_get_node(const struct _xml_id *xid, const cacheId *nc, const char **bu
         if (cur[0] == '!' || cur[0] == '?')
         {
             const char *start = cur;
-            int blocklen = restlen;
+            ssize_t blocklen = restlen;
             assert(cur+restlen == end);
             new = __zeroxmlProcessCDATA(&start, &blocklen, mode);
             if (!new && start && open_len) { /* CDATA */
@@ -2493,7 +2509,7 @@ __zeroxml_get_node(const struct _xml_id *xid, const cacheId *nc, const char **bu
             while (cur[0] == '!')
             {
                 const char *start = cur;
-                int blocklen = restlen;
+                ssize_t blocklen = restlen;
                 new = __zeroxmlProcessCDATA(&start, &blocklen, mode);
                 if (!new && start && open_len) { /* CDATA */
                     SET_ERROR_AND_RETURN(start, XML_INVALID_COMMENT);
@@ -2584,8 +2600,8 @@ __zeroxml_get_node(const struct _xml_id *xid, const cacheId *nc, const char **bu
         {
             /* No leaf node, continue */
             const char *node = "*";
-            int slen = restlen+1; /* due to cur-1 below*/
-            int nlen = 1;
+            ssize_t slen = restlen+1; /* due to cur-1 below*/
+            ssize_t nlen = 1;
             int pos = -1;
 
             /*
@@ -2663,7 +2679,7 @@ __zeroxml_get_node_pos(const xmlId *pid, xmlId *id, const char *name, int nodenu
     struct _xml_id *xid = (struct _xml_id *)id;
     const char *ptr, *new;
     const cacheId *nc;
-    int len, slen;
+    ssize_t len, slen;
     xmlId *rv = NULL;
 
     assert(xpid != 0);
@@ -2723,7 +2739,7 @@ __zeroxml_node_get_num(const xmlId *id, const char *path, char mode)
     {
         const char *nodename = (*path == '/') ? path+1 : path;
         const char *end = path + strlen(path);
-        int len, slen = end-nodename;
+        ssize_t len, slen = end-nodename;
         const char *pathname, *ptr;
         const cacheId *nc;
 
@@ -2731,10 +2747,10 @@ __zeroxml_node_get_num(const xmlId *id, const char *path, char mode)
         if ((pathname = strchr(nodename, '/')) != NULL)
         {
             const char *node = ++pathname;
+            ssize_t nlen = end - node;
             len = xid->len;
-            slen = end-node;
-            ptr = __zeroxml_node_get_path(xid, &nc, xid->start, &len, &node, &slen);
-            if (ptr == NULL && slen == 0) {
+            ptr = __zeroxml_node_get_path(xid, &nc, xid->start, &len, &node, &nlen);
+            if (ptr == NULL && nlen == 0) {
                 SET_ERROR(xid, node, node, len);
             }
             nodename = pathname; /* leaf name for the count call below */
@@ -2790,7 +2806,7 @@ __zeroxml_get_string(const xmlId *id, char mode)
     if (xid->len)
     {
         const char *ps = xid->start;
-        int len = xid->len;
+        ssize_t len = xid->len;
 
         if (mode == STRIPPED) {
              __zeroxml_prepare_data(rid, &ps, &len, mode);
@@ -2828,11 +2844,11 @@ __zeroxml_get_string(const xmlId *id, char mode)
  * @return a pointer right after the XML comment or CDATA section
  */
 const char*
-__zeroxmlProcessCDATA(const char **start, int *len, char mode)
+__zeroxmlProcessCDATA(const char **start, ssize_t *len, char mode)
 {
     const char *new = *start;
     const char *cur = new;
-    int restlen = *len;
+    ssize_t restlen = *len;
 
     /* comment: "<!---->" */
     if ((restlen >= 7) && (MEMCMP(cur, "!--", 3) == 0))
@@ -2933,7 +2949,7 @@ __zeroxmlProcessCDATA(const char **start, int *len, char mode)
  * @return a pointer to the memory location right after the declaration
  */
 static const char*
-__zeroxml_process_byte_order_mark(const struct _root_id *rid, const char *start, int len, char *locale)
+__zeroxml_process_byte_order_mark(const struct _root_id *rid, const char *start, ssize_t len, char *locale)
 {
     const char *rv = start;
 
@@ -3009,7 +3025,7 @@ __zeroxml_process_byte_order_mark(const struct _root_id *rid, const char *start,
  * @return a pointer to the memory location right after the declaration
  */
 const char*
-__zeroxml_process_declaration(const struct _root_id *rid, const char *start, int len, char *locale)
+__zeroxml_process_declaration(const struct _root_id *rid, const char *start, ssize_t len, char *locale)
 {
     const char *cur = start;
     const char *rv = start;
@@ -3042,7 +3058,7 @@ __zeroxml_process_declaration(const struct _root_id *rid, const char *start, int
             element = "encoding=\"";
             if ((new = __zeroxml_memncasestr(rid, cur, len, element)) != NULL)
             {
-                int elementlen = strlen(element);
+                ssize_t elementlen = strlen(element);
                 len -= new-cur+elementlen;
                 cur = new+elementlen;
                 if ((end = MEMCHR(cur, '"', len)) != NULL)
@@ -3052,14 +3068,14 @@ __zeroxml_process_declaration(const struct _root_id *rid, const char *start, int
                     len = end - cur;
                     if (len >= MAX_ENCODING) len = MAX_ENCODING;
                     res = strncasecmp(locale, "UTF-8", len);
-                    if (!res) res = strncasecmp(locale, "UTF-16BE", len);;
-                    if (!res) res = strncasecmp(locale, "UTF-16LE", len);;
-                    if (!res) res = strncasecmp(locale, "UTF-32BE", len);;
-                    if (!res) res = strncasecmp(locale, "UTF-32LE", len);;
-                    if (!res) res = strncasecmp(locale, "SCSU", len);;
-                    if (!res) res = strncasecmp(locale, "BOCU-1", len);;
-                    if (!res) res = strncasecmp(locale, "GB18030", len);
-                    if (res)
+                    if (res) res = strncasecmp(locale, "UTF-16BE", len);
+                    if (res) res = strncasecmp(locale, "UTF-16LE", len);
+                    if (res) res = strncasecmp(locale, "UTF-32BE", len);
+                    if (res) res = strncasecmp(locale, "UTF-32LE", len);
+                    if (res) res = strncasecmp(locale, "SCSU", len);
+                    if (res) res = strncasecmp(locale, "BOCU-1", len);
+                    if (res) res = strncasecmp(locale, "GB18030", len);
+                    if (!res)
                     {
                         memcpy(locale, cur, len);
                         locale[len] = 0;
@@ -3089,9 +3105,9 @@ __zeroxml_process_declaration(const struct _root_id *rid, const char *start, int
    or not (STRIPPED)
  */
 static void
-__zeroxml_prepare_data(const struct _root_id *rid, const char **start, int *blocklen, char mode)
+__zeroxml_prepare_data(const struct _root_id *rid, const char **start, ssize_t *blocklen, char mode)
 {
-    int restlen = *blocklen;
+    ssize_t restlen = *blocklen;
     const char *ps = *start;
     const char *pe = ps + restlen;
 
@@ -3197,7 +3213,7 @@ __zeroxml_set_error(const struct _xml_id *id, const char *start, const char *pos
 
 #ifndef NDEBUG
 void
-__zeroxml_set_error_debug(const struct _xml_id *id, const char *start, const char *pos, int err_no, const char *func, size_t line)
+__zeroxml_set_error_debug(const struct _xml_id *id, const char *start, const char *pos, int err_no, const char *func, ssize_t line)
 {
     __zeroxml_info.func = func;
     __zeroxml_info.line_no = line;
@@ -3228,7 +3244,7 @@ __zeroxml_set_error_debug(const struct _xml_id *id, const char *start, const cha
 static long
 __zeroxml_strtol(const char *str, char **end, int base, long rv)
 {
-    int len = *end - str;
+    ssize_t len = *end - str;
     long val;
 
     if (len >= 2)
@@ -3295,7 +3311,7 @@ __zeroxml_strtob(const struct _root_id *rid, const char *start, const char *end,
     val = __zeroxml_strtol(start, &ptr, 10, rv) ? XML_TRUE : XML_FALSE;
     if (ptr == start)
     {
-        int len = end-start;
+        ssize_t len = end - start;
         if (!STRNCMP(rid, start, "off", len)
             || !STRNCMP(rid, start, "no", len)
             || !STRNCMP(rid, start, "false", len))
@@ -3327,7 +3343,7 @@ static const char*
 __zeroxml_memncasestr(const struct _root_id *rid, const char *haystack, int haystacklen, const char *needle)
 {
     const char *rv = NULL;
-    int needlelen;
+    ssize_t needlelen;
 
     assert(needle);
 
@@ -3451,8 +3467,8 @@ static const uint8_t __validname_table[256] = {
 #define ISNUM(a)	(isdigit(a))
 static const char* __attribute__((hot))
 __zeroxml_memncasecmp(const struct _root_id *rid,
-                      const char **haystack_ptr, int *haystacklen,
-                      const char **needle, int *needlelen)
+                      const char **haystack_ptr, ssize_t *haystacklen,
+                      const char **needle, ssize_t *needlelen)
 {
     const char *haystack;
     const char *rptr = 0;
@@ -3503,7 +3519,7 @@ __zeroxml_memncasecmp(const struct _root_id *rid,
             else
             {
                 // the above test assures *haystacklen >= *needlelen
-                int i = *needlelen;
+                ssize_t i = *needlelen;
                 do
                 {
                     /* does it match or is it a wildcard character? */
@@ -3590,7 +3606,7 @@ __zeroxml_memncasecmp(const struct _root_id *rid,
  *         (void *) MMAP_ERROR) is returned.
  */
 void*
-simple_mmap(int fd, int length, SIMPLE_UNMMAP *un)
+simple_mmap(int fd, ssize_t length, SIMPLE_UNMMAP *un)
 {
     HANDLE f;
     HANDLE m;
@@ -3627,7 +3643,7 @@ simple_mmap(int fd, int length, SIMPLE_UNMMAP *un)
  * @param un a structure to hold some Windows specific parameters
  */
 void
-simple_unmmap(void *addr, int length, SIMPLE_UNMMAP *un)
+simple_unmmap(void *addr, ssize_t length, SIMPLE_UNMMAP *un)
 {
     UnmapViewOfFile(un->p);
     CloseHandle(un->m);

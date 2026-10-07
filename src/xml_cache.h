@@ -117,7 +117,7 @@ const cacheId *cacheNodeGet(const xmlId *xid);
  * @param data a pointer to the node data section
  * @param datalen the length of the node data section
  */
-void cacheDataSet(const cacheId *cid, const char *name, int namelen, const char *data, int datalen);
+void cacheDataSet(const cacheId *cid, const char *name, ssize_t namelen, const char *data, ssize_t datalen);
 
 /**
  * Allocate a new XML-node in the XML-tree and set all data for the Cache-id.
@@ -130,7 +130,7 @@ void cacheDataSet(const cacheId *cid, const char *name, int namelen, const char 
  * @param data a pointer to the node data section
  * @param datalen the length of the node data section
  */
-void cacheNodeAdd(const cacheId *cid, const char *name, int namelen, const char *data, int datalen);
+void cacheNodeAdd(const cacheId *cid, const char *name, ssize_t namelen, const char *data, ssize_t datalen);
 
 /**
  * Get the data from a cached node.
@@ -150,7 +150,7 @@ void cacheNodeAdd(const cacheId *cid, const char *name, int namelen, const char 
  * @param nodenum which occurence of the node name to look for
  * @return a pointer right after the section or NULL in case of an error
  */
-const char* __zeroxml_get_node_from_cache(const cacheId **cid, const char **start, int *len, const char **name, int *rlen , int *nodenum);
+const char* __zeroxml_get_node_from_cache(const cacheId **cid, const char **start, ssize_t *len, const char **name, ssize_t *rlen , int *nodenum);
 
 #ifdef __cplusplus
 }

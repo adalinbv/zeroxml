@@ -18,10 +18,11 @@ int main(int argc, char **argv)
     static char buf[BUFLEN+1];
     char *s, *e, *p = buf;
     const char *cs, *c, *b;
-    int i, hl, nl;
+    ssize_t hl, nl;
     xmlId *rid;
     double d;
     long l;
+    int i;
 
     s = "xmlOpen";
     rid = xmlInitBuffer("<x/>", 4);
