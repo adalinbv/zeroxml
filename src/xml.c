@@ -1522,8 +1522,18 @@ xmlErrorGetString(const xmlId *id, int clear)
             }
         }
     }
-    else if (!id) {
-       rv = (char*)__zeroxml_error_str[__zeroxml_info.err_no];
+    else if (!id)
+    {
+       int err_no = __zeroxml_info.err_no;
+       if (XML_NO_ERROR <= err_no && err_no < XML_MAX_ERROR) {
+           rv = (char*)__zeroxml_error_str[err_no];
+       } else {
+           rv = "unknown error number.";
+       }
+
+       if (clear) {
+            __zeroxml_info.err_no = 0;
+        }
     }
 
 #ifndef NDEBUG
