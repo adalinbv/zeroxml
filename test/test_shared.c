@@ -91,6 +91,18 @@ int test(xmlId *rid)
     i = xmlNodeGetInt(nid, "hexadecimal");
     TESTINT(p, i, 522802);
 
+    p = "xmlGetDouble for "OUTPUTNODE"/price (7.79)";
+    f = xmlNodeGetDouble(nid, "price");
+    TESTFLOAT(p, f, 7.79);
+
+    p = "xmlGetDouble for "OUTPUTNODE"/tag (2.5)";
+    f = xmlNodeGetDouble(nid, "tag");
+    TESTFLOAT(p, f, 2.5);
+
+    p = "xmlGetDouble for "OUTPUTNODE"/pi (3.14)";
+    f = xmlNodeGetDouble(nid, "pi");
+    TESTFLOAT(p, f, 3.14);
+
     p = "xmlNodeGetDouble for "OUTPUTNODE"/interval-hz (20.5)";
     f = xmlNodeGetDouble(nid, "interval-hz");
     TESTFLOAT(p, f, 20.5);

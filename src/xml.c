@@ -983,18 +983,25 @@ xmlNodeCompareString(const xmlId *id, const char *path, const char *s)
 XML_API int XML_APIENTRY
 xmlGetBool(const xmlId *id)
 {
-    const struct _xml_id *xid = (const struct _xml_id *)id;
-    const struct _root_id *rid = xid->root;
-    int rv = __XML_BOOL_NONE;
+    struct _xml_id *xid = (struct _xml_id *)id;
+    double rv = __XML_FPNONE;
 
-    assert(xid != 0);
-
-    if (xid->len)
+    if (xid && xid->len)
     {
-        const char *end = xid->start + xid->len;
-        rv = __zeroxml_strtob(rid, xid->start, end, __XML_BOOL_NONE);
-    }
+        const struct _root_id *rid = xid->root;
+        const char *ps = xid->start;
+        int len = xid->len;
 
+        __zeroxml_prepare_data(rid, &ps, &len, STRIPPED);
+        if (len)
+        {
+            char *end = (char*)ps + len;
+            rv = __zeroxml_strtob(rid, xid->start, end, __XML_BOOL_NONE);
+        }
+    }
+    else {
+        SET_ERROR(xid, NULL, NULL, XML_NODE_NOT_FOUND);
+    }
     return rv;
 }
 
@@ -1002,31 +1009,38 @@ XML_API int XML_APIENTRY
 xmlNodeGetBool(const xmlId *id, const char *path)
 {
     const struct _xml_id *xid = (const struct _xml_id *)id;
-    const struct _root_id *rid = xid->root;
     int rv = __XML_BOOL_NONE;
 
-    assert(xid != 0);
     assert(path != 0);
 
-    if (xid->len)
+    if (xid && xid->len)
     {
-        const char *str, *node;
+        const char *ps, *ptr, *node;
         const cacheId *nc;
         int len, slen;
 
+        ps = xid->start;
         len = xid->len;
         slen = strlen(path);
         node = (const char *)path;
         nc = cacheNodeGet(id);
-        str = __zeroxml_node_get_path(xid, &nc, xid->start, &len, &node, &slen);
-        if (str)
+        ptr = __zeroxml_node_get_path(xid, &nc, ps, &len, &node, &slen);
+        if (ptr)
         {
-            const char *end = str+len;
-            rv = __zeroxml_strtob(rid, str, end, __XML_BOOL_NONE);
+            const struct _root_id *rid = xid->root;
+            __zeroxml_prepare_data(rid, &ptr, &len, STRIPPED);
+            if (len)
+            {
+                char *end = (char*)ptr+len;
+                rv = __zeroxml_strtob(rid, ptr, end, __XML_BOOL_NONE);
+            }
         }
         else if (slen == 0) {
             SET_ERROR(xid, node, node, len);
         }
+    }
+    else {
+        SET_ERROR(xid, NULL, NULL, XML_NODE_NOT_FOUND);
     }
 
     return rv;
@@ -1036,16 +1050,24 @@ XML_API long int XML_APIENTRY
 xmlGetInt(const xmlId *id)
 {
     struct _xml_id *xid = (struct _xml_id *)id;
-    long int rv = __XML_NONE;
+    double rv = __XML_FPNONE;
 
-    assert(xid != 0);
-
-    if (xid->len)
+    if (xid && xid->len)
     {
-        char *end = (char*)xid->start + xid->len;
-        rv = __zeroxml_strtol(xid->start, &end, 10, __XML_NONE);
-    }
+        const struct _root_id *rid = xid->root;
+        const char *ps = xid->start;
+        int len = xid->len;
 
+        __zeroxml_prepare_data(rid, &ps, &len, STRIPPED);
+        if (len)
+        {
+            char *end = (char*)ps + len;
+            rv = __zeroxml_strtol(xid->start, &end, 10, __XML_NONE);
+        }
+    }
+    else {
+        SET_ERROR(xid, NULL, NULL, XML_NODE_NOT_FOUND);
+    }
     return rv;
 }
 
@@ -1055,28 +1077,36 @@ xmlNodeGetInt(const xmlId *id, const char *path)
     const struct _xml_id *xid = (const struct _xml_id *)id;
     long int rv = __XML_NONE;
 
-    assert(xid != 0);
     assert(path != 0);
 
-    if (xid->len)
+    if (xid && xid->len)
     {
-        const char *str, *node;
+        const char *ps, *ptr, *node;
         const cacheId *nc;
         int len, slen;
 
+        ps = xid->start;
         len = xid->len;
         slen = strlen(path);
         node = (const char *)path;
         nc = cacheNodeGet(id);
-        str = __zeroxml_node_get_path(xid, &nc, xid->start, &len, &node, &slen);
-        if (str)
+        ptr = __zeroxml_node_get_path(xid, &nc, ps, &len, &node, &slen);
+        if (ptr)
         {
-            char *end = (char*)str+len;
-            rv = __zeroxml_strtol(str, &end, 10, __XML_NONE);
+            const struct _root_id *rid = xid->root;
+            __zeroxml_prepare_data(rid, &ptr, &len, STRIPPED);
+            if (len)
+            {
+                char *end = (char*)ptr+len;
+                rv = __zeroxml_strtol(ptr, &end, 10, __XML_NONE);
+            }
         }
         else if (slen == 0) {
             SET_ERROR(xid, node, node, len);
         }
+    }
+    else {
+        SET_ERROR(xid, NULL, NULL, XML_NODE_NOT_FOUND);
     }
 
     return rv;
@@ -1088,15 +1118,22 @@ xmlGetDouble(const xmlId *id)
     struct _xml_id *xid = (struct _xml_id *)id;
     double rv = __XML_FPNONE;
 
-    assert(xid != 0);
-
-    if (xid->len)
+    if (xid && xid->len)
     {
-        const char *ptr = xid->start;
-        char *end = (char*)ptr + xid->len;
-        rv = __zeroxml_strtod(ptr, &end, __XML_FPNONE);
-    }
+        const struct _root_id *rid = xid->root;
+        const char *ps = xid->start;
+        int len = xid->len;
 
+        __zeroxml_prepare_data(rid, &ps, &len, STRIPPED);
+        if (len)
+        {
+            char *end = (char*)ps + len;
+            rv = __zeroxml_strtod(ps, &end, __XML_FPNONE);
+        }
+    }
+    else {
+        SET_ERROR(xid, NULL, NULL, XML_NODE_NOT_FOUND);
+    }
     return rv;
 }
 
@@ -1106,28 +1143,36 @@ xmlNodeGetDouble(const xmlId *id, const char *path)
     const struct _xml_id *xid = (const struct _xml_id *)id;
     double rv = __XML_FPNONE;
 
-    assert(xid != 0);
     assert(path != 0);
 
-    if (xid->len)
+    if (xid && xid->len)
     {
-        const char *ptr, *node;
+        const char *ps, *ptr, *node;
         const cacheId *nc;
         int len, slen;
 
+        ps = xid->start;
         len = xid->len;
         slen = strlen(path);
         node = (const char *)path;
         nc = cacheNodeGet(id);
-        ptr = __zeroxml_node_get_path(xid, &nc, xid->start, &len, &node, &slen);
+        ptr = __zeroxml_node_get_path(xid, &nc, ps, &len, &node, &slen);
         if (ptr)
         {
-            char *end = (char*)ptr+len;
-            rv = __zeroxml_strtod(ptr, &end, __XML_FPNONE);
+            const struct _root_id *rid = xid->root;
+            __zeroxml_prepare_data(rid, &ptr, &len, STRIPPED);
+            if (len)
+            {
+                char *end = (char*)ptr+len;
+                rv = __zeroxml_strtod(ptr, &end, __XML_FPNONE);
+            }
         }
         else if (slen == 0) {
             SET_ERROR(xid, node, node, len);
         }
+    }
+    else {
+        SET_ERROR(xid, NULL, NULL, XML_NODE_NOT_FOUND);
     }
 
     return rv;
@@ -1633,11 +1678,11 @@ __simd_memmem(const char *haystack, int haystacklen,
             }
 
             // Generate indices [0, 1, 2... vl-1]
-            vuint8m1_t idx_vec = __riscv_vid_v_u8m1(vl); 
-            
+            vuint8m1_t idx_vec = __riscv_vid_v_u8m1(vl);
+
             // Create a new mask where only bits GREATER than current 'off' are kept
             mask = __riscv_vmsgtu_vx_u8m1_b8(idx_vec, (uint8_t)off, vl);
-            
+
             off = __riscv_vfirst_m_b8(mask, vl);
         }
 

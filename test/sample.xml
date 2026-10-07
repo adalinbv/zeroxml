@@ -9,6 +9,10 @@
   <interval-hz>20.5</interval-hz>
   <num-speakers>2</num-speakers>
 
+  <price><![CDATA[7.79]]></price>
+  <tag a="1.5"><![CDATA[2.5]]></tag>
+  <pi>  <!-- comment --> 3.14 </pi>
+
   <tmp><!-- --></tmp>
   <test n="0" xtamp="erer" ëlémènt="bjôrn"/>
   <test n="1"/>
