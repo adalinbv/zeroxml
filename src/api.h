@@ -237,6 +237,8 @@ struct _root_id
     char *mmap;
     char encoding[MAX_ENCODING+1];
 
+    unsigned char recursion_level;
+
 #if defined(HAVE_ICONV_H) || defined(WIN32)
     iconv_t cd;
 #endif

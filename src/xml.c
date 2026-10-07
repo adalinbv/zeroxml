@@ -1537,7 +1537,6 @@ xmlErrorGetString(const xmlId *id, int clear)
 
 static const char *__zeroxmlProcessCDATA(const char**, int*, char);
 
-static const char *__zeroxml_memmem(const char*, int, const char*, int);
 static const char *__zeroxml_memncasestr(const struct _root_id*, const char*, int, const char*);
 static const char *__zeroxml_memncasecmp(const struct _root_id*, const char**, int*, const char**, int*);
 
@@ -1926,18 +1925,65 @@ __simd_memmem(const char *haystack, int haystacklen,
     }
     return NULL;
 }
+#else
+
+/*
+ * Locate a sub-string in a memory block.
+ *
+ * The comparisson is case sensitive.
+ *
+ * @param haystack a pointer to the beginning of the memory block
+ * @param haystacklen the length of the memory block
+ * @param needle the string to search for
+ * @param needlelen the length of the needle to search for
+ * @return a pointer to the located sub-string, or NULL if not found
+ */
+static const char* __attribute__((hot)) __simd_memmem(const char *haystack, int haystacklen, const char *needle, int needlelen)
+{
+    const char *rv = NULL;
+    int first;
+
+    assert (haystack);
+    assert (needle);
+
+    first = *needle;
+    if (haystacklen && needlelen && first != '\0')
+    {
+#if defined(__x86_64__) || defined(_M_X64)
+        rv = __simd_memmem(haystack, haystacklen, needle, needlelen);
+#else
+        do
+        {
+            const char *new = MEMCHR(haystack, first, haystacklen);
+            if (!new) break;
+
+            haystacklen -= (new-haystack);
+            if (haystacklen < needlelen) break;
+
+            if (MEMCMP(new, needle, needlelen) == 0)
+            {
+                rv = new;
+                break;
+            }
+            haystack = new+1;
+            haystacklen -= haystack-new;
+        }
+        while (haystacklen >= needlelen);
+#endif
+    }
+    return rv;
+}
 #endif
 
 /* Dispatch macros: use SIMD path on x86-64 and RISCV,
  * fall back to scalar elsewhere
  */
+#define FAST_MEMMEM(hs,hl,nd,nl)       __simd_memmem((hs),(hl),(nd),(nl))
 #if defined(__x86_64__) || defined(_M_X64) || \
     (defined(__riscv_v) && defined(__riscv_v_intrinsic))
-# define FAST_MEMMEM(hs,hl,nd,nl)       __simd_memmem((hs),(hl),(nd),(nl))
 # define FAST_SKIP_WS_FWD(ps,pe)        __simd_skip_ws_fwd((ps),(pe))
 # define FAST_SKIP_WS_BWD(ps,pe)        __simd_skip_ws_bwd((ps),(pe))
 #else
-# define FAST_MEMMEM(hs,hl,nd,nl)       __zeroxml_memmem((hs),(hl),(nd),(nl))
 # define FAST_SKIP_WS_FWD(ps,pe)        ({ const char *_p=(ps); while(_p<(pe)&&isspace((unsigned char)*_p))_p++; _p; })
 # define FAST_SKIP_WS_BWD(ps,pe)        ({ const char *_p=(pe); while(_p>(ps)&&isspace((unsigned char)*_p))_p--; _p; })
 #endif
@@ -2216,17 +2262,16 @@ __zeroxml_node_get_path(const struct _xml_id *xid, const cacheId **nc, const cha
  }
 #endif
 
- const char* __attribute__((hot))
+const char* __attribute__((hot))
 __zeroxml_get_node(const struct _xml_id *xid, const cacheId *nc, const char **buf, int *len, const char **name, int *rlen, int *nodenum, char mode)
 {
-static int level = 0;
 #ifndef NDEBUG
     const char *end = *buf + *len;
 #endif
-    const struct _root_id *rid = xid->root;
+    struct _root_id *rid = xid->root;
     const char *open_element = *name;
     const char *element, *start_tag = 0;
-    const char *rptr, *start;
+    const char *rptr, *start = NULL;
     const char *new, *cur;
     int restlen, elementlen;
     int open_len = *rlen;
@@ -2242,7 +2287,10 @@ static int level = 0;
     assert(rlen != 0);
     assert(nodenum != 0);
 
-++level;
+    if (rid->recursion_level == 99) {
+       SET_ERROR_AND_RETURN(start, XML_OUT_OF_MEMORY);
+    }
+
     start = *buf;
     if (open_len == 0 || *name == 0) {
         SET_ERROR_AND_RETURN(start, XML_NO_ERROR);
@@ -2265,6 +2313,8 @@ static int level = 0;
     elementlen = *rlen;
 
     assert(cur+restlen == end);
+
+    ++rid->recursion_level;
     while ((new = MEMCHR(cur, '<', restlen)) != 0)
     {
 
@@ -2558,6 +2608,7 @@ static int level = 0;
          }
          while(0);
     } /* while */
+    --rid->recursion_level;
 
 __zeroxml_get_nodeExit:
     if (found != num && num != -1)
@@ -2572,7 +2623,6 @@ __zeroxml_get_nodeExit:
         *rlen = open_len;
         *name = open_element;
         *nodenum = found;
---level;
     }
     return rv;
 }
@@ -3231,55 +3281,6 @@ __zeroxml_strtob(const struct _root_id *rid, const char *start, const char *end,
     }
     else {
         rv = val;
-    }
-    return rv;
-}
-
-/*
- * Locate a sub-string in a memory block.
- *
- * The comparisson is case sensitive.
- *
- * @param haystack a pointer to the beginning of the memory block
- * @param haystacklen the length of the memory block
- * @param needle the string to search for
- * @param needlelen the length of the needle to search for
- * @return a pointer to the located sub-string, or NULL if not found
- */
-
-static const char* __attribute__((hot))
-__zeroxml_memmem(const char *haystack, int haystacklen, const char *needle, int needlelen)
-{
-    const char *rv = NULL;
-    int first;
-
-    assert (haystack);
-    assert (needle);
-
-    first = *needle;
-    if (haystacklen && needlelen && first != '\0')
-    {
-#if defined(__x86_64__) || defined(_M_X64)
-        rv = __simd_memmem(haystack, haystacklen, needle, needlelen);
-#else
-        do
-        {
-            const char *new = MEMCHR(haystack, first, haystacklen);
-            if (!new) break;
-
-            haystacklen -= (new-haystack);
-            if (haystacklen < needlelen) break;
-
-            if (MEMCMP(new, needle, needlelen) == 0)
-            {
-                rv = new;
-                break;
-            }
-            haystack = new+1;
-            haystacklen -= haystack-new;
-        }
-        while (haystacklen >= needlelen);
-#endif
     }
     return rv;
 }

@@ -148,18 +148,18 @@ int main(int argc, char **argv)
 
 
     s = "<?xml?><"ctb">1</"ctb">";
-    c = __zeroxml_memmem(s, strlen(s), ctb, strlen(ctb));
-    snprintf(buf, BUFLEN, "__zeroxml_memmem with '%s' and '%s'", s, ctb);
+    c = __simd_memmem(s, strlen(s), ctb, strlen(ctb));
+    snprintf(buf, BUFLEN, "__simd_memmem with '%s' and '%s'", s, ctb);
     TESTSTRNCASE(p, strncmp, c, ctb, strlen(ctb));
 
     s = "<?xml?><"cTb">1</"cTb">";
-    c = __zeroxml_memmem(s, strlen(s), cTb, strlen(cTb));
-    snprintf(buf, BUFLEN, "__zeroxml_memmem with '%s' and '%s'", s, ctb);
+    c = __simd_memmem(s, strlen(s), cTb, strlen(cTb));
+    snprintf(buf, BUFLEN, "__simd_memmem with '%s' and '%s'", s, ctb);
     TESTSTRNCASE(p, !strncmp, c, ctb, strlen(ctb));
 
     s = "<?xml?><"nTB">1</"nTB">";
-    c = __zeroxml_memmem(s, strlen(s), cTb, strlen(cTb));
-    snprintf(buf, BUFLEN, "__zeroxml_memmem with '%s' and '%s'", s, cTb);
+    c = __simd_memmem(s, strlen(s), cTb, strlen(cTb));
+    snprintf(buf, BUFLEN, "__simd_memmem with '%s' and '%s'", s, cTb);
     TESTPTR(p, c, NULL);
 
 
