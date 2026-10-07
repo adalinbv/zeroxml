@@ -2981,7 +2981,7 @@ __zeroxml_process_declaration(const struct _root_id *rid, const char *start, int
                 if ((end = MEMCHR(cur, '"', len)) != NULL)
                 {
                     len = end - cur;
-                    if (len > MAX_ENCODING) len = MAX_ENCODING;
+                    if (len >= MAX_ENCODING) len = MAX_ENCODING;
                     memcpy(locale, cur, len);
                     locale[len] = 0;
                 }
