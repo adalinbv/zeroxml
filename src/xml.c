@@ -166,7 +166,7 @@ xmlOpenFlags(const char *filename, enum xmlFlags flags)
 #if defined(HAVE_LOCALE_H) && !defined(WIN32)
                     rid->locale = newlocale(LC_CTYPE_MASK, locale, 0);
 #endif
-                    encoding[0] = 0;
+                    encoding = "C";
                     start = __zeroxml_process_declaration(rid, mm, blocklen,
                                                           encoding);
                     blocklen -= start-mm;
@@ -3031,10 +3031,23 @@ __zeroxml_process_declaration(const struct _root_id *rid, const char *start, int
                 cur = new+elementlen;
                 if ((end = MEMCHR(cur, '"', len)) != NULL)
                 {
+                    int res;
+
                     len = end - cur;
                     if (len >= MAX_ENCODING) len = MAX_ENCODING;
-                    memcpy(locale, cur, len);
-                    locale[len] = 0;
+                    res = strncasecmp(locale, "UTF-8", len);
+                    if (!res) res = strncasecmp(locale, "UTF-16BE", len);;
+                    if (!res) res = strncasecmp(locale, "UTF-16LE", len);;
+                    if (!res) res = strncasecmp(locale, "UTF-32BE", len);;
+                    if (!res) res = strncasecmp(locale, "UTF-32LE", len);;
+                    if (!res) res = strncasecmp(locale, "SCSU", len);;
+                    if (!res) res = strncasecmp(locale, "BOCU-1", len);;
+                    if (!res) res = strncasecmp(locale, "GB18030", len);
+                    if (res)
+                    {
+                        memcpy(locale, cur, len);
+                        locale[len] = 0;
+                    }
                 }
             }
         }
