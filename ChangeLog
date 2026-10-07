@@ -1,4 +1,20 @@
 2026-04-27 Erik Hofman <tech@adalin.org>
+ * Increase the version number to 2.4.3
+ * Make all length and size parameters of ssize_t type
+ * Protect against setlocale returning NULL
+ * Close fd on failure. Add O_CLOEXEC to open. This flag is essential in some
+   multithreaded programs
+ * Add a boundary check for __zeroxml_info.err_no
+ * Limit XML declared encoding to supported types
+ * Cast calls to isspace to unsigned char. Without the cast bytes ≥ 0x80 (any
+   UTF-8 document in a non-C locale) this is undefined behavior and can make
+   isspace return true for non-space bytes
+ * Add a recursion_level checkt and set it's limit to 100
+ * Fix an off-by-one write in __zeroxml_process_declaration
+ * Handle the situation where a boolean, integer or double value is defined
+   within a CDATA section
+
+2026-04-27 Erik Hofman <tech@adalin.org>
  * Increase the version number to 2.4.2
  * Add RISCV vector support
 
