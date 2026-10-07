@@ -140,7 +140,9 @@ xmlOpenFlags(const char *filename, enum xmlFlags flags)
 
 #ifdef HAVE_LOCALE_H
                 char *locale;
-                locale = strdup(setlocale(LC_CTYPE, ""));
+                char *lc_type = setlocale(LC_CTYPE, "");
+                if (lc_type) locale = strdup(lc_type);
+                else locale = strdup("C");
 #endif
                 rid->root = rid;
                 xmlSetFlags(rid, XML_DEFAULT_FLAGS);
