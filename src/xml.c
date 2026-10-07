@@ -129,7 +129,7 @@ xmlOpenFlags(const char *filename, enum xmlFlags flags)
 
     if (filename)
     {
-        int fd = open(filename, O_RDONLY);
+        int fd = open(filename, O_RDONLY|O_CLOEXEC);
         if (fd >= 0)
         {
             rid = calloc(1, sizeof(struct _root_id));
@@ -157,6 +157,7 @@ xmlOpenFlags(const char *filename, enum xmlFlags flags)
 #endif
                     free(rid);
                     rid = 0;
+                    close(fd);
                 }
                 else
                 {
@@ -223,6 +224,9 @@ xmlOpenFlags(const char *filename, enum xmlFlags flags)
 #endif
                     }
                 }
+            }
+            else {
+                close(fd);
             }
         }
     }
