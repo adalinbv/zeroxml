@@ -176,7 +176,7 @@ xmlOpenFlags(const char *filename, enum xmlFlags flags)
 #if defined(HAVE_LOCALE_H) && !defined(WIN32)
                     rid->locale = newlocale(LC_CTYPE_MASK, locale, 0);
 #endif
-                    encoding = "C";
+                    strcpy(encoding, "C");
                     start = __zeroxml_process_declaration(rid, mm, blocklen,
                                                           encoding);
                     blocklen -= start-mm;
@@ -3067,14 +3067,14 @@ __zeroxml_process_declaration(const struct _root_id *rid, const char *start, ssi
 
                     len = end - cur;
                     if (len >= MAX_ENCODING) len = MAX_ENCODING;
-                    res = strncasecmp(locale, "UTF-8", len);
-                    if (res) res = strncasecmp(locale, "UTF-16BE", len);
-                    if (res) res = strncasecmp(locale, "UTF-16LE", len);
-                    if (res) res = strncasecmp(locale, "UTF-32BE", len);
-                    if (res) res = strncasecmp(locale, "UTF-32LE", len);
-                    if (res) res = strncasecmp(locale, "SCSU", len);
-                    if (res) res = strncasecmp(locale, "BOCU-1", len);
-                    if (res) res = strncasecmp(locale, "GB18030", len);
+                    res = strncasecmp(cur, "UTF-8", len);
+                    if (res) res = strncasecmp(cur, "UTF-16BE", len);
+                    if (res) res = strncasecmp(cur, "UTF-16LE", len);
+                    if (res) res = strncasecmp(cur, "UTF-32BE", len);
+                    if (res) res = strncasecmp(cur, "UTF-32LE", len);
+                    if (res) res = strncasecmp(cur, "SCSU", len);
+                    if (res) res = strncasecmp(cur, "BOCU-1", len);
+                    if (res) res = strncasecmp(cur, "GB18030", len);
                     if (!res)
                     {
                         memcpy(locale, cur, len);
